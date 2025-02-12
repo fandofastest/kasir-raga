@@ -1,0 +1,5 @@
+admin
+karyawan  - username,password,role(kasir,staff antar),nama, no hp, no rek
+produk -  namaproduk,harga,kategori,satuan,brand ,supplier
+konsumen - nama, alamat, nohp 
+transaksi -  kasir yang handle, produk apa, pembeli member/tidak, pengantar (jika delivery), metode pembayaran, status transaksi, 
