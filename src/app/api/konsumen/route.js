@@ -1,7 +1,7 @@
 // File: app/api/kategori/route.js (dijelaskan dalam pertanyaan sebelumnya)
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import Konsumen from "@/models/Konsumen"; // Sesuaikan dengan model yang benar
+import Konsumen from "@/models/konsumen"; // Sesuaikan dengan model yang benar
 import { withAuth } from "@/middleware/withAuth";
 
 export const POST = withAuth(async (req, res) => {
