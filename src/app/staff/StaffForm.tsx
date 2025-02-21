@@ -3,16 +3,7 @@
 import { XCircleIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-
-interface Staff {
-  _id?: string;
-  name: string;
-  email?: string;
-  password?: string;
-  role: "kasir" | "tukangAntar";
-  nohp: string;
-  alamat?: string;
-}
+import { Staff } from "@/models/modeltsx/staffTypes"; // Sesuaikan path sesuai struktur proyek Anda
 
 interface StaffFormModalProps {
   isOpen: boolean;

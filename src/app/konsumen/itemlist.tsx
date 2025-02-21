@@ -4,11 +4,21 @@ import DropdownAction from "./dropwdownaction";
 import { fetchPelanggan } from "@/lib/dataService";
 import PelangganFormModal from "./PelangganForm";
 
+// Definisi interface untuk tipe Pelanggan
+interface Pelanggan {
+  _id: string;
+  nama: string;
+  nohp: string;
+  alamat: string;
+}
+
 const ItemPelanggan = () => {
-  const [pelanggan, setPelanggan] = useState([]);
-  const [filteredPelanggan, setFilteredPelanggan] = useState([]);
+  const [pelanggan, setPelanggan] = useState<Pelanggan[]>([]);
+  const [filteredPelanggan, setFilteredPelanggan] = useState<Pelanggan[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPelanggan, setSelectedPelanggan] = useState(null);
+  const [selectedPelanggan, setSelectedPelanggan] = useState<Pelanggan | null>(
+    null,
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -18,18 +28,17 @@ const ItemPelanggan = () => {
     });
   }, []);
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
 
     const filtered = pelanggan.filter((p) =>
-      p.nama?.toLowerCase().includes(query),
+      p.nama.toLowerCase().includes(query),
     );
-
     setFilteredPelanggan(filtered);
   };
 
-  const handleOpenModal = (pelanggan = null) => {
+  const handleOpenModal = (pelanggan: Pelanggan | null = null) => {
     setSelectedPelanggan(pelanggan);
     setIsModalOpen(true);
   };
@@ -51,6 +60,7 @@ const ItemPelanggan = () => {
         </button>
       </div>
 
+      {/* Header Table */}
       <div className="grid grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark sm:grid-cols-10 md:px-6 2xl:px-7.5">
         <div className="col-span-3 flex items-center">
           <p className="font-medium">Nama Pelanggan</p>
@@ -63,6 +73,7 @@ const ItemPelanggan = () => {
         </div>
       </div>
 
+      {/* Daftar Pelanggan */}
       {filteredPelanggan.map((pelanggan) => (
         <div
           className="grid grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark sm:grid-cols-10 md:px-6 2xl:px-7.5"
@@ -100,6 +111,7 @@ const ItemPelanggan = () => {
         </div>
       ))}
 
+      {/* Modal Form Pelanggan */}
       <PelangganFormModal
         onSubmit={() => {
           fetchPelanggan().then((res) => {

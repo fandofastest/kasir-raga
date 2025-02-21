@@ -1,5 +1,19 @@
-function CartSummary() {
-  const cartItems: CartItem[] = [
+"use client";
+import { useState } from "react";
+import Image from "next/image";
+
+interface CartItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  note?: string;
+  image?: string;
+}
+
+const CartSummary = () => {
+  // State untuk menyimpan item dalam keranjang
+  const [cartItems, setCartItems] = useState<CartItem[]>([
     {
       id: 101,
       name: "Produk A",
@@ -16,17 +30,40 @@ function CartSummary() {
       note: "Catatan B",
       image: "/images/product-b.png",
     },
-    // Tambahkan item lain sesuai kebutuhan
-  ];
+  ]);
 
+  // Menghitung total harga
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
 
+  // Fungsi untuk menambah jumlah barang
+  const handleIncrease = (id: number) => {
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
+      ),
+    );
+  };
+
+  // Fungsi untuk mengurangi jumlah barang
+  const handleDecrease = (id: number) => {
+    setCartItems(
+      (prevItems) =>
+        prevItems
+          .map((item) =>
+            item.id === id
+              ? { ...item, quantity: Math.max(1, item.quantity - 1) }
+              : item,
+          )
+          .filter((item) => item.quantity > 0), // Menghapus item jika quantity = 0
+    );
+  };
+
   return (
     <div className="flex h-full flex-col">
-      {/* Daftar item (scrollable) */}
+      {/* Daftar item dalam keranjang */}
       <div className="flex-1 overflow-y-auto p-4">
         {cartItems.length > 0 ? (
           cartItems.map((item) => (
@@ -41,6 +78,7 @@ function CartSummary() {
                       src={item.image}
                       alt={item.name}
                       fill
+                      sizes="48px"
                       className="object-cover"
                     />
                   )}
@@ -57,11 +95,17 @@ function CartSummary() {
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <button className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600">
+                <button
+                  className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600"
+                  onClick={() => handleDecrease(item.id)}
+                >
                   -
                 </button>
                 <span className="w-5 text-center text-sm">{item.quantity}</span>
-                <button className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600">
+                <button
+                  className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600"
+                  onClick={() => handleIncrease(item.id)}
+                >
                   +
                 </button>
                 <p className="ml-2 w-16 text-right text-sm font-medium text-black dark:text-white">
@@ -75,7 +119,7 @@ function CartSummary() {
         )}
       </div>
 
-      {/* Footer Cart (tetap terlihat) */}
+      {/* Footer */}
       <div className="border-t border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
         <div className="mb-3 flex items-center justify-between text-sm font-semibold">
           <span>Total:</span>
@@ -87,4 +131,6 @@ function CartSummary() {
       </div>
     </div>
   );
-}
+};
+
+export default CartSummary;
