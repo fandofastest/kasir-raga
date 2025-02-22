@@ -25,12 +25,12 @@ const transactionSchema = new mongoose.Schema({
   },
   metode_pembayaran: {
     type: String,
-    enum: ["tunai", "matrial", "bank transfer"],
+    enum: ["tunai", "EDC", "bank transfer"],
     required: true,
   },
   status_transaksi: {
     type: String,
-    enum: ["lunas", "pending", "canceled"],
+    enum: ["lunas", "Pay Later", "pending", "canceled"],
     required: true,
   },
   keterangan: {

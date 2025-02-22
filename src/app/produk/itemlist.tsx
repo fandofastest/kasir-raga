@@ -88,12 +88,13 @@ const TableTwo = () => {
           >
             <div className="col-span-3 flex items-center">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="h-20 w-30 rounded-md">
+                <div className="rounded-md object-contain">
                   <Image
                     src={product.image ?? "/images/product/product-01.png"}
                     width={100}
                     height={100}
                     alt="Product"
+                    className="h-30 w-30 rounded-md object-contain"
                   />
                 </div>
                 <p className="text-sm text-black dark:text-white">

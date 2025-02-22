@@ -1,8 +1,8 @@
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
-import ItemList from "./itemlist";
 import Head from "next/head";
 import { Metadata } from "next";
+import PenjualanPage from "./penjualanPage";
 
 export const metadata: Metadata = {
   title: "Sistem Kasir | Produk",
@@ -16,7 +16,7 @@ const ProductsPage = () => {
       <div className="max-w-600  mx-auto">
         <Breadcrumb pageName="Transaksi" />
 
-        <ItemList />
+        <PenjualanPage />
       </div>
     </DefaultLayout>
   );
