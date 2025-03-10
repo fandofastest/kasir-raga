@@ -81,7 +81,7 @@ export default function TransactionHistoryPage() {
   // Load opsi supplier dan staff saat pertama kali render
   useEffect(() => {
     loadOptions();
-  });
+  }, []);
 
   // Buat opsi berdasarkan role untuk select staff
   const kasirOptions = staffOptions.filter((staff) => staff.role === "kasir");
@@ -134,7 +134,7 @@ export default function TransactionHistoryPage() {
 
   useEffect(() => {
     loadData();
-  });
+  }, []);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

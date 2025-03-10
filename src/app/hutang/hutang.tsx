@@ -57,7 +57,7 @@ export default function HutangPage() {
 
   useEffect(() => {
     loadData();
-  });
+  }, []);
 
   // Fungsi untuk menghitung sisa tagihan (outstanding) per transaksi
   const computeOutstanding = (trx: HutangTransaction) => {
