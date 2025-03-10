@@ -15,7 +15,7 @@ export async function POST(req) {
     const buffer = Buffer.from(bytes);
     const fileName = `${Date.now()}-${file.name}`;
 
-    const uploadDir = path.join(process.cwd(), "public/uploads");
+    const uploadDir = path.join(process.cwd(), "/uploads");
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -24,7 +24,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       message: "Upload successful",
-      url: `/uploads/${fileName}`,
+      url: `http://localhost:3333/uploads/${fileName}`,
     });
   } catch (error) {
     console.error("Upload Error:", error);

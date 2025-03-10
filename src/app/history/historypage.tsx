@@ -66,23 +66,22 @@ export default function TransactionHistoryPage() {
     updateDataTransaction(updatedTransaction._id, updatedTransaction);
     loadData();
   };
-
+  const loadOptions = async () => {
+    try {
+      const supplierRes = await fetchSupplier();
+      setSupplierOptions(supplierRes.data);
+      const staffRes = await fetchStaff();
+      const pembeliRes = await fetchPelanggan();
+      setStaffOptions(staffRes.data);
+      setPembeliOptions(pembeliRes.data);
+    } catch (err) {
+      console.error("Gagal memuat opsi:", err);
+    }
+  };
   // Load opsi supplier dan staff saat pertama kali render
   useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        const supplierRes = await fetchSupplier();
-        setSupplierOptions(supplierRes.data);
-        const staffRes = await fetchStaff();
-        const pembeliRes = await fetchPelanggan();
-        setStaffOptions(staffRes.data);
-        setPembeliOptions(pembeliRes.data);
-      } catch (err) {
-        console.error("Gagal memuat opsi:", err);
-      }
-    };
     loadOptions();
-  }, []);
+  });
 
   // Buat opsi berdasarkan role untuk select staff
   const kasirOptions = staffOptions.filter((staff) => staff.role === "kasir");
@@ -135,7 +134,7 @@ export default function TransactionHistoryPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  });
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

@@ -220,20 +220,17 @@ export default function ProductFormModal({
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("mytoken") : null;
-
-  // Fetch data satuan saat mount
-  useEffect(() => {
-    async function getSatuan() {
-      try {
-        const res = await fetchSatuan();
-        const data = res.data;
-        setSatuanOptions(data);
-      } catch (error) {
-        console.error("Failed to fetch satuan:", error);
-      }
+  async function getSatuan() {
+    try {
+      const res = await fetchSatuan();
+      const data = res.data;
+      setSatuanOptions(data);
+    } catch (error) {
+      console.error("Failed to fetch satuan:", error);
     }
-    getSatuan();
-  }, []);
+  }
+  // Fetch data satuan saat mount
+
   function generateUUID() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
       /[xy]/g,
@@ -247,6 +244,8 @@ export default function ProductFormModal({
 
   // Set data form jika mode edit
   useEffect(() => {
+    getSatuan();
+
     if (product) {
       setNamaProduk(product.nama_produk);
       setHargaModal(product.harga_modal.toString());
@@ -357,9 +356,9 @@ export default function ProductFormModal({
     } else {
       res = await createProduct(productData);
     }
-    console.log("====================================");
-    console.log(res);
-    console.log("====================================");
+    // console.log("====================================");
+    // console.log(res);
+    // console.log("====================================");
 
     setLoading(false);
     const responseData = await res;

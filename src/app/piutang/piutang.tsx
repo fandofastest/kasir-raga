@@ -65,7 +65,7 @@ export default function PiutangPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  });
 
   // Fungsi helper untuk menghitung jumlah cicilan yang sudah dibayar
   const countPaidInstallments = (trx: PiutangTransaction) => {
