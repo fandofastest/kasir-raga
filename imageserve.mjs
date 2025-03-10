@@ -16,10 +16,10 @@ console.log(__dirname); // Menampilkan path direktori
 app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Menyajikan file di folder uploads
 
 // API route untuk upload file
-// app.post("/upload", upload.single("file"), (req, res) => {
-//   const filePath = `/uploads/${req.file.filename}`;
-//   res.json({ message: "Upload successful", url: filePath });
-// });
+app.post("/upload", upload.single("file"), (req, res) => {
+  const filePath = `/uploads/${req.file.filename}`;
+  res.json({ message: "Upload successful", url: filePath });
+});
 
 // Handle semua route lainnya dengan Next.js
 // app.all("*", (req, res) => {
