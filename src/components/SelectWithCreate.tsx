@@ -38,7 +38,7 @@ export default function SelectWithCreate({
       const data = await res.json();
       if (res.status == 403) {
         alert("Session Expired");
-        signOut({ callbackUrl: "/auth/signin" });
+        signOut();
       }
 
       setItems(data);
