@@ -3,28 +3,70 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+// Mengimpor dotenv dan memuat variabel dari file .env
+import dotenv from "dotenv";
 
+dotenv.config();
 // Menggunakan import.meta.url untuk mendapatkan path direktori
-
 const app = express();
-const upload = multer({ dest: "uploads/" }); // Simpan file di luar public
-const __filename = fileURLToPath(import.meta.url); // Mendapatkan nama file
-const __dirname = dirname(__filename); // Mendapatkan direktori dari nama file
 
-console.log(__dirname); // Menampilkan path direktori
+// Tentukan folder penyimpanan upload
+const uploadDir = path.join(dirname(fileURLToPath(import.meta.url)), "uploads");
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Menyajikan file di folder uploads
+// Membuat folder jika belum ada
+import fs from "fs";
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Setup Multer dengan filter ekstensi file
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    cb(null, fileName);
+  },
+});
+
+// Filter untuk memeriksa ekstensi file
+const fileFilter = (req, file, cb) => {
+  const allowedExtensions = /jpeg|jpg|png|gif/; // Daftar ekstensi yang diizinkan
+  const extname = allowedExtensions.test(
+    path.extname(file.originalname).toLowerCase(),
+  );
+  const mimetype = allowedExtensions.test(file.mimetype);
+
+  if (extname && mimetype) {
+    return cb(null, true); // File diterima
+  } else {
+    cb(new Error("Only image files (jpeg, jpg, png, gif) are allowed!"), false); // Menolak file dengan ekstensi yang tidak diizinkan
+  }
+};
+
+// Setup multer dengan storage dan filter
+const upload = multer({ storage: storage, fileFilter: fileFilter });
+
+// Menyajikan file di folder uploads
+app.use("/uploads", express.static(uploadDir)); // Menyajikan file yang di-upload
 
 // API route untuk upload file
 app.post("/upload", upload.single("file"), (req, res) => {
-  const filePath = `/uploads/${req.file.filename}`;
+  const filePath = process.env.PHOTOURL + "uploads/" + req.file.filename;
   res.json({ message: "Upload successful", url: filePath });
 });
 
-// Handle semua route lainnya dengan Next.js
-// app.all("*", (req, res) => {
-//   return handle(req, res);
-// });
+// Menangani error jika file tidak sesuai dengan filter
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ message: "Multer error: " + err.message });
+  }
+  if (err) {
+    return res.status(400).json({ message: err.message });
+  }
+  next();
+});
 
 app.listen(3333, () => {
   console.log("Server running on http://localhost:3333");

@@ -24,7 +24,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       message: "Upload successful",
-      url: `http://158.178.247.48:3333/uploads/${fileName}`,
+      url: `http://localhost:3333/uploads/${fileName}`,
     });
   } catch (error) {
     console.error("Upload Error:", error);
