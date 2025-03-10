@@ -234,6 +234,16 @@ export default function ProductFormModal({
     }
     getSatuan();
   }, []);
+  function generateUUID() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        var r = (Math.random() * 16) | 0,
+          v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      },
+    );
+  }
 
   // Set data form jika mode edit
   useEffect(() => {
@@ -250,7 +260,7 @@ export default function ProductFormModal({
       if (Array.isArray(product.satuans) && product.satuans.length > 0) {
         setSatuans(
           product.satuans.map((s) => ({
-            _id: s._id || crypto.randomUUID(),
+            _id: s._id,
             satuanId: s.satuan?._id || "",
             konversi: s.konversi,
             harga: s.harga,
@@ -258,7 +268,7 @@ export default function ProductFormModal({
         );
       } else {
         setSatuans([
-          { _id: crypto.randomUUID(), satuanId: "", konversi: 0, harga: 0 },
+          { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
         ]);
       }
     } else {
@@ -271,7 +281,7 @@ export default function ProductFormModal({
       setBrand(null);
       setKategori(null);
       setSatuans([
-        { _id: crypto.randomUUID(), satuanId: "", konversi: 0, harga: 0 },
+        { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
       ]);
     }
   }, [product]);
@@ -281,7 +291,7 @@ export default function ProductFormModal({
   const addSatuanRow = () => {
     setSatuans((prev) => [
       ...prev,
-      { _id: crypto.randomUUID(), satuanId: "", konversi: 0, harga: 0 },
+      { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
     ]);
   };
 
