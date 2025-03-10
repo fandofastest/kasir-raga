@@ -1,5 +1,5 @@
 interface Customer {
-  id: number;
+  _id: string;
   nama: string;
   nohp: string;
   alamat: string;

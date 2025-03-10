@@ -109,8 +109,8 @@ const TableTwo = () => {
             </div>
             <div className="col-span-1 flex items-center">
               <p className="text-sm text-black dark:text-white">
-                {product.harga
-                  ? product.harga.toLocaleString("id-ID", {
+                {product.harga_modal
+                  ? product.harga_modal.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
                     })

@@ -31,7 +31,12 @@ export const POST = async (req) => {
 
     return NextResponse.json({
       token,
-      user: { email: user.email, role: user.role, name: user.name },
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+      },
     });
   } catch (error) {
     return NextResponse.json(

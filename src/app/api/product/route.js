@@ -8,53 +8,103 @@ import { withAuth } from "@/middleware/withAuth";
 
 export const POST = withAuth(async (req) => {
   try {
+    // Koneksikan ke DB Mongo
     await connectToDatabase();
     const data = await req.json();
 
+    // Contoh validasi minimal
+    if (!data.nama_produk || !data.harga_modal) {
+      return NextResponse.json(
+        { error: "nama_produk dan harga_modal wajib diisi." },
+        { status: 400 },
+      );
+    }
+
+    // (Opsional) validasi image
     if (!data.image) {
       return NextResponse.json({ error: "Image is required" }, { status: 400 });
     }
 
-    // Validasi satuan, kategori, brand
-    const satuan = await Satuan.findById(data.satuan._id);
-    const kategori = await Kategori.findById(data.kategori._id);
-    const brand = await Brand.findById(data.brand._id);
+    // Validasi Kategori & Brand by _id
+    const kategoriDoc = data.kategori?._id
+      ? await Kategori.findById(data.kategori._id)
+      : null;
+    const brandDoc = data.brand?._id
+      ? await Brand.findById(data.brand._id)
+      : null;
 
-    // console.log("====================================");
-    // console.log(satuan);
-    // console.log("====================================");
+    if (!kategoriDoc || !brandDoc) {
+      return NextResponse.json(
+        { error: "Kategori atau Brand tidak valid." },
+        { status: 400 },
+      );
+    }
+    console.log("====================================");
+    console.log(data);
+    console.log("====================================");
 
-    if (!satuan || !kategori || !brand) {
-      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    // Jika ada array satuans, validasi & mapping
+    let mappedSatuans = [];
+    if (Array.isArray(data.satuans)) {
+      mappedSatuans = await Promise.all(
+        data.satuans.map(async (s) => {
+          if (!s?.satuan?._id) {
+            throw new Error(
+              "Field satuan._id pada salah satu item satuans tidak ditemukan.",
+            );
+          }
+          // Cari di model Satuan
+          const foundSatuan = await Satuan.findById(s.satuan._id);
+          if (!foundSatuan) {
+            throw new Error(
+              `Satuan dengan _id=${s.satuan._id} tidak ada di DB`,
+            );
+          }
+          return {
+            satuan: foundSatuan._id, // Mengacu ke koleksi Satuan
+            harga: s.harga,
+            konversi: s.konversi,
+          };
+        }),
+      );
     }
 
-    // Simpan produk dengan URL gambar
+    // Buat dokumen Product baru
     const newProduct = new Product({
       nama_produk: data.nama_produk,
-      harga: data.harga,
-      jumlah: data.jumlah,
-      supplier: data.supplier,
-      satuan: satuan._id,
-      kategori: kategori._id,
-      brand: brand._id,
-      sku: data.sku,
-      image: data.image, // URL gambar yang diunggah
+      harga_modal: data.harga_modal,
+      supplier: data.supplier || "",
+      sku: data.sku || "",
+      image: data.image,
+      kategori: kategoriDoc._id,
+      brand: brandDoc._id,
+      satuans: mappedSatuans,
+      jumlah: data.jumlah || 0,
     });
 
+    // Simpan ke DB
     await newProduct.save();
-    return NextResponse.json({ message: "Product added successfully" });
+
+    // Kembalikan respons sukses
+    return NextResponse.json(
+      { message: "Product added successfully", data: newProduct, status: 201 },
+      { status: 201 },
+    );
   } catch (error) {
+    console.error(error);
+    // Tangani error apapun
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message },
       { status: 500 },
     );
   }
 });
-
-export const GET = withAuth(async (req) => {
+export const GET = withAuth(async () => {
   try {
     await connectToDatabase();
-    const products = await Product.find().populate("satuan kategori brand");
+    const products = await Product.find().populate(
+      "satuans.satuan kategori brand",
+    );
     return NextResponse.json(products);
   } catch (error) {
     return NextResponse.json(
@@ -71,22 +121,7 @@ export const PUT = withAuth(async (req) => {
     const id = searchParams.get("id");
     const data = await req.json();
 
-    // Cari ObjectId untuk satuan jika ada perubahan
-    console.log("====================================");
-    console.log(data.satuan.nama);
-    console.log("====================================");
-    if (data.satuan) {
-      const satuanObj = await Satuan.findOne({ nama: data.satuan.nama });
-      if (!satuanObj) {
-        return NextResponse.json(
-          { error: "Satuan not found" },
-          { status: 400 },
-        );
-      }
-      data.satuan = satuanObj._id;
-    }
-
-    // Cari ObjectId untuk kategori jika ada perubahan
+    // Validasi kategori & brand jika ada perubahan
     if (data.kategori) {
       const kategoriObj = await Kategori.findOne({ nama: data.kategori.nama });
       if (!kategoriObj) {
@@ -98,7 +133,6 @@ export const PUT = withAuth(async (req) => {
       data.kategori = kategoriObj._id;
     }
 
-    // Cari ObjectId untuk brand jika ada perubahan
     if (data.brand) {
       const brandObj = await Brand.findOne({ nama: data.brand.nama });
       if (!brandObj) {
@@ -107,8 +141,30 @@ export const PUT = withAuth(async (req) => {
       data.brand = brandObj._id;
     }
 
+    // Update satuans jika ada perubahan
+    if (data.satuans) {
+      const satuans = await Promise.all(
+        data.satuans.map(async (satuan) => {
+          const foundSatuan = await Satuan.findById(satuan.satuan._id);
+          if (!foundSatuan) {
+            throw new Error(`Satuan ${satuan.satuan.nama} not found`);
+          }
+          return {
+            satuan: foundSatuan._id,
+            harga: satuan.harga,
+            konversi: satuan.konversi,
+          };
+        }),
+      );
+      data.satuans = satuans;
+    }
+
     await Product.findByIdAndUpdate(id, data);
-    return NextResponse.json({ message: "Product updated successfully" });
+    return NextResponse.json({
+      message: "Product updated successfully",
+      data,
+      status: 200,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message },
@@ -121,9 +177,6 @@ export const DELETE = withAuth(async (req) => {
   try {
     await connectToDatabase();
     const { id } = await req.json();
-    console.log("====================================");
-    console.log(id);
-    console.log("====================================");
     await Product.findByIdAndDelete(id);
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {

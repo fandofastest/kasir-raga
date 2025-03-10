@@ -12,27 +12,56 @@ export default function PenjualanPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
-
-  const addToCart = (product: Product) => {
+  const [refreshProducts, setRefreshProducts] = useState<number>(0);
+  const handleCheckoutSuccess = () => {
+    // Update refreshProducts, misalnya dengan timestamp baru
+    setRefreshProducts(Date.now());
+  };
+  const addToCart = (product: Product, quantity: number) => {
     setCartItems((prev) => {
-      const existing = prev.find((item) => item._id === product._id);
+      // Ambil satuan dari index 0
+      const chosenSatuan = product.satuans && product.satuans[0];
+      if (!chosenSatuan) {
+        toast.error("Produk tidak memiliki satuan.");
+        return prev;
+      }
+
+      // Cari item di keranjang berdasarkan product id dan satuan yang sama (dari index 0)
+      const existing = prev.find(
+        (item) =>
+          item._id === product._id &&
+          item.satuans &&
+          item.satuans[0].satuan._id === chosenSatuan.satuan._id,
+      );
 
       if (existing) {
-        // Cek apakah jumlah di keranjang sudah sama dengan stok
+        // Jika jumlah di keranjang sudah mencapai stok, tampilkan error
         if (existing.quantity >= product.jumlah) {
           toast.error("Jumlah di keranjang sudah sama dengan stok.", {
-            duration: 1000,
+            duration: 3000,
           });
-
-          return prev; // Tidak menambahkan lagi
+          return prev;
         }
+        // Tambahkan quantity jika sudah ada
         return prev.map((item) =>
-          item._id === product._id
-            ? { ...item, quantity: item.quantity + 1 }
+          item._id === product._id &&
+          item.satuans &&
+          item.satuans[0].satuan._id === chosenSatuan.satuan._id
+            ? { ...item, quantity: item.quantity + quantity }
             : item,
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+
+      // Jika belum ada, tambahkan produk ke keranjang
+      return [
+        ...prev,
+        {
+          ...product,
+          quantity,
+          harga: chosenSatuan.harga,
+          satuans: [chosenSatuan],
+        },
+      ];
     });
   };
 
@@ -40,10 +69,14 @@ export default function PenjualanPage() {
     <div className="mx-auto h-screen max-w-screen-2xl p-4">
       <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
         <div className="col-span-2">
-          <ProductsList addToCart={addToCart} />
+          <ProductsList addToCart={addToCart} refreshKey={refreshProducts} />
         </div>
         <div className="col-span-1">
-          <CartSummary cartItems={cartItems} updateCart={setCartItems} />
+          <CartSummary
+            onCheckoutSuccess={handleCheckoutSuccess}
+            cartItems={cartItems}
+            updateCart={setCartItems}
+          />
         </div>
       </div>
     </div>

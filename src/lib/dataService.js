@@ -15,6 +15,40 @@ export const fetchProducts = async () => {
   }
   return { data, token };
 };
+export async function createProduct(productData) {
+  const token = await fetchUser();
+
+  const response = await fetch("/api/product", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(productData),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to add product");
+  }
+  const data = await response.json();
+  return data;
+}
+export async function updateProduct(productId, updateData) {
+  const token = await fetchUser();
+
+  const response = await fetch(`/api/product?id=${productId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updateData),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update product");
+  }
+  const data = await response.json();
+  return data; // asumsikan struktur: { message, data: updatedProduct }
+}
 
 export const deleteProduct = async (id) => {
   const token = await fetchUser();
@@ -83,6 +117,34 @@ export const fetchStaff = async () => {
   }
   return { data, token };
 };
+export const fetchSupplier = async () => {
+  const token = await fetchUser();
+  const res = await fetch(apiUrl + "/supplier", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+
+  if (res.status == 403) {
+    toast.error("Session Expired");
+    signOut({ callbackUrl: "/auth/signin" });
+  }
+  return { data, token };
+};
+
+export const deleteSupplier = async (id) => {
+  const token = await fetchUser();
+  const res = await fetch(apiUrl + "/supplier", {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ id }),
+  });
+  const data = await res.json();
+  if (res.status == 403) {
+    toast.error("Session Expired");
+    signOut({ callbackUrl: "/auth/signin" });
+  }
+  return data;
+};
 export const deleteStaff = async (id) => {
   const token = await fetchUser();
   const res = await fetch(apiUrl + "/user", {
@@ -96,4 +158,188 @@ export const deleteStaff = async (id) => {
     signOut({ callbackUrl: "/auth/signin" });
   }
   return data;
+};
+
+export const fetchSatuan = async () => {
+  const token = await fetchUser();
+  const res = await fetch(apiUrl + "/satuan", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+
+  if (res.status == 403) {
+    toast.error("Session Expired");
+    signOut({ callbackUrl: "/auth/signin" });
+  }
+  return { data, token };
+};
+
+export const deleteSatuan = async (id) => {
+  const token = await fetchUser();
+  const res = await fetch(apiUrl + "/satuan", {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ id }),
+  });
+  const data = await res.json();
+  if (res.status == 403) {
+    toast.error("Session Expired");
+    signOut({ callbackUrl: "/auth/signin" });
+  }
+  return data;
+};
+export const addSatuan = async (satName) => {
+  const token = await fetchUser();
+  const res = await fetch(apiUrl + "/satuan", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ nama: satName, deskripsi: satName }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    toast.error("Gagal menambah satuan: " + data.error);
+  } else {
+    toast.success("Berhasil menambah satuan!");
+  }
+
+  if (res.status == 403) {
+    toast.error("Session Expired");
+    signOut({ callbackUrl: "/auth/signin" });
+  }
+  return { data, token };
+};
+
+export const createTransaction = async (transactionData) => {
+  // Ambil token dari session (pastikan fungsi fetchUser sudah tersedia)
+  const token = await fetchUser();
+
+  // Bangun URL dengan parameter tipe_transaksi (misalnya "pembelian" atau "penjualan")
+  // Jika transactionData.tipe_transaksi sudah ada, gunakan nilainya; jika tidak, bisa di-set default.
+  const tipe = transactionData.tipe_transaksi || "pembelian";
+  const response = await fetch(apiUrl + `/transaksi`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(transactionData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Failed to create transaction");
+  }
+  const data = await response.json();
+  return { data, token };
+};
+
+export async function updateDataTransaction(transactionId, updateData) {
+  const token = await fetchUser();
+  const response = await fetch(apiUrl + `/transaksi?id=${transactionId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updateData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Failed to update transaction");
+  }
+
+  const data = await response.json();
+  return { data, token };
+}
+
+export const fetchTransaction = async (params = {}) => {
+  const token = await fetchUser();
+
+  // Membuat query string dari parameter yang diterima
+  const queryParams = new URLSearchParams(params);
+
+  const res = await fetch(`${apiUrl}/transaksi?${queryParams.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+
+  if (res.status === 403) {
+    toast.error("Session Expired");
+    signOut({ callbackUrl: "/auth/signin" });
+  }
+  return { data, token };
+};
+
+export const payInstallment = async (transactionId, amount, paymentDate) => {
+  const token = await fetchUser();
+  const res = await fetch(
+    `${apiUrl}/transaksi/${transactionId}/payInstallment`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        amount,
+        paymentDate: paymentDate || new Date().toISOString(),
+      }),
+    },
+  );
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to pay installment");
+  }
+  return { data, token };
+};
+
+export const payHutang = async (transactionId, amount, paymentDate) => {
+  const token = await fetchUser();
+  const res = await fetch(`${apiUrl}/transaksi/${transactionId}/payHutang`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      amount,
+      paymentDate: paymentDate || new Date().toISOString(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Gagal memproses pembayaran hutang");
+  }
+  return { data, token };
+};
+
+export const fetchUserById = async (id) => {
+  const token = await fetchUser();
+  const res = await fetch(`${apiUrl}/user?id=${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  return { data, token };
+};
+export const updateUser = async (id, updateData) => {
+  const token = await fetchUser();
+  const res = await fetch(`${apiUrl}/user?id=${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updateData),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to update user");
+  }
+  return { data, token };
 };

@@ -14,6 +14,9 @@ export function withAuth(handler, requiredRole = null) {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // console.log("====================================");
+      // console.log(decoded);
+      // console.log("====================================");
 
       if (requiredRole && decoded.role !== requiredRole) {
         return NextResponse.json(
@@ -23,6 +26,7 @@ export function withAuth(handler, requiredRole = null) {
       }
 
       req.user = decoded;
+      // req.id = decoded.id;
       return handler(req);
     } catch (error) {
       return NextResponse.json({ error: "Invalid Token" }, { status: 403 });

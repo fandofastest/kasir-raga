@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const ProductsPage = () => {
   return (
     <DefaultLayout>
-      <div className="max-w-600  mx-auto">
+      <div className="max-w-600  max-h-: mx-auto">
         <Breadcrumb pageName="Produk" />
 
         <div className="colo grid h-full w-full grid-cols-5 gap-8 ">

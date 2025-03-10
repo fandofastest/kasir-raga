@@ -7,14 +7,13 @@ import { connectToDatabase } from "@/lib/mongodb";
 export const POST = async (req) => {
   try {
     await connectToDatabase();
-    const { email, password, name, nohp, alamat, role } = await req.json();
+    const { email, password, name, nohp, role } = await req.json();
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       email,
       password: hashedPassword,
       name,
       nohp,
-      alamat,
       role,
     });
     await newUser.save();

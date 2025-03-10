@@ -16,7 +16,7 @@ const DropdownUser = () => {
         const res = await fetch("/api/auth/session");
         const session = await res.json();
         setUser(session?.user || null);
-        // console.log(session);
+        console.log(session);
       } catch (error) {
         console.error("Error fetching session:", error);
       }
@@ -35,7 +35,7 @@ const DropdownUser = () => {
           <span className="block text-sm font-medium text-black dark:text-white">
             {user ? user.name : "Guest"}
           </span>
-          <span className="block text-xs">
+          <span className="block text-xs ">
             {user ? user.role : "Unknown Email"}
           </span>
         </span>

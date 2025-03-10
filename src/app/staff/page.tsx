@@ -1,7 +1,7 @@
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
-import ItemStaff from "./itemlist";
 import { Metadata } from "next";
+import ItemStaff from "./itemlist";
 
 export const metadata: Metadata = {
   title: "Sistem Kasir | Karyawan",
@@ -12,7 +12,7 @@ const ProductsPage = () => {
   return (
     <DefaultLayout>
       <div className="max-w-600  mx-auto">
-        <Breadcrumb pageName="Pelanggan" />
+        <Breadcrumb pageName="Karyawan" />
 
         <div className="colo grid h-full w-full grid-cols-5 gap-8 ">
           <div className="col-span-5 xl:col-span-8">

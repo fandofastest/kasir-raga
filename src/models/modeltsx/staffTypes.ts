@@ -4,7 +4,8 @@ export interface Staff {
   name: string;
   email?: string;
   password?: string;
-  role: "kasir" | "tukangAntar";
+  role: "kasir" | "staffAntar" | "staffBongkar";
+
   nohp: string;
   alamat?: string;
 }

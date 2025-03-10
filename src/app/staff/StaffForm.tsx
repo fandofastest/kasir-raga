@@ -4,6 +4,7 @@ import { XCircleIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Staff } from "@/models/modeltsx/staffTypes"; // Sesuaikan path sesuai struktur proyek Anda
+import { fetchStaff, deleteStaff } from "@/lib/dataService";
 
 interface StaffFormModalProps {
   isOpen: boolean;
@@ -69,6 +70,7 @@ export default function StaffFormModal({
     setLoading(true);
     let res;
     if (staff?._id) {
+      fetchStaff().then((res) => {});
       res = await fetch(`/api/user/?id=${staff._id}`, {
         method: "PUT",
         headers: {
@@ -129,7 +131,8 @@ export default function StaffFormModal({
             className="w-full rounded-lg border p-2 dark:bg-gray-800"
           >
             <option value="kasir">Kasir</option>
-            <option value="tukangAntar">Tukang Antar</option>
+            <option value="staffAntar">Staff Antar</option>
+            <option value="staffBongkar">Staff Bongkar</option>
           </select>
           <input
             type="text"

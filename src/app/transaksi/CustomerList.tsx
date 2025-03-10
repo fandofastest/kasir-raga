@@ -15,16 +15,8 @@ function CustomersList({
     async function loadCustomer() {
       await fetchPelanggan().then((res) => {
         console.log(res);
-        setCustomers([
-          { id: 0, nama: "Bukan Member", nohp: "", alamat: "" },
-          ...res.data,
-        ]);
-        setSelectedCustomer({
-          id: 0,
-          nama: "Bukan Member",
-          nohp: "",
-          alamat: "",
-        });
+        setCustomers(res.data);
+        setSelectedCustomer(res.data[0]);
       });
     }
     loadCustomer();
@@ -37,9 +29,9 @@ function CustomersList({
       </h3>
       <select
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        value={selectedCustomer?.nama || ""}
+        value={selectedCustomer?._id || ""}
         onChange={(e) => {
-          const customer = customers.find((c) => c.nama == e.target.value);
+          const customer = customers.find((c) => c._id == e.target.value);
           if (customer) {
             setSelectedCustomer(customer);
             console.log("====================================");
@@ -49,7 +41,7 @@ function CustomersList({
         }}
       >
         {customers.map((customer) => (
-          <option key={customer.id} value={customer.nama}>
+          <option key={customer._id} value={customer._id}>
             {customer.nama}
           </option>
         ))}

@@ -73,8 +73,8 @@ export const PUT = withAuth(async (req) => {
 export const DELETE = withAuth(async (req) => {
   try {
     await connectToDatabase();
-    const { nama } = await req.json();
-    await Satuan.findOneAndDelete({ nama: nama });
+    const { id } = await req.json();
+    await Satuan.findByIdAndDelete(id);
     return NextResponse.json({ message: "Satuan deleted successfully" });
   } catch (error) {
     return NextResponse.json(

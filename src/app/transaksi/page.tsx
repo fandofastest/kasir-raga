@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 const ProductsPage = () => {
   return (
     <DefaultLayout>
-      <div className="max-w-600  mx-auto">
-        <Breadcrumb pageName="Transaksi" />
+      <div className="max-w-600   mx-auto ">
+        <Breadcrumb pageName="Transaksi Penjualan" />
 
         <PenjualanPage />
       </div>
