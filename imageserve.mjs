@@ -53,7 +53,7 @@ app.use("/uploads", express.static(uploadDir)); // Menyajikan file yang di-uploa
 
 // API route untuk upload file
 app.post("/upload", upload.single("file"), (req, res) => {
-  const filePath = process.env.PHOTOURL + "uploads/" + req.file.filename;
+  const filePath = process.env.NEXT_PHOTOURL + "uploads/" + req.file.filename;
   res.json({ message: "Upload successful", url: filePath });
 });
 

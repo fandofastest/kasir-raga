@@ -371,7 +371,7 @@ export const photoUpload = async (e) => {
   if (!file || !token) return;
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch("/api/upload", {
+  const res = await fetch(process.env.NEXT_PHOTOURL + "/upload", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
