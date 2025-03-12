@@ -5,10 +5,12 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 // Mengimpor dotenv dan memuat variabel dari file .env
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 // Menggunakan import.meta.url untuk mendapatkan path direktori
 const app = express();
+app.use(cors());
 
 // Tentukan folder penyimpanan upload
 const uploadDir = path.join(dirname(fileURLToPath(import.meta.url)), "uploads");
@@ -53,8 +55,15 @@ app.use("/uploads", express.static(uploadDir)); // Menyajikan file yang di-uploa
 
 // API route untuk upload file
 app.post("/upload", upload.single("file"), (req, res) => {
-  const filePath = process.env.NEXT_PHOTOURL + "uploads/" + req.file.filename;
-  res.json({ message: "Upload successful", url: filePath });
+  try {
+    const filePath =
+      process.env.NEXT_PUBLIC_PHOTOURL + "/uploads/" + req.file.filename;
+    res.json({ message: "Upload successful", url: filePath });
+  } catch (error) {
+    console.log("====================================");
+    console.log(error);
+    console.log("====================================");
+  }
 });
 
 // Menangani error jika file tidak sesuai dengan filter
