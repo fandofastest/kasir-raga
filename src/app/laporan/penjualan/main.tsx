@@ -33,6 +33,13 @@ export default function LaporanPenjualanPage() {
     new Set(),
   );
 
+  // State untuk informasi toko (di header cetak)
+  const [storeName, setStoreName] = useState<string>("Nama Minimarket");
+  const [storeAddress, setStoreAddress] = useState<string>(
+    "Jln. Alamat Surabaya",
+  );
+  const [storePhone, setStorePhone] = useState<string>("081353935206");
+
   // Cek ukuran layar (threshold 768px)
   useEffect(() => {
     const handleResize = () => {
@@ -41,6 +48,16 @@ export default function LaporanPenjualanPage() {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Muat data toko dari localStorage
+  useEffect(() => {
+    const storedName = localStorage.getItem("companyName");
+    const storedAddress = localStorage.getItem("companyAddress");
+    const storedPhone = localStorage.getItem("companyPhone");
+    if (storedName) setStoreName(storedName);
+    if (storedAddress) setStoreAddress(storedAddress);
+    if (storedPhone) setStorePhone(storedPhone);
   }, []);
 
   // Load opsi supplier dan pembeli dari API
@@ -55,8 +72,7 @@ export default function LaporanPenjualanPage() {
     }
   };
 
-  // Fungsi untuk memuat data transaksi berdasarkan filter yang diterapkan,
-  // hanya mengambil transaksi dengan tipe "penjualan"
+  // Fungsi untuk memuat data transaksi berdasarkan filter, hanya transaksi penjualan
   const loadTransactions = async () => {
     setLoading(true);
     try {
@@ -102,7 +118,7 @@ export default function LaporanPenjualanPage() {
     });
   };
 
-  // Hitung total penjualan dan total laba (perhitungan dummy untuk laba)
+  // Hitung total penjualan dan total laba (dummy perhitungan untuk laba)
   const totalPenjualan = transactions.reduce(
     (sum, trx) => sum + trx.total_harga,
     0,
@@ -214,9 +230,9 @@ export default function LaporanPenjualanPage() {
       {/* HEADER untuk cetak */}
       <div className="mb-4 flex flex-col space-y-1 border-b pb-2 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 print:bg-white print:text-black-2">
         <div>
-          <h2 className="text-lg font-bold">Nama Minimarket</h2>
-          <p>081353935206</p>
-          <p>Jln. Alamat Surabaya</p>
+          <h2 className="text-lg font-bold">{storeName}</h2>
+          <p>{storePhone}</p>
+          <p>{storeAddress}</p>
         </div>
       </div>
 

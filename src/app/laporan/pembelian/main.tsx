@@ -33,6 +33,11 @@ export default function LaporanPembelianPage() {
     new Set(),
   );
 
+  // State untuk informasi toko yang akan ditampilkan pada header cetak
+  const [storeName, setStoreName] = useState<string>("");
+  const [storeAddress, setStoreAddress] = useState<string>("");
+  const [storePhone, setStorePhone] = useState<string>("");
+
   // Cek ukuran layar (threshold 768px)
   useEffect(() => {
     const handleResize = () => {
@@ -41,6 +46,24 @@ export default function LaporanPembelianPage() {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    console.log("useEffect di Sidebar terpanggil");
+    const storedName = localStorage.getItem("companyName");
+    const storedAddress = localStorage.getItem("companyAddress");
+    const storedPhone = localStorage.getItem("companyPhone");
+    console.log(
+      "companyName:",
+      storedName,
+      "companyAddress:",
+      storedAddress,
+      "companyPhone:",
+      storedPhone,
+    );
+    if (storedName) setStoreName(storedName);
+    if (storedAddress) setStoreAddress(storedAddress);
+    if (storedPhone) setStorePhone(storedPhone);
   }, []);
 
   // Load opsi supplier dan pembeli dari API
@@ -213,9 +236,9 @@ export default function LaporanPembelianPage() {
       {/* HEADER untuk cetak */}
       <div className="mb-4 flex flex-col space-y-1 border-b pb-2 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 print:bg-white print:text-black">
         <div>
-          <h2 className="text-lg font-bold">Nama Minimarket</h2>
-          <p>081353935206</p>
-          <p>Jln. Alamat Surabaya</p>
+          <h2 className="text-lg font-bold">{storeName}</h2>
+          <p>{storePhone}</p>
+          <p>{storeAddress}</p>
         </div>
       </div>
 
@@ -224,7 +247,7 @@ export default function LaporanPembelianPage() {
         Laporan Pembelian
       </h1>
 
-      {/* 
+      {/*
         Tampilan Desktop & Saat Print (tabel)  
         Jika perangkat mobile, maka div ini disembunyikan di layar, namun tetap tampil saat print
       */}

@@ -135,11 +135,11 @@ const menuGroups: MenuGroup[] = [
             route: "/laporan/pembelian",
             requiredPermission: "laporan:pembelian:view",
           },
-          {
-            label: "Keuangan",
-            route: "/laporan/keuangan",
-            requiredPermission: "laporan:keuangan:view",
-          },
+          // {
+          //   label: "Keuangan",
+          //   route: "/laporan/keuangan",
+          //   requiredPermission: "laporan:keuangan:view",
+          // },
         ],
       },
       {
