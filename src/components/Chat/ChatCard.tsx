@@ -20,10 +20,11 @@ const EmployeeList: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Ambil data karyawan dan filter agar tidak menyertakan yang berperan "kasir"
+        // Ambil data karyawan dan filter agar tidak menyertakan yang berperan "kasir" atau "superadmin"
         const staffRes = await fetchStaff();
         const staffData: Staff[] = staffRes.data.filter(
-          (staff: Staff) => staff.role !== "kasir",
+          (staff: Staff) =>
+            staff.role !== "kasir" && staff.role !== "superadmin",
         );
 
         // Ambil data transaksi
@@ -45,7 +46,7 @@ const EmployeeList: React.FC = () => {
           }
         });
 
-        // Gabungkan data karyawan (non kasir) dengan jumlah transaksi (default 0)
+        // Gabungkan data karyawan (non kasir dan non superadmin) dengan jumlah transaksi (default 0)
         const employeesWithCount: EmployeeWithCount[] = staffData.map(
           (staff) => ({
             ...staff,

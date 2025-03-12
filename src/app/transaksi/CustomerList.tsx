@@ -20,7 +20,7 @@ function CustomersList({
       });
     }
     loadCustomer();
-  });
+  }, []);
 
   return (
     <div className="border-b border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">

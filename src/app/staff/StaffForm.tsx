@@ -19,9 +19,9 @@ export default function StaffFormModal({
   onSubmit,
   staff,
 }: StaffFormModalProps) {
-  const [role, setRole] = useState<"kasir" | "staffAntar" | "staffBongkar">(
-    "kasir",
-  );
+  const [role, setRole] = useState<
+    "kasir" | "staffAntar" | "staffBongkar" | "superadmin"
+  >("kasir");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

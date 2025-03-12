@@ -36,6 +36,7 @@ export const POST = async (req) => {
         email: user.email,
         role: user.role,
         name: user.name,
+        permissions: user.permissions,
       },
     });
   } catch (error) {

@@ -2,7 +2,10 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-export function withAuth(handler, requiredRole = null) {
+export function withAuth(
+  handler,
+  { requiredRole = null, requiredPermissions = [] } = {},
+) {
   return async (req) => {
     const authHeader = req.headers.get("authorization");
 
@@ -14,19 +17,38 @@ export function withAuth(handler, requiredRole = null) {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      // console.log("====================================");
-      // console.log(decoded);
-      // console.log("====================================");
 
+      // Jika requiredRole diberikan, cek role (superadmin bypass role check)
       if (requiredRole && decoded.role !== requiredRole) {
-        return NextResponse.json(
-          { error: "Forbidden: Insufficient privileges" },
-          { status: 403 },
+        if (decoded.role !== "superadmin") {
+          return NextResponse.json(
+            { error: "Forbidden: Insufficient privileges" },
+            { status: 403 },
+          );
+        }
+      }
+
+      // Jika requiredPermissions ada, cek apakah user memiliki semua permission yang diperlukan.
+      // Superadmin memiliki akses penuh.
+      if (requiredPermissions.length > 0 && decoded.role !== "superadmin") {
+        if (!decoded.permissions || !Array.isArray(decoded.permissions)) {
+          return NextResponse.json(
+            { error: "Forbidden: Permissions not set" },
+            { status: 403 },
+          );
+        }
+        const hasPermissions = requiredPermissions.every((perm) =>
+          decoded.permissions.includes(perm),
         );
+        if (!hasPermissions) {
+          return NextResponse.json(
+            { error: "Forbidden: Insufficient permissions" },
+            { status: 403 },
+          );
+        }
       }
 
       req.user = decoded;
-      // req.id = decoded.id;
       return handler(req);
     } catch (error) {
       return NextResponse.json({ error: "Invalid Token" }, { status: 403 });

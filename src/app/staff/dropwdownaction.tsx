@@ -1,6 +1,6 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
+import toast from "react-hot-toast";
 import { deleteStaff } from "@/lib/dataService";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
@@ -8,12 +8,14 @@ interface DropdownActionProps {
   staffId: string;
   onDeleteSuccess: () => void;
   onEditClick?: () => void;
+  onPermissionClick?: () => void;
 }
 
 const DropdownAction = ({
   staffId,
   onDeleteSuccess,
   onEditClick,
+  onPermissionClick,
 }: DropdownActionProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -55,10 +57,22 @@ const DropdownAction = ({
       {isOpen && (
         <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-md bg-white py-2 shadow-lg dark:bg-boxdark">
           <button
-            onClick={onEditClick}
+            onClick={() => {
+              setIsOpen(false);
+              if (onEditClick) onEditClick();
+            }}
             className="flex w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-meta-4"
           >
             Edit
+          </button>
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              if (onPermissionClick) onPermissionClick();
+            }}
+            className="flex w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-meta-4"
+          >
+            Ubah Permission
           </button>
           <button
             onClick={() => setIsDialogOpen(true)}

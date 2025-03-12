@@ -6,11 +6,12 @@ import { redirect } from "next/navigation";
 import UserProvider from "./contexts/userContext";
 
 export default async function Home() {
-  const session = await auth();
+  // const session = await auth();
 
-  if (!session) {
-    redirect("/login");
-  }
+  // if (!session) {
+  //   redirect("/auth/signin");
+  // }
+
   return (
     <>
       <DefaultLayout>

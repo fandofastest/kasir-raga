@@ -12,7 +12,6 @@ const SignIn: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
-  const { user, loginUser, logoutUser } = useUser();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

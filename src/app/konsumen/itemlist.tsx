@@ -20,6 +20,8 @@ const ItemPelanggan = () => {
     null,
   );
   const [searchQuery, setSearchQuery] = useState("");
+  // State untuk mengelola pelanggan yang di-expand pada tampilan mobile
+  const [expandedPelanggan, setExpandedPelanggan] = useState<string[]>([]);
 
   useEffect(() => {
     fetchPelanggan().then((res) => {
@@ -43,9 +45,24 @@ const ItemPelanggan = () => {
     setIsModalOpen(true);
   };
 
+  const togglePelanggan = (id: string) => {
+    if (expandedPelanggan.includes(id)) {
+      setExpandedPelanggan(expandedPelanggan.filter((pid) => pid !== id));
+    } else {
+      setExpandedPelanggan([...expandedPelanggan, id]);
+    }
+  };
+
+  // Fungsi hapus untuk mobile (inline)
+  const handleDelete = (id: string) => {
+    setPelanggan((prev) => prev.filter((item) => item._id !== id));
+    setFilteredPelanggan((prev) => prev.filter((item) => item._id !== id));
+  };
+
   return (
     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-      <div className="flex justify-between space-x-4 px-4 py-6 md:px-6 xl:px-7.5">
+      {/* Search & Button */}
+      <div className="flex flex-col items-center justify-between space-y-4 px-4 py-6 md:flex-row md:space-x-4 md:space-y-0 md:px-6 xl:px-7.5">
         <input
           onChange={handleSearch}
           type="text"
@@ -60,56 +77,121 @@ const ItemPelanggan = () => {
         </button>
       </div>
 
-      {/* Header Table */}
-      <div className="grid grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark sm:grid-cols-10 md:px-6 2xl:px-7.5">
-        <div className="col-span-3 flex items-center">
-          <p className="font-medium">Nama Pelanggan</p>
-        </div>
-        <div className="col-span-2 flex items-center">
-          <p className="font-medium">No HP</p>
-        </div>
-        <div className="col-span-3 flex items-center">
-          <p className="font-medium">Alamat</p>
-        </div>
-      </div>
-
-      {/* Daftar Pelanggan */}
-      {filteredPelanggan.map((pelanggan) => (
-        <div
-          className="grid grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark sm:grid-cols-10 md:px-6 2xl:px-7.5"
-          key={pelanggan._id}
-        >
+      {/* Tampilan Desktop (Table) */}
+      <div className="hidden md:block">
+        {/* Header Table */}
+        <div className="grid grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark sm:grid-cols-10 md:px-6 2xl:px-7.5">
           <div className="col-span-3 flex items-center">
-            <p className="text-sm text-black dark:text-white">
-              {pelanggan.nama ?? "N/A"}
-            </p>
+            <p className="font-medium">Nama Pelanggan</p>
           </div>
           <div className="col-span-2 flex items-center">
-            <p className="text-sm text-black dark:text-white">
-              {pelanggan.nohp ?? "N/A"}
-            </p>
+            <p className="font-medium">No HP</p>
           </div>
           <div className="col-span-3 flex items-center">
-            <p className="text-sm text-black dark:text-white">
-              {pelanggan.alamat ?? "N/A"}
-            </p>
+            <p className="font-medium">Alamat</p>
           </div>
-          <div className="col-span-1 flex items-center space-x-2">
-            <DropdownAction
-              onEditClick={() => handleOpenModal(pelanggan)}
-              onDeleteSuccess={() => {
-                setPelanggan((prevPelanggan) =>
-                  prevPelanggan.filter((p) => p._id !== pelanggan._id),
-                );
-                setFilteredPelanggan((prevPelanggan) =>
-                  prevPelanggan.filter((p) => p._id !== pelanggan._id),
-                );
-              }}
-              id={pelanggan._id}
-            />
-          </div>
+          <div className="col-span-1"></div>
         </div>
-      ))}
+
+        {/* Daftar Pelanggan */}
+        {filteredPelanggan.length > 0 ? (
+          filteredPelanggan.map((p) => (
+            <div
+              key={p._id}
+              className="grid grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark sm:grid-cols-10 md:px-6 2xl:px-7.5"
+            >
+              <div className="col-span-3 flex items-center">
+                <p className="text-sm text-black dark:text-white">
+                  {p.nama ?? "N/A"}
+                </p>
+              </div>
+              <div className="col-span-2 flex items-center">
+                <p className="text-sm text-black dark:text-white">
+                  {p.nohp ?? "N/A"}
+                </p>
+              </div>
+              <div className="col-span-3 flex items-center">
+                <p className="text-sm text-black dark:text-white">
+                  {p.alamat ?? "N/A"}
+                </p>
+              </div>
+              <div className="col-span-1 flex items-center space-x-2">
+                <DropdownAction
+                  onEditClick={() => handleOpenModal(p)}
+                  onDeleteSuccess={() => {
+                    setPelanggan((prev) =>
+                      prev.filter((item) => item._id !== p._id),
+                    );
+                    setFilteredPelanggan((prev) =>
+                      prev.filter((item) => item._id !== p._id),
+                    );
+                  }}
+                  id={p._id}
+                />
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="py-4 text-center text-gray-500">
+            Tidak ada pelanggan ditemukan.
+          </p>
+        )}
+      </div>
+
+      {/* Tampilan Mobile (Accordion) */}
+      <div className="block md:hidden">
+        {filteredPelanggan.length > 0 ? (
+          filteredPelanggan.map((p) => (
+            <div
+              key={p._id}
+              className="border-t border-stroke px-4 py-4 dark:border-strokedark"
+            >
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-black dark:text-white">
+                  {p.nama ?? "N/A"}
+                </p>
+                <button
+                  onClick={() => togglePelanggan(p._id)}
+                  className="text-2xl font-bold"
+                >
+                  {expandedPelanggan.includes(p._id) ? "−" : "+"}
+                </button>
+              </div>
+              {expandedPelanggan.includes(p._id) && (
+                <div className="mt-2 space-y-2">
+                  <p className="text-sm text-black dark:text-white">
+                    <span className="font-medium">No HP: </span>
+                    {p.nohp ?? "N/A"}
+                  </p>
+                  <p className="text-sm text-black dark:text-white">
+                    <span className="font-medium">Alamat: </span>
+                    {p.alamat ?? "N/A"}
+                  </p>
+                  {/* Menu aksi tampil secara langsung */}
+                  <div className="mt-2 flex space-x-2">
+                    <button
+                      onClick={() => handleOpenModal(p)}
+                      className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p._id)}
+                      className="rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="py-4 text-center text-gray-500">
+            Tidak ada pelanggan ditemukan.
+          </p>
+        )}
+      </div>
 
       {/* Modal Form Pelanggan */}
       <PelangganFormModal

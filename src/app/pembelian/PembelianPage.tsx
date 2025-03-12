@@ -1,4 +1,5 @@
 "use client";
+
 import CartItem from "@/models/modeltsx/CartItem";
 import Customer from "@/models/modeltsx/Costumer";
 import { Product } from "@/models/modeltsx/productTypes";
@@ -6,6 +7,7 @@ import { useState } from "react";
 import CartSummary from "./CartSummary";
 import ProductsList from "./ProductsList";
 import toast from "react-hot-toast";
+import ProductFormModal from "@/components/ProductForm";
 
 export default function PembelianPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -13,24 +15,16 @@ export default function PembelianPage() {
     null,
   );
   const [refreshProducts, setRefreshProducts] = useState<number>(0);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   const handleCheckoutSuccess = () => {
-    // Update refreshProducts, misalnya dengan timestamp baru
     setRefreshProducts(Date.now());
   };
+
   const addToCart = (product: Product, quantity: number, harga: number) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item._id === product._id);
-
       if (existing) {
-        // Cek apakah jumlah di keranjang sudah sama dengan stok
-        // if (existing.quantity >= product.jumlah) {
-        //   toast.error("Jumlah di keranjang sudah sama dengan stok.", {
-        //     duration: 3000,
-        //   });
-
-        //   return prev; // Tidak menambahkan lagi
-        // }
         return prev.map((item) =>
           item._id === product._id
             ? { ...item, quantity: item.quantity + 1 }
@@ -41,8 +35,23 @@ export default function PembelianPage() {
     });
   };
 
+  const handleAddProductSuccess = () => {
+    toast.success("Produk berhasil ditambahkan!");
+    setRefreshProducts(Date.now());
+    setIsDialogOpen(false);
+  };
+
   return (
     <div className="mx-auto h-screen max-w-screen-2xl p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold">Pembelian</h1>
+        <button
+          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          onClick={() => setIsDialogOpen(true)}
+        >
+          + Add Product
+        </button>
+      </div>
       <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
         <div className="col-span-2">
           <ProductsList refreshKey={refreshProducts} addToCart={addToCart} />
@@ -55,6 +64,14 @@ export default function PembelianPage() {
           />
         </div>
       </div>
+      {isDialogOpen && (
+        <ProductFormModal
+          onClose={() => setIsDialogOpen(false)}
+          isOpen={isDialogOpen}
+          product={null}
+          onSubmit={handleAddProductSuccess}
+        />
+      )}
     </div>
   );
 }

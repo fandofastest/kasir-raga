@@ -1,7 +1,6 @@
-// TransactionDetailDialog.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import TransactionSuccessDialog from "../pembelian/TransactionSuccessDialog";
@@ -19,7 +18,14 @@ const TransactionDetailDialog = ({
   onClose,
   onUpdate,
 }: TransactionDetailDialogProps) => {
-  console.log(transaction);
+  // Nonaktifkan scroll pada body saat dialog terbuka
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
 
   // Inisialisasi form state untuk update
   const [status, setStatus] = useState(transaction.status_transaksi);
@@ -73,7 +79,8 @@ const TransactionDetailDialog = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-gray-800">
+      {/* Container dialog dengan scrollable content dan batas tinggi untuk mobile */}
+      <div className="max-h-screen w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 dark:bg-gray-800">
         <h2 className="mb-6 mt-10 text-2xl font-bold text-gray-800 dark:text-gray-100">
           Detail Transaksi: {transaction.no_transaksi}
         </h2>
@@ -280,25 +287,24 @@ const TransactionDetailDialog = ({
               ))}
             </select>
           </div>
-          <div className="flex justify-end space-x-2">
+          <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded bg-gray-300 px-4 py-2 text-sm text-gray-800 hover:bg-gray-400"
+              className="mb-2 rounded bg-gray-300 px-4 py-2 text-sm text-gray-800 hover:bg-gray-400 sm:mb-0"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+              className="mb-2 rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 sm:mb-0"
             >
               Perbarui
             </button>
             <button
               type="button"
               onClick={() => {
-                // Tampilkan dialog Invoice
-                // Misalnya dengan membuka TransactionSuccessDialog
+                // Tampilkan dialog Invoice misalnya dengan membuka TransactionSuccessDialog
               }}
               className="rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
             >

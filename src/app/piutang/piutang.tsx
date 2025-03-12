@@ -44,6 +44,11 @@ export default function PiutangPage() {
   const [historyTransaction, setHistoryTransaction] =
     useState<PiutangTransaction | null>(null);
 
+  // State untuk tampilan mobile: transaksi yang di-expand
+  const [expandedTransactions, setExpandedTransactions] = useState<string[]>(
+    [],
+  );
+
   // Fungsi untuk memuat transaksi cicilan dengan filter tambahan
   const loadData = async () => {
     setLoading(true);
@@ -173,6 +178,15 @@ export default function PiutangPage() {
     0,
   );
 
+  // Handler untuk toggle tampilan detail transaksi pada mobile
+  const toggleTransaction = (id: string) => {
+    if (expandedTransactions.includes(id)) {
+      setExpandedTransactions(expandedTransactions.filter((tid) => tid !== id));
+    } else {
+      setExpandedTransactions([...expandedTransactions, id]);
+    }
+  };
+
   return (
     <div className="p-4 dark:bg-gray-900 dark:text-gray-100">
       <h1 className="mb-4 text-2xl font-bold">Daftar Piutang Cicilan</h1>
@@ -248,7 +262,9 @@ export default function PiutangPage() {
 
       {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
-      <div className="overflow-x-auto">
+
+      {/* Tampilan Desktop (Table) */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
           <thead className="bg-gray-100 dark:bg-gray-700">
             <tr className="text-center">
@@ -305,13 +321,16 @@ export default function PiutangPage() {
                   </td>
                   <td className="border px-4 py-2">{nextDueDate(trx)}</td>
                   <td className="border px-4 py-2">
-                    <ActionDropdown
-                      trx={trx}
-                      outstanding={outstanding}
-                      openInstallmentModal={openInstallmentModal as any}
-                      openSettleModal={openSettleModal as any}
-                      openHistoryModal={openHistoryModal as any}
-                    />
+                    {/* Desktop: gunakan dropdown */}
+                    <div className="hidden md:block">
+                      <ActionDropdown
+                        trx={trx}
+                        outstanding={outstanding}
+                        openInstallmentModal={openInstallmentModal as any}
+                        openSettleModal={openSettleModal as any}
+                        openHistoryModal={openHistoryModal as any}
+                      />
+                    </div>
                   </td>
                 </tr>
               );
@@ -320,9 +339,106 @@ export default function PiutangPage() {
         </table>
       </div>
 
+      {/* Tampilan Mobile (Accordion) */}
+      <div className="block md:hidden">
+        {transactions.length > 0 ? (
+          transactions.map((trx) => {
+            const outstanding = computeOutstanding(trx);
+            return (
+              <div
+                key={trx._id}
+                className="border-t border-gray-300 px-4 py-4 dark:border-gray-600"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{trx.no_transaksi}</p>
+                    <p className="text-sm">
+                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleTransaction(trx._id)}
+                    className="text-2xl font-bold"
+                  >
+                    {expandedTransactions.includes(trx._id) ? "−" : "+"}
+                  </button>
+                </div>
+                {expandedTransactions.includes(trx._id) && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm">
+                      <span className="font-medium">Pelanggan: </span>
+                      {trx.tipe_transaksi === "penjualan"
+                        ? trx.pembeli?.nama || "N/A"
+                        : trx.supplier?.nama || "N/A"}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Total Harga: </span>
+                      {trx.total_harga.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">DP: </span>
+                      {trx.dp.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Outstanding: </span>
+                      {outstanding.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Next Due Date: </span>
+                      {nextDueDate(trx)}
+                    </p>
+                    {/* Mobile: tampilkan menu aksi secara langsung */}
+                    <div className="mt-2 flex flex-col space-y-2">
+                      <button
+                        onClick={() => openInstallmentModal(trx)}
+                        className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+                      >
+                        Bayar Cicilan
+                      </button>
+                      <button
+                        onClick={() => openSettleModal(trx)}
+                        className="rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
+                      >
+                        Lunasi
+                      </button>
+                      <button
+                        onClick={() => openHistoryModal(trx)}
+                        className="rounded bg-gray-500 px-4 py-2 text-sm text-white hover:bg-gray-600"
+                      >
+                        Riwayat
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <p className="py-4 text-center text-gray-500">
+            Tidak ada transaksi cicilan ditemukan.
+          </p>
+        )}
+      </div>
+
       {/* Modal Pembayaran Cicilan/Hutang */}
       {modalType && selectedTransaction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">
               {modalType === "partial" ? "Bayar Cicilan" : "Lunasi Transaksi"}
@@ -331,7 +447,7 @@ export default function PiutangPage() {
               No. Transaksi: {selectedTransaction.no_transaksi}
             </p>
             <p className="mb-2">
-              Outstanding: Rp{" "}
+              Outstanding:{" "}
               {computeOutstanding(selectedTransaction).toLocaleString("id-ID", {
                 style: "currency",
                 currency: "IDR",
@@ -341,7 +457,7 @@ export default function PiutangPage() {
             {modalType === "installment" && (
               <>
                 <p className="mb-2">
-                  Cicilan per bulan: Rp{" "}
+                  Cicilan per bulan:{" "}
                   {selectedTransaction.cicilanPerBulan.toLocaleString("id-ID", {
                     style: "currency",
                     currency: "IDR",
@@ -378,7 +494,7 @@ export default function PiutangPage() {
                   setModalType(null);
                   setSelectedTransaction(null);
                 }}
-                className="dark: rounded bg-gray-300 px-4 py-2 text-sm text-gray-800 "
+                className="rounded bg-gray-300 px-4 py-2 text-sm text-gray-800"
               >
                 Batal
               </button>

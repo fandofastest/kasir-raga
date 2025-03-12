@@ -5,24 +5,24 @@ import Link from "next/link";
 import Image from "next/image";
 import ClickOutside from "@/components/ClickOutside";
 import { signOut } from "next-auth/react";
+import { useAuth } from "@/hooks/userauth";
 
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const user = useAuth().user as User;
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        const session = await res.json();
-        setUser(session?.user || null);
-        console.log(session);
-      } catch (error) {
-        console.error("Error fetching session:", error);
-      }
-    };
-
-    fetchUser();
+    // const fetchUser = async () => {
+    //   try {
+    //     const res = await fetch("/api/auth/session");
+    //     const session = await res.json();
+    //     setUser(session?.user || null);
+    //     // console.log(session);
+    //   } catch (error) {
+    //     console.error("Error fetching session:", error);
+    //   }
+    // };
+    // fetchUser();
   }, []);
 
   return (

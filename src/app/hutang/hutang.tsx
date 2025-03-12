@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, FormEvent } from "react";
 import { toast } from "react-hot-toast";
 import { fetchTransaction, payHutang } from "@/lib/dataService"; // Pastikan payHutang sudah diimplementasikan di dataService
@@ -34,6 +33,11 @@ export default function HutangPage() {
   const [filterPelanggan, setFilterPelanggan] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+
+  // State untuk tampilan mobile: transaksi yang di-expand
+  const [expandedTransactions, setExpandedTransactions] = useState<string[]>(
+    [],
+  );
 
   // Fungsi untuk memuat transaksi hutang
   const loadData = async () => {
@@ -142,7 +146,22 @@ export default function HutangPage() {
     }
   };
 
-  // Render summary above the table
+  // Handler untuk submit form filter
+  const handleFilterSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    loadData();
+  };
+
+  // Handler untuk toggle tampilan detail transaksi pada mobile
+  const toggleTransaction = (id: string) => {
+    if (expandedTransactions.includes(id)) {
+      setExpandedTransactions(expandedTransactions.filter((tid) => tid !== id));
+    } else {
+      setExpandedTransactions([...expandedTransactions, id]);
+    }
+  };
+
+  // Render summary di atas tabel
   const renderSummary = () => {
     return (
       <div className="mb-4 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
@@ -174,12 +193,56 @@ export default function HutangPage() {
     <div className="p-4 dark:bg-gray-900 dark:text-gray-100">
       <h1 className="mb-4 text-2xl font-bold">Daftar Piutang Cicilan</h1>
       {renderSummary()}
+
+      {/* Form Filter */}
+      <form
+        onSubmit={handleFilterSubmit}
+        className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
+      >
+        <div>
+          <label className="block text-sm font-medium">Pelanggan</label>
+          <input
+            type="text"
+            placeholder="Cari pelanggan"
+            value={filterPelanggan}
+            onChange={(e) => setFilterPelanggan(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Tanggal Mulai</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Tanggal Akhir</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+          />
+        </div>
+        <button
+          type="submit"
+          className="col-span-1 rounded bg-blue-500 px-4 py-2 text-white sm:col-span-3"
+        >
+          Terapkan Filter
+        </button>
+      </form>
+
       {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
-      <div className="overflow-x-auto">
+
+      {/* Tampilan Desktop (Table) */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
-          <thead>
-            <tr className="bg-gray-100 dark:bg-gray-700">
+          <thead className="bg-gray-100 dark:bg-gray-700">
+            <tr className="text-center">
               <th className="border px-4 py-2">No</th>
               <th className="border px-4 py-2">No Transaksi</th>
               <th className="border px-4 py-2">Tanggal</th>
@@ -217,7 +280,6 @@ export default function HutangPage() {
                       minimumFractionDigits: 2,
                     })}
                   </td>
-
                   <td className="border px-4 py-2">
                     Rp{" "}
                     {trx.sudah_dibayar
@@ -236,21 +298,24 @@ export default function HutangPage() {
                     })}
                   </td>
                   <td className="border px-4 py-2">{nextDueDate(trx)}</td>
-                  <td className="space-x-2 border px-4 py-2">
-                    <button
-                      onClick={() => openPartialModal(trx)}
-                      className="rounded bg-blue-500 px-2 py-1 text-white"
-                      disabled={outstanding <= 0}
-                    >
-                      Bayar Cicilan
-                    </button>
-                    <button
-                      onClick={() => openSettleModal(trx)}
-                      className="rounded bg-green-500 px-2 py-1 text-white"
-                      disabled={outstanding <= 0}
-                    >
-                      Lunasi
-                    </button>
+                  <td className="border px-4 py-2">
+                    {/* Pada desktop, aksi tampil inline */}
+                    <div className="flex justify-center space-x-2">
+                      <button
+                        onClick={() => openPartialModal(trx)}
+                        className="rounded bg-blue-500 px-2 py-1 text-white"
+                        disabled={outstanding <= 0}
+                      >
+                        Bayar Cicilan
+                      </button>
+                      <button
+                        onClick={() => openSettleModal(trx)}
+                        className="rounded bg-green-500 px-2 py-1 text-white"
+                        disabled={outstanding <= 0}
+                      >
+                        Lunasi
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -259,8 +324,105 @@ export default function HutangPage() {
         </table>
       </div>
 
+      {/* Tampilan Mobile (Accordion) */}
+      <div className="block md:hidden">
+        {transactions.length > 0 ? (
+          transactions.map((trx) => {
+            const outstanding = computeOutstanding(trx);
+            return (
+              <div
+                key={trx._id}
+                className="border-t border-gray-300 px-4 py-4 dark:border-gray-600"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{trx.no_transaksi}</p>
+                    <p className="text-sm">
+                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleTransaction(trx._id)}
+                    className="text-2xl font-bold"
+                  >
+                    {expandedTransactions.includes(trx._id) ? "−" : "+"}
+                  </button>
+                </div>
+                {expandedTransactions.includes(trx._id) && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm">
+                      <span className="font-medium">Pelanggan: </span>
+                      {trx.tipe_transaksi === "penjualan"
+                        ? trx.pembeli?.nama || "N/A"
+                        : trx.supplier?.nama || "N/A"}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Total Harga: </span>
+                      {trx.total_harga.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Sudah Dibayar: </span>
+                      Rp{" "}
+                      {trx.sudah_dibayar
+                        ? trx.sudah_dibayar.toLocaleString("id-ID", {
+                            style: "currency",
+                            currency: "IDR",
+                            minimumFractionDigits: 2,
+                          })
+                        : "0"}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Outstanding: </span>
+                      {outstanding.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Next Due Date: </span>
+                      {nextDueDate(trx)}
+                    </p>
+                    {/* Menu aksi tampil langsung */}
+                    <div className="mt-2 flex flex-col space-y-2">
+                      <button
+                        onClick={() => openPartialModal(trx)}
+                        className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+                        disabled={outstanding <= 0}
+                      >
+                        Bayar Cicilan
+                      </button>
+                      <button
+                        onClick={() => openSettleModal(trx)}
+                        className="rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
+                        disabled={outstanding <= 0}
+                      >
+                        Lunasi
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <p className="py-4 text-center text-gray-500">
+            Tidak ada transaksi hutang ditemukan.
+          </p>
+        )}
+      </div>
+
+      {/* Modal Pembayaran Hutang */}
       {modalType && selectedTransaction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">
               {modalType === "partial" ? "Bayar Cicilan" : "Lunasi Transaksi"}

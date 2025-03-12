@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from "react";
 import CardDataStats from "@/components/CardDataStats";
 import ChartOne from "@/components/Charts/ChartOne";
-import ChartTwo from "@/components/Charts/ChartTwo";
 import ChatCard from "@/components/Chat/ChatCard";
 import {
   DollarSign,

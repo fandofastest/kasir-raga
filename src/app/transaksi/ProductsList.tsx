@@ -181,14 +181,14 @@ export default function ProductsList({
                   }`}
               >
                 {/* Gambar Produk */}
-                <Image
-                  src={product.image}
-                  alt={product.nama_produk}
-                  width={80}
-                  height={80}
-                  className="h-20 w-20 rounded-md object-contain"
-                />
-
+                <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
+                  <Image
+                    src={product.image ?? "/images/product/product-01.png"}
+                    alt="Product"
+                    fill
+                    className="rounded-md object-cover"
+                  />
+                </div>
                 {/* Info Produk */}
                 <div className="flex-1">
                   <p className="font-medium text-black dark:text-white">

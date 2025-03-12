@@ -36,6 +36,7 @@ export const authOptions = {
             name: data.user.name, // Tambahkan name
             role: data.user.role,
             accessToken: data.token, // Simpan token
+            permissions: data.user.permissions,
           };
         } catch (error) {
           console.error("Authorize error:", error);
@@ -47,25 +48,29 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.name = user.name; // Tambahkan name ke token
+        token.id = user.id;
+        token.name = user.name;
         token.email = user.email;
         token.role = user.role;
+        token.permissions = user.permissions;
         token.accessToken = user.accessToken;
-        token.userId = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      session.user.name = token.name; // Tambahkan name ke session
-      session.user.email = token.email;
-      session.user.role = token.role;
+      session.user = {
+        id: token.id,
+        name: token.name,
+        email: token.email,
+        role: token.role,
+        permissions: token.permissions,
+      };
       session.accessToken = token.accessToken;
-      session.user.id = token.userId;
       return session;
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: "/",
   },
   secret: process.env.NEXTAUTH_SECRET,
   session: {

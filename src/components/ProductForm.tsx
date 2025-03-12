@@ -13,6 +13,7 @@ import {
   deleteSatuan,
   updateProduct,
   createProduct,
+  photoUpload,
 } from "@/lib/dataService";
 
 // -------------------------------------------------------------------
@@ -196,7 +197,7 @@ export default function ProductFormModal({
   const [hargaModal, setHargaModal] = useState("");
   const [jumlah, setJumlah] = useState("");
   const [supplier, setSupplier] = useState("");
-  const [sku, setSku] = useState("");
+  // const [sku, setSku] = useState("");
   const [imageUrl, setImageUrl] = useState("");
 
   // Brand & Kategori
@@ -251,7 +252,7 @@ export default function ProductFormModal({
       setHargaModal(product.harga_modal.toString());
       setJumlah(product.jumlah.toString());
       setSupplier(product.supplier);
-      setSku(product.sku);
+      // setSku(product.sku);
       setImageUrl(product.image);
       setBrand(product.brand || null);
       setKategori(product.kategori || null);
@@ -275,7 +276,7 @@ export default function ProductFormModal({
       setHargaModal("");
       setJumlah("");
       setSupplier("");
-      setSku("");
+      // setSku("");
       setImageUrl("");
       setBrand(null);
       setKategori(null);
@@ -311,18 +312,9 @@ export default function ProductFormModal({
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !token) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    const data = await res.json();
-    if (data.url) {
-      setImageUrl(data.url);
+    const url = await photoUpload(e);
+    if (url) {
+      setImageUrl(url);
     }
   };
 
@@ -343,7 +335,7 @@ export default function ProductFormModal({
       harga_modal: parseFloat(hargaModal),
       jumlah,
       supplier,
-      sku,
+      // sku,
       image: imageUrl,
       brand,
       kategori,
@@ -470,7 +462,7 @@ export default function ProductFormModal({
                   className="w-full rounded-lg border p-2 dark:bg-gray-800"
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   SKU
                 </label>
@@ -481,7 +473,7 @@ export default function ProductFormModal({
                   onChange={(e) => setSku(e.target.value)}
                   className="w-full rounded-lg border p-2 dark:bg-gray-800"
                 />
-              </div>
+              </div> */}
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Upload Gambar

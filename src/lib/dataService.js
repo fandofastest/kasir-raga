@@ -85,6 +85,8 @@ const fetchUser = async () => {
     const res = await fetch("/api/auth/session");
     const session = await res.json();
     localStorage.setItem("mytoken", session.accessToken);
+
+    // log(session.accessToken);
     return session.accessToken;
   } catch (error) {
     console.error("Error fetching session:", error);
@@ -129,6 +131,25 @@ export const fetchSupplier = async () => {
     signOut({ callbackUrl: "/auth/signin" });
   }
   return { data, token };
+};
+
+export const updateStaff = async (id, updateData) => {
+  const token = await fetchUser();
+  const res = await fetch(`${apiUrl}/user?id=${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updateData),
+  });
+  const data = await res.json();
+
+  if (res.status == 403) {
+    toast.error("Session Expired");
+    signOut({ callbackUrl: "/auth/signin" });
+  }
+  return data;
 };
 
 export const deleteSupplier = async (id) => {
@@ -340,6 +361,39 @@ export const updateUser = async (id, updateData) => {
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error || "Failed to update user");
+  }
+  return { data, token };
+};
+export const photoUpload = async (e) => {
+  const token = await fetchUser();
+
+  const file = e.target.files?.[0];
+  if (!file || !token) return;
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await res.json();
+  if (data.url) {
+    return data.url;
+  }
+};
+export const updatePreferences = async (updateData) => {
+  const token = await fetchUser(); // Fungsi untuk mendapatkan token (sesuaikan jika perlu)
+  const res = await fetch(`${apiUrl}/preferences`, {
+    method: "POST", // Kita menggunakan POST untuk create/update
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updateData),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to update preferences");
   }
   return { data, token };
 };
