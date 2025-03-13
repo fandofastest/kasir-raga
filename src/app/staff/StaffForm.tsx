@@ -11,6 +11,7 @@ interface StaffFormModalProps {
   onClose: () => void;
   onSubmit: () => void;
   staff?: Staff | null;
+  initialRole?: "kasir" | "staffAntar" | "staffBongkar" | "superadmin";
 }
 
 export default function StaffFormModal({
@@ -18,6 +19,7 @@ export default function StaffFormModal({
   onClose,
   onSubmit,
   staff,
+  initialRole,
 }: StaffFormModalProps) {
   const [role, setRole] = useState<
     "kasir" | "staffAntar" | "staffBongkar" | "superadmin"
@@ -40,14 +42,15 @@ export default function StaffFormModal({
         setEmail(staff.email || "");
       }
     } else {
-      setRole("kasir");
+      // Jika tidak ada staff, gunakan initialRole jika tersedia
+      setRole(initialRole || "kasir");
       setName("");
       setEmail("");
       setPassword("");
       setNohp("");
       setAlamat("");
     }
-  }, [staff]);
+  }, [staff, initialRole]);
 
   if (!isOpen) return null;
 
@@ -72,7 +75,7 @@ export default function StaffFormModal({
     setLoading(true);
     let res;
     if (staff?._id) {
-      fetchStaff().then((res) => {});
+      // Logika update jika diperlukan
       res = await fetch(`/api/user/?id=${staff._id}`, {
         method: "PUT",
         headers: {

@@ -42,8 +42,8 @@ export default function PembelianPage() {
   };
 
   return (
-    <div className="mx-auto h-screen max-w-screen-2xl p-4">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="mx-auto h-screen max-w-screen-2xl ">
+      <div className="mb-4 flex items-center justify-between px-4">
         <h1 className="text-xl font-bold">Pembelian</h1>
         <button
           className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"

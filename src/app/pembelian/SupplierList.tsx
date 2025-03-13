@@ -1,61 +1,80 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchSupplier } from "@/lib/dataService"; // ganti sesuai endpoint real
-import { Supplier } from "@/models/modeltsx/supplierTypes";
+import { fetchPelanggan } from "@/lib/dataService";
+import Customer from "@/models/modeltsx/Costumer";
+import PelangganFormModal from "../konsumen/PelangganForm";
 
-function SupplierList({
-  selectedSupplier,
-  setSelectedSupplier,
-}: {
-  selectedSupplier: Supplier | null;
-  setSelectedSupplier: (supplier: Supplier) => void;
-}) {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+interface CustomersListProps {
+  selectedCustomer: Customer | null;
+  setSelectedCustomer: (customer: Customer) => void;
+}
+
+export default function CustomersList({
+  selectedCustomer,
+  setSelectedCustomer,
+}: CustomersListProps) {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [showPelangganModal, setShowPelangganModal] = useState(false);
+
+  const loadCustomers = async () => {
+    try {
+      const res = await fetchPelanggan();
+      setCustomers(res.data);
+      if (!selectedCustomer && res.data.length > 0) {
+        setSelectedCustomer(res.data[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    }
+  };
 
   useEffect(() => {
-    async function loadSuppliers() {
-      try {
-        const res = await fetchSupplier();
-        // Contoh: pastikan res.data adalah array of Supplier
-        // Tambahkan opsi default misal "Tanpa Supplier" (ID = 0)
-
-        setSuppliers(res.data);
-
-        // Set default selectedSupplier jadi "Tanpa Supplier"
-        setSelectedSupplier(res.data[0]);
-      } catch (error) {
-        console.error("Error fetching suppliers:", error);
-      }
-    }
-    loadSuppliers();
-  }, [setSelectedSupplier]);
+    loadCustomers();
+  }, []);
 
   return (
-    <div className="border-b border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
+    <div className="border-b border-stroke bg-white dark:border-strokedark dark:bg-gray-700">
       <h3 className="mb-2 text-lg font-semibold text-black dark:text-white">
-        Pilih Supplier
+        Pilih Pelanggan
       </h3>
-      <select
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm 
-                   dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-        value={selectedSupplier?.nama || ""}
-        onChange={(e) => {
-          const sup = suppliers.find((s) => s.nama === e.target.value);
-          if (sup) {
-            setSelectedSupplier(sup);
-            console.log("Selected supplier:", sup);
-          }
-        }}
-      >
-        {suppliers.map((sup) => (
-          <option key={sup._id} value={sup.nama}>
-            {sup.nama}
-          </option>
-        ))}
-      </select>
+      <div className="flex items-center justify-between">
+        <select
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          value={selectedCustomer?._id || ""}
+          onChange={(e) => {
+            const customer = customers.find((c) => c._id === e.target.value);
+            if (customer) {
+              setSelectedCustomer(customer);
+            }
+          }}
+        >
+          {customers.map((customer) => (
+            <option key={customer._id} value={customer._id}>
+              {customer.nama}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => setShowPelangganModal(true)}
+          className="ml-2 rounded bg-green-500 px-3 py-2 text-sm text-white hover:bg-green-600"
+        >
+          +
+        </button>
+      </div>
+
+      {showPelangganModal && (
+        <PelangganFormModal
+          isOpen={showPelangganModal}
+          onClose={() => setShowPelangganModal(false)}
+          onSubmit={() => {
+            loadCustomers();
+            setShowPelangganModal(false);
+          }}
+          pelanggan={null} // Untuk menambah pelanggan baru
+        />
+      )}
     </div>
   );
 }
-
-export default SupplierList;

@@ -285,6 +285,16 @@ export default function ProductFormModal({
       ]);
     }
   }, [product]);
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -642,6 +652,15 @@ export default function ProductFormModal({
                   ? "Simpan Perubahan"
                   : "Simpan Produk"}
             </button>
+            <div className="mt-2 flex gap-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
+              >
+                Batal
+              </button>
+            </div>
           </form>
         </div>
       </div>

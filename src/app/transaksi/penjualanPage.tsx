@@ -66,8 +66,8 @@ export default function PenjualanPage() {
   };
 
   return (
-    <div className="mx-auto h-screen max-w-screen-2xl p-4">
-      <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
+    <div className="mx-auto h-screen max-w-screen-2xl  ">
+      <div className="grid h-full grid-cols-1 gap-4   md:grid-cols-3 ">
         <div className="col-span-2">
           <ProductsList addToCart={addToCart} refreshKey={refreshProducts} />
         </div>
