@@ -15,7 +15,12 @@ interface Transaksi {
   keterangan: string;
   pengantar: Staff | string;
   diskon: number;
-  produk: { productId: Product; quantity: number; harga: number }[];
+  produk: {
+    productId: Product;
+    quantity: number;
+    harga: number;
+    satuans: any;
+  }[];
   staff_bongkar: Staff | string;
   // Field tambahan untuk cicilan/hutang
   dp?: number;

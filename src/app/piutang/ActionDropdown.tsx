@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import Transaksi from "@/models/modeltsx/Transaksi";
 
-interface ActionDropdownProps {
+interface ActionModalProps {
   trx: Transaksi;
   outstanding: number;
   openInstallmentModal: (trx: Transaksi) => void;
@@ -11,36 +11,22 @@ interface ActionDropdownProps {
   openHistoryModal: (trx: Transaksi) => void;
 }
 
-const ActionDropdown: React.FC<ActionDropdownProps> = ({
+const ActionModal: React.FC<ActionModalProps> = ({
   trx,
   outstanding,
   openInstallmentModal,
   openSettleModal,
   openHistoryModal,
 }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // Toggle dropdown
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
+  const openModal = () => {
+    setModalOpen(true);
   };
 
-  // Tutup dropdown jika klik di luar
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  const closeModal = () => {
+    setModalOpen(false);
+  };
 
   const handleOptionClick = (option: "installment" | "settle" | "history") => {
     if (option === "installment") {
@@ -50,46 +36,60 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
     } else if (option === "history") {
       openHistoryModal(trx);
     }
-    setDropdownOpen(false);
+    closeModal();
   };
 
   return (
-    <div className="relative inline-block" ref={dropdownRef}>
+    <div>
       <button
-        onClick={toggleDropdown}
-        className="rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+        onClick={openModal}
+        className="rounded-md bg-blue-600 px-4 py-2 text-white shadow transition-colors duration-200 hover:bg-blue-700"
       >
         Aksi
       </button>
-      {dropdownOpen && (
-        <div className="absolute right-0 z-50 mt-2 w-48 rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
-          {outstanding > 0 && (
-            <button
-              onClick={() => handleOptionClick("installment")}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-              disabled={outstanding <= 0}
-            >
-              Bayar Cicilan
-            </button>
-          )}
-          {outstanding > 0 && (
-            <button
-              onClick={() => handleOptionClick("settle")}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              Lunasi
-            </button>
-          )}
-          <button
-            onClick={() => handleOptionClick("history")}
-            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={closeModal}
+        >
+          <div
+            className="w-64 rounded-md bg-white p-4 shadow-lg dark:bg-gray-800"
+            onClick={(e) => e.stopPropagation()}
           >
-            Riwayat Pembayaran
-          </button>
+            {outstanding > 0 && (
+              <button
+                onClick={() => handleOptionClick("installment")}
+                className="block w-full rounded bg-green-500 px-4 py-2 text-left text-sm text-white hover:bg-green-600"
+                disabled={outstanding <= 0}
+              >
+                Bayar Cicilan
+              </button>
+            )}
+            {outstanding > 0 && (
+              <button
+                onClick={() => handleOptionClick("settle")}
+                className="mt-1 block w-full rounded bg-red-500 px-4 py-2 text-left text-sm text-white hover:bg-red-600"
+              >
+                Lunasi
+              </button>
+            )}
+            <button
+              onClick={() => handleOptionClick("history")}
+              className="mt-1 block w-full rounded bg-indigo-500 px-4 py-2 text-left text-sm text-white hover:bg-indigo-600"
+            >
+              Riwayat Pembayaran
+            </button>
+            <button
+              onClick={closeModal}
+              className="mt-4 block w-full rounded bg-gray-300 px-4 py-2 text-sm text-gray-800 hover:bg-gray-400"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default ActionDropdown;
+export default ActionModal;

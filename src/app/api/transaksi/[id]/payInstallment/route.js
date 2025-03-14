@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Transaksi from "@/models/transaksi";
-// Jika Anda menggunakan middleware otentikasi, pastikan adaptasinya untuk app router,
-// misalnya dengan memeriksa token secara manual atau membuat fungsi pembungkus khusus.
+import Preference from "@/models/Preference";
 
 export async function PUT(request, { params }) {
   try {
@@ -39,49 +38,49 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Validasi: pembayaran minimal harus tidak kurang dari cicilanPerBulan
-    const minInstallment = transaction.cicilanPerBulan;
-    if (amount < minInstallment) {
-      return NextResponse.json(
-        { error: `Jumlah pembayaran minimal adalah ${minInstallment}` },
-        { status: 400 },
-      );
-    }
+    // Tambahkan entry pembayaran ke jadwalPembayaran
+    transaction.jadwalPembayaran.push({
+      dueDate: payDate,
+      installment: amount,
+      paid: true,
+      paymentDate: payDate,
+    });
 
-    // Proses pembayaran cicilan:
-    // Urutkan jadwalPembayaran berdasarkan dueDate secara ascending
-    transaction.jadwalPembayaran.sort(
-      (a, b) => new Date(a.dueDate) - new Date(b.dueDate),
+    // Hitung total pembayaran: DP + seluruh installment yang telah dibayar
+    const paidInstallments = transaction.jadwalPembayaran.reduce(
+      (sum, record) => sum + record.installment,
+      0,
     );
-    let remainingPayment = amount;
-    for (const installment of transaction.jadwalPembayaran) {
-      if (!installment.paid) {
-        if (remainingPayment >= installment.installment) {
-          installment.paid = true;
-          installment.paymentDate = payDate;
-          remainingPayment -= installment.installment;
-        } else {
-          // Jika pembayaran tidak cukup untuk menutup installment penuh, tolak
-          break;
+    const totalPaid = transaction.dp + paidInstallments;
+
+    // Jika total pembayaran sudah mencapai atau melebihi total_harga,
+    // ubah status transaksi menjadi "lunas" dan lakukan pengecekan terhadap preferensi
+    if (totalPaid >= transaction.total_harga) {
+      transaction.status_transaksi = "lunas";
+
+      // Ambil data preference
+      const pref = await Preference.findOne();
+      if (pref) {
+        // Hitung selisih hari antara tanggal pembelian (createdAt) dan tanggal pembayaran terakhir
+        const purchaseDate = new Date(transaction.createdAt);
+        const diffTime = payDate - purchaseDate; // selisih dalam milidetik
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        // Jika jarak hari kurang atau sama dengan maxPelunasanHari, ubah metode pembayaran menjadi "tunai"
+        if (diffDays <= pref.maxPelunasanHari) {
+          transaction.metode_pembayaran = "tunai";
         }
       }
     }
 
-    // Jika seluruh installment sudah dibayar, ubah status menjadi "lunas"
-    const allPaid = transaction.jadwalPembayaran.every(
-      (inst) => inst.paid === true,
-    );
-    if (allPaid) {
-      // Walaupun status berubah ke "lunas", metode pembayaran tetap "cicilan"
-      transaction.status_transaksi = "lunas";
-    }
-
     const updatedTransaction = await transaction.save();
-    return NextResponse.json({
-      message: "Pembayaran cicilan berhasil diproses",
-      data: updatedTransaction,
-      status: 200,
-    });
+    return NextResponse.json(
+      {
+        message: "Pembayaran cicilan berhasil diproses",
+        data: updatedTransaction,
+        status: 200,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("Gagal memproses pembayaran cicilan:", error);
     return NextResponse.json(

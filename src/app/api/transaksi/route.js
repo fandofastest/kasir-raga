@@ -24,7 +24,7 @@ export const POST = withAuth(async (req) => {
     }
     data.kasir = userid;
 
-    // Hitung cicilan per bulan untuk transaksi cicilan
+    // Jika metode pembayaran adalah cicilan, hitung tanggalMaksimalPelunasan
     if (data.metode_pembayaran === "cicilan") {
       if (data.dp === undefined || data.dp === null) {
         return NextResponse.json(
@@ -32,35 +32,29 @@ export const POST = withAuth(async (req) => {
           { status: 400 },
         );
       }
-      if (!data.tenor || data.tenor <= 0) {
+      if (!data.durasiPelunasan || data.durasiPelunasan <= 0) {
         return NextResponse.json(
-          { error: "Tenor harus diisi untuk cicilan" },
+          { error: "Durasi pelunasan harus diisi dan lebih dari 0" },
           { status: 400 },
         );
       }
-      // Total cicilan yang harus dicicil adalah total harga dikurangi DP
-      const cicilanPerBulan = (data.total_harga - data.dp) / data.tenor;
-      data.cicilanPerBulan = cicilanPerBulan;
+      // Jika unitPelunasan tidak diberikan, default ke "hari"
+      data.unitPelunasan = data.unitPelunasan || "hari";
 
-      if (!cicilanPerBulan || cicilanPerBulan <= 0) {
-        return NextResponse.json(
-          { error: "Cicilan per bulan tidak valid" },
-          { status: 400 },
-        );
+      // Hitung tanggalMaksimalPelunasan: current date + durasiPelunasan (berdasarkan unit)
+      let dueDate = new Date();
+      if (data.unitPelunasan === "bulan") {
+        dueDate.setMonth(dueDate.getMonth() + data.durasiPelunasan);
+      } else {
+        // unit "hari"
+        dueDate.setDate(dueDate.getDate() + data.durasiPelunasan);
       }
-      // Buat jadwal pembayaran otomatis setiap 30 hari
-      const schedule = [];
-      const interval = 30 * 24 * 60 * 60 * 1000; // 30 hari dalam milidetik
-      const startDate = new Date(); // Tanggal transaksi sebagai awal
-      for (let i = 1; i <= data.tenor; i++) {
-        const dueDate = new Date(startDate.getTime() + i * interval);
-        schedule.push({
-          dueDate,
-          installment: cicilanPerBulan,
-          paid: false, // Status awal: belum dibayar
-        });
+      data.tanggalMaksimalPelunasan = dueDate;
+
+      // Pastikan jadwalPembayaran ada untuk mencatat histori pembayaran
+      if (!data.jadwalPembayaran) {
+        data.jadwalPembayaran = [];
       }
-      data.jadwalPembayaran = schedule;
     }
 
     // Buat transaksi baru
@@ -70,21 +64,14 @@ export const POST = withAuth(async (req) => {
     // Update stok produk berdasarkan tipe transaksi
     if (newTransaction.produk && newTransaction.produk.length > 0) {
       for (const detail of newTransaction.produk) {
-        // Ambil konversi dari satuan pertama; default 1 jika tidak ada
         const conversion =
           detail.satuans && detail.satuans[0]?.konversi
             ? detail.satuans[0].konversi
             : 1;
         const adjustment = detail.quantity * conversion;
         if (newTransaction.tipe_transaksi === "penjualan") {
-          // Kurangi stok produk
           await Product.findByIdAndUpdate(detail.productId, {
             $inc: { jumlah: -adjustment },
-          });
-        } else if (newTransaction.tipe_transaksi === "pembelian") {
-          // Tambah stok produk
-          await Product.findByIdAndUpdate(detail.productId, {
-            $inc: { jumlah: adjustment },
           });
         }
       }
@@ -109,7 +96,11 @@ export const POST = withAuth(async (req) => {
   } catch (error) {
     console.error("Gagal membuat transaksi:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", details: error.message, status: 500 },
+      {
+        error: "Internal Server Error",
+        details: error.message,
+        status: 500,
+      },
       { status: 500 },
     );
   }
@@ -138,6 +129,11 @@ export const GET = withAuth(async (req) => {
       });
       // Asumsikan field supplier menyimpan _id_ supplier
       filter.supplier = supplierDoc ? supplierDoc._id : null;
+    }
+    if (searchParams.has("pelanggan")) {
+      // Filter berdasarkan pelanggan, misalnya field 'pembeli'
+      // Pastikan bahwa nilai yang dikirim adalah ID pelanggan
+      filter.pembeli = searchParams.get("pelanggan");
     }
     if (searchParams.has("pengantar")) {
       const pengantarName = searchParams.get("pengantar");
@@ -195,7 +191,7 @@ export const GET = withAuth(async (req) => {
           break;
         case "week":
           // Misal minggu dimulai dari Minggu
-          const dayOfWeek = now.getDay(); // 0 (Minggu) - 6 (Sabtu)
+          const dayOfWeek = now.getDay();
           start = new Date(now);
           start.setDate(now.getDate() - dayOfWeek);
           end = new Date(start);
@@ -238,6 +234,8 @@ export const GET = withAuth(async (req) => {
     const transactions = await Transaksi.find(filter)
       .populate("kasir supplier pembeli pengantar staff_bongkar")
       .populate("produk.productId")
+      .populate("produk.satuans", "nama") // hanya ambil field nama dari Satuan
+
       .sort(sort);
 
     // Agregasi untuk total transaksi dan total harga
@@ -262,9 +260,7 @@ export const GET = withAuth(async (req) => {
     );
   }
 });
-
 // UPDATE Transaksi
-
 export const PUT = withAuth(async (req) => {
   try {
     await connectToDatabase();
@@ -278,10 +274,21 @@ export const PUT = withAuth(async (req) => {
       );
     }
 
-    // Ambil data update dari body
-    let updateData = await req.json();
+    const userid = req.user?.id;
 
-    // Normalisasi field pengantar dan staff_bongkar jika tidak ada atau kosong
+    // Validasi: pastikan kasir ada
+    const kasir = await User.findById(userid);
+    if (!kasir) {
+      return NextResponse.json(
+        { error: "Kasir tidak ditemukan" },
+        { status: 400 },
+      );
+    }
+
+    let updateData = await req.json();
+    updateData.kasir = userid;
+
+    // Normalisasi field pengantar dan staff_bongkar
     if (!updateData.pengantar || updateData.pengantar === "") {
       updateData.pengantar = null;
     }
@@ -289,8 +296,9 @@ export const PUT = withAuth(async (req) => {
       updateData.staff_bongkar = null;
     }
 
-    // Cari transaksi yang akan diupdate
-    const transaction = await Transaksi.findById(id);
+    // Cari transaksi lama
+    const transaction =
+      await Transaksi.findById(id).populate("produk.productId");
     if (!transaction) {
       return NextResponse.json(
         { error: "Transaksi tidak ditemukan" },
@@ -298,12 +306,12 @@ export const PUT = withAuth(async (req) => {
       );
     }
 
-    // Jika transaksi menggunakan metode cicilan, pastikan metode pembayaran tetap "cicilan"
+    // ---------- LOGIKA CICILAN ----------
     if (transaction.metode_pembayaran === "cicilan") {
       updateData.metode_pembayaran = "cicilan";
 
-      // Jika status diupdate menjadi "lunas", tandai seluruh jadwal sebagai paid
       if (updateData.status_transaksi === "lunas") {
+        // Tandai seluruh jadwalPembayaran terbayar
         if (
           transaction.jadwalPembayaran &&
           transaction.jadwalPembayaran.length > 0
@@ -316,45 +324,85 @@ export const PUT = withAuth(async (req) => {
           updateData.jadwalPembayaran = transaction.jadwalPembayaran;
         }
       }
-      // Jika ada pembaruan pada dp, tenor, atau cicilanPerBulan, hitung ulang jadwal pembayaran otomatis
-      else if (
+
+      if (
         updateData.dp !== undefined ||
-        updateData.tenor !== undefined ||
-        updateData.cicilanPerBulan !== undefined
+        updateData.durasiPelunasan !== undefined ||
+        updateData.unitPelunasan !== undefined
       ) {
-        const dpValue =
-          updateData.dp !== undefined ? updateData.dp : transaction.dp || 0;
-        const tenorValue =
-          updateData.tenor !== undefined ? updateData.tenor : transaction.tenor;
-        const installmentValue =
-          updateData.cicilanPerBulan !== undefined
-            ? updateData.cicilanPerBulan
-            : transaction.cicilanPerBulan;
-        if (!tenorValue || !installmentValue) {
+        const durasi =
+          updateData.durasiPelunasan !== undefined
+            ? updateData.durasiPelunasan
+            : transaction.durasiPelunasan;
+        const unit =
+          updateData.unitPelunasan !== undefined
+            ? updateData.unitPelunasan
+            : transaction.unitPelunasan || "hari";
+        if (!durasi || durasi <= 0) {
           return NextResponse.json(
-            {
-              error:
-                "Untuk transaksi cicilan, tenor dan cicilanPerBulan harus diisi.",
-            },
+            { error: "Durasi pelunasan harus diisi dan lebih dari 0" },
             { status: 400 },
           );
         }
-        const schedule = [];
-        const interval = 30 * 24 * 60 * 60 * 1000; // 30 hari dalam milidetik
-        const startDate = new Date();
-        for (let i = 1; i <= tenorValue; i++) {
-          const dueDate = new Date(startDate.getTime() + i * interval);
-          schedule.push({
-            dueDate,
-            installment: installmentValue,
-            paid: false,
-          });
+        let newDueDate = new Date();
+        if (unit === "bulan") {
+          newDueDate.setMonth(newDueDate.getMonth() + durasi);
+        } else {
+          newDueDate.setDate(newDueDate.getDate() + durasi);
         }
-        updateData.jadwalPembayaran = schedule;
+        updateData.tanggalMaksimalPelunasan = newDueDate;
       }
     }
 
-    // Terapkan update ke dokumen transaksi dan tunggu penyimpanannya
+    // ---------- LOGIKA BATAL ----------
+    if (updateData.status_transaksi === "batal") {
+      // Cek apakah status sebelumnya sudah "lunas" atau "batal"
+      // misal: jika sudah lunas, mungkin tidak boleh dibatalkan
+      if (
+        transaction.status_transaksi === "lunas" ||
+        transaction.status_transaksi === "batal"
+      ) {
+        return NextResponse.json(
+          {
+            error: `Transaksi sudah ${
+              transaction.status_transaksi
+            }, tidak bisa dibatalkan`,
+          },
+          { status: 400 },
+        );
+      }
+
+      // Kembalikan stok
+      if (
+        transaction.produk &&
+        Array.isArray(transaction.produk) &&
+        transaction.produk.length > 0
+      ) {
+        for (const detail of transaction.produk) {
+          const productDoc = detail.productId;
+          if (!productDoc) continue; // jaga2
+          // asumsikan field konversi di detail.satuans[0] (atau di detail?).
+          // jika tidak ada, default 1
+          const conversion =
+            detail.satuans &&
+            Array.isArray(detail.satuans) &&
+            detail.satuans[0]?.konversi
+              ? detail.satuans[0].konversi
+              : 1;
+
+          const adjustment = detail.quantity * conversion;
+
+          // jika penjualan => stok +adjustment
+          if (transaction.tipe_transaksi === "penjualan") {
+            await Product.findByIdAndUpdate(productDoc._id, {
+              $inc: { jumlah: adjustment },
+            });
+          }
+        }
+      }
+    }
+
+    // Terapkan update & simpan
     transaction.set(updateData);
     const updatedTransaction = await transaction.save();
     if (!updatedTransaction) {
@@ -364,9 +412,18 @@ export const PUT = withAuth(async (req) => {
       );
     }
 
+    const populatedTransactionFull = await Transaksi.findById(id)
+      .populate("kasir")
+      .populate("produk.productId")
+      .populate("supplier")
+      .populate("pembeli")
+      .populate("pengantar")
+      .populate("staff_bongkar")
+      .exec();
+
     return NextResponse.json({
       message: "Transaksi berhasil diperbarui",
-      data: updatedTransaction,
+      data: populatedTransactionFull,
     });
   } catch (error) {
     console.error("Gagal mengupdate transaksi:", error);

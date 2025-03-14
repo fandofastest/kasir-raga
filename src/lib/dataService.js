@@ -287,6 +287,10 @@ export const fetchTransaction = async (params = {}) => {
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  console.log("====================================");
+  console.log(`${apiUrl}/transaksi?${queryParams.toString()}`);
+  console.log("====================================");
+
   const data = await res.json();
 
   if (res.status === 403) {
@@ -383,6 +387,7 @@ export const photoUpload = async (e) => {
 };
 export const updatePreferences = async (updateData) => {
   const token = await fetchUser(); // Fungsi untuk mendapatkan token (sesuaikan jika perlu)
+
   const res = await fetch(`${apiUrl}/preferences`, {
     method: "POST", // Kita menggunakan POST untuk create/update
     headers: {
@@ -392,8 +397,41 @@ export const updatePreferences = async (updateData) => {
     body: JSON.stringify(updateData),
   });
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || "Failed to update preferences");
   }
   return { data, token };
 };
+
+export const getPreferences = async () => {
+  const token = await fetchUser(); // Fungsi untuk mendapatkan token
+  const res = await fetch(`${apiUrl}/preferences`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to get preferences");
+  }
+  return { data: data.data, token };
+};
+// dataService.ts
+export async function fetchDraftTransaction(draftId) {
+  const token = await fetchUser(); // fungsi yang mengambil token
+  const res = await fetch(`${apiUrl}/transaksi/${draftId}/draft`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to fetch draft transaction");
+  }
+  return { data: data.data, token };
+}

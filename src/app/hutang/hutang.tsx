@@ -1,12 +1,16 @@
 "use client";
+
 import { useState, useEffect, FormEvent } from "react";
 import { toast } from "react-hot-toast";
-import { fetchTransaction, payHutang } from "@/lib/dataService"; // Pastikan payHutang sudah diimplementasikan di dataService
+import {
+  fetchTransaction,
+  payHutang,
+  fetchSupplier, // Untuk memuat data supplier
+} from "@/lib/dataService";
 import Transaksi from "@/models/modeltsx/Transaksi";
 
 interface HutangTransaction extends Transaksi {
-  // Untuk transaksi hutang, gunakan field "sudah_dibayar" untuk melacak pembayaran yang telah dilakukan.
-  sudah_dibayar?: number;
+  sudah_dibayar?: number; // nominal yang sudah dibayar
   dp: number;
   tenor: number;
   cicilanPerBulan: number;
@@ -19,37 +23,65 @@ interface HutangTransaction extends Transaksi {
 }
 
 export default function HutangPage() {
+  // State transaksi hutang
   const [transactions, setTransactions] = useState<HutangTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // Modal state untuk pembayaran hutang
+  // Filter: supplier, startDate, endDate
+  const [supplier, setSupplier] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
+  // Data Supplier untuk select
+  const [supplierOptions, setSupplierOptions] = useState<any[]>([]);
+
+  // Modal state untuk pembayaran
   const [selectedTransaction, setSelectedTransaction] =
     useState<HutangTransaction | null>(null);
   const [modalType, setModalType] = useState<"partial" | "settle" | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
-  // Filter state tambahan
-  const [filterPelanggan, setFilterPelanggan] = useState<string>("");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  // Expanded rows (mobile)
+  const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
-  // State untuk tampilan mobile: transaksi yang di-expand
-  const [expandedTransactions, setExpandedTransactions] = useState<string[]>(
-    [],
-  );
+  // Sorting state
+  const [sortColumn, setSortColumn] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // Fungsi untuk memuat transaksi hutang
-  const loadData = async () => {
+  // 1. Load data supplier
+  const loadSupplier = async () => {
+    try {
+      const res = await fetchSupplier();
+      setSupplierOptions(res.data); // res.data diharapkan berisi array supplier
+    } catch (err) {
+      console.error("Gagal memuat supplier:", err);
+    }
+  };
+
+  // 2. Load data hutang
+  const loadData = async (
+    overrideSortColumn?: string,
+    overrideSortDirection?: "asc" | "desc",
+  ) => {
     setLoading(true);
     try {
       const params: { [key: string]: string } = {
         tipe_transaksi: "pembelian",
         metode_pembayaran: "hutang",
       };
-      if (filterPelanggan) params.pelanggan = filterPelanggan;
+      if (supplier) params.supplier = supplier;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
+
+      // Sorting
+      const col = overrideSortColumn || sortColumn;
+      const dir = overrideSortDirection || sortDirection;
+      if (col) {
+        params.sortBy = col;
+        params.sortOrder = dir;
+      }
+
       const res = await fetchTransaction(params);
       setTransactions(res.data.transactions);
     } catch (err: any) {
@@ -60,17 +92,18 @@ export default function HutangPage() {
   };
 
   useEffect(() => {
+    loadSupplier();
     loadData();
   }, []);
 
-  // Fungsi untuk menghitung sisa tagihan (outstanding) per transaksi
+  // Hitung sisa hutang (outstanding)
   const computeOutstanding = (trx: HutangTransaction) => {
     const paid = trx.sudah_dibayar || 0;
     const outstanding = trx.total_harga - trx.dp - paid;
     return outstanding > 0 ? outstanding : 0;
   };
 
-  // Fungsi untuk mendapatkan tanggal jatuh tempo berikutnya
+  // Dapatkan tanggal jatuh tempo berikutnya
   const nextDueDate = (trx: HutangTransaction) => {
     if (trx.jadwalPembayaran && trx.jadwalPembayaran.length > 0) {
       const nextInst = trx.jadwalPembayaran.find((inst) => !inst.paid);
@@ -86,7 +119,7 @@ export default function HutangPage() {
     return "N/A";
   };
 
-  // Summary calculations
+  // Summary
   const totalUtang = transactions.reduce(
     (sum, trx) => sum + trx.total_harga,
     0,
@@ -100,21 +133,37 @@ export default function HutangPage() {
     0,
   );
 
-  // Modal: Buka untuk pembayaran sebagian (partial)
+  // Sorting
+  const handleSort = (column: string) => {
+    let newDirection: "asc" | "desc" = "asc";
+    if (sortColumn === column) {
+      newDirection = sortDirection === "asc" ? "desc" : "asc";
+    }
+    setSortColumn(column);
+    setSortDirection(newDirection);
+    loadData(column, newDirection);
+  };
+
+  const renderSortIndicator = (column: string) => {
+    if (sortColumn === column) {
+      return sortDirection === "asc" ? " ▲" : " ▼";
+    }
+    return "";
+  };
+
+  // Modal Payment
   const openPartialModal = (trx: HutangTransaction) => {
     setSelectedTransaction(trx);
     setModalType("partial");
     setPaymentAmount(0);
   };
 
-  // Modal: Buka untuk pelunasan
   const openSettleModal = (trx: HutangTransaction) => {
     setSelectedTransaction(trx);
     setModalType("settle");
     setPaymentAmount(computeOutstanding(trx));
   };
 
-  // Fungsi submit modal pembayaran
   const handlePaymentSubmit = async () => {
     if (!selectedTransaction) return;
     const outstanding = computeOutstanding(selectedTransaction);
@@ -126,7 +175,7 @@ export default function HutangPage() {
       }
     } else if (modalType === "settle") {
       if (paymentAmount < outstanding) {
-        toast.error("Jumlah pembayaran kurang dari sisa tagihan");
+        toast.error("Jumlah pembayaran kurang dari sisa hutang");
         return;
       }
     }
@@ -146,68 +195,67 @@ export default function HutangPage() {
     }
   };
 
-  // Handler untuk submit form filter
+  // Toggle row (mobile)
+  const toggleRow = (id: string) => {
+    if (expandedRows.includes(id)) {
+      setExpandedRows(expandedRows.filter((rowId) => rowId !== id));
+    } else {
+      setExpandedRows([...expandedRows, id]);
+    }
+  };
+
+  // Filter submit
   const handleFilterSubmit = (e: FormEvent) => {
     e.preventDefault();
     loadData();
   };
 
-  // Handler untuk toggle tampilan detail transaksi pada mobile
-  const toggleTransaction = (id: string) => {
-    if (expandedTransactions.includes(id)) {
-      setExpandedTransactions(expandedTransactions.filter((tid) => tid !== id));
-    } else {
-      setExpandedTransactions([...expandedTransactions, id]);
-    }
-  };
-
-  // Render summary di atas tabel
-  const renderSummary = () => {
-    return (
+  return (
+    <div className="p-4 dark:bg-gray-900 dark:text-gray-100">
+      <h1 className="mb-4 text-2xl font-bold">Daftar Hutang</h1>
+      {/* Summary */}
       <div className="mb-4 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
         <p className="text-sm text-gray-700 dark:text-gray-300">
-          Total Utang:{" "}
+          Total Hutang:{" "}
           {totalUtang.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
-            minimumFractionDigits: 2,
+            minimumFractionDigits: 0,
           })}{" "}
           | Sudah Dibayar:{" "}
           {totalPaid.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
-            minimumFractionDigits: 2,
+            minimumFractionDigits: 0,
           })}{" "}
-          | Outstanding:{" "}
+          | Sisa Hutang:{" "}
           {totalOutstanding.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
-            minimumFractionDigits: 2,
+            minimumFractionDigits: 0,
           })}
         </p>
       </div>
-    );
-  };
 
-  return (
-    <div className="p-4 dark:bg-gray-900 dark:text-gray-100">
-      <h1 className="mb-4 text-2xl font-bold">Daftar Piutang Cicilan</h1>
-      {renderSummary()}
-
-      {/* Form Filter */}
+      {/* Filter Form */}
       <form
         onSubmit={handleFilterSubmit}
         className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
       >
         <div>
-          <label className="block text-sm font-medium">Pelanggan</label>
-          <input
-            type="text"
-            placeholder="Cari pelanggan"
-            value={filterPelanggan}
-            onChange={(e) => setFilterPelanggan(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
-          />
+          <label className="block text-sm font-medium">Supplier</label>
+          <select
+            value={supplier}
+            onChange={(e) => setSupplier(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          >
+            <option value="">Semua Supplier</option>
+            {supplierOptions.map((sup) => (
+              <option key={sup._id} value={sup._id}>
+                {sup.nama}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium">Tanggal Mulai</label>
@@ -215,7 +263,7 @@ export default function HutangPage() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
         </div>
         <div>
@@ -224,7 +272,7 @@ export default function HutangPage() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
         </div>
         <button
@@ -235,82 +283,112 @@ export default function HutangPage() {
         </button>
       </form>
 
-      {loading && <p>Loading...</p>}
+      {loading && <p className="text-gray-500">Memuat data...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Tampilan Desktop (Table) */}
+      {/* Table Desktop */}
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+        <table className="min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-600">
           <thead className="bg-gray-100 dark:bg-gray-700">
             <tr className="text-center">
-              <th className="border px-4 py-2">No</th>
-              <th className="border px-4 py-2">No Transaksi</th>
-              <th className="border px-4 py-2">Tanggal</th>
-              <th className="border px-4 py-2">Pelanggan</th>
-              <th className="border px-4 py-2">Total Harga</th>
-              <th className="border px-4 py-2">Sudah Dibayar</th>
-              <th className="border px-4 py-2">Outstanding</th>
-              <th className="border px-4 py-2">Next Due Date</th>
-              <th className="border px-4 py-2">Aksi</th>
+              <th
+                className="cursor-pointer border px-4 py-2 text-sm font-medium"
+                onClick={() => handleSort("no_transaksi")}
+              >
+                No Transaksi{renderSortIndicator("no_transaksi")}
+              </th>
+              <th
+                className="cursor-pointer border px-4 py-2 text-sm font-medium"
+                onClick={() => handleSort("supplier")}
+              >
+                Supplier{renderSortIndicator("supplier")}
+              </th>
+              <th
+                className="cursor-pointer border px-4 py-2 text-sm font-medium"
+                onClick={() => handleSort("createdAt")}
+              >
+                Tanggal{renderSortIndicator("createdAt")}
+              </th>
+              <th
+                className="cursor-pointer border px-4 py-2 text-right text-sm font-medium"
+                onClick={() => handleSort("total_harga")}
+              >
+                Total Harga{renderSortIndicator("total_harga")}
+              </th>
+              <th className="border px-4 py-2 text-sm font-medium">
+                Sudah Dibayar
+              </th>
+              <th className="border px-4 py-2 text-sm font-medium">
+                Sisa Hutang
+              </th>
+              <th
+                className="cursor-pointer border px-4 py-2 text-sm font-medium"
+                onClick={() => handleSort("jadwalPembayaran")}
+              >
+                Jatuh Tempo{renderSortIndicator("jadwalPembayaran")}
+              </th>
+              <th className="border px-4 py-2 text-sm font-medium">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {transactions.map((trx, idx) => {
+            {transactions.map((trx) => {
               const outstanding = computeOutstanding(trx);
               return (
-                <tr key={trx._id} className="text-center">
-                  <td className="border px-4 py-2">{idx + 1}</td>
-                  <td className="border px-4 py-2">{trx.no_transaksi}</td>
-                  <td className="border px-4 py-2">
+                <tr
+                  key={trx._id}
+                  className="text-center odd:bg-white even:bg-gray-50 dark:odd:bg-gray-800 dark:even:bg-gray-700"
+                >
+                  <td className="border px-4 py-2 text-sm dark:text-white">
+                    {trx.no_transaksi}
+                  </td>
+                  <td className="border px-4 py-2 text-sm dark:text-white">
+                    {trx.supplier?.nama || "N/A"}
+                  </td>
+                  <td className="border px-4 py-2 text-sm dark:text-white">
                     {new Date(trx.createdAt).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
                     })}
                   </td>
-                  <td className="border px-4 py-2">
-                    {trx.tipe_transaksi === "penjualan"
-                      ? trx.pembeli?.nama || "N/A"
-                      : trx.supplier?.nama || "N/A"}
-                  </td>
-                  <td className="border px-4 py-2">
+                  <td className="border px-4 py-2 text-right text-sm dark:text-white">
                     {trx.total_harga.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
-                      minimumFractionDigits: 2,
+                      minimumFractionDigits: 0,
                     })}
                   </td>
-                  <td className="border px-4 py-2">
-                    Rp{" "}
+                  <td className="border px-4 py-2 text-sm dark:text-white">
                     {trx.sudah_dibayar
                       ? trx.sudah_dibayar.toLocaleString("id-ID", {
                           style: "currency",
                           currency: "IDR",
-                          minimumFractionDigits: 2,
+                          minimumFractionDigits: 0,
                         })
                       : "0"}
                   </td>
-                  <td className="border px-4 py-2">
+                  <td className="border px-4 py-2 text-sm dark:text-white">
                     {outstanding.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
-                      minimumFractionDigits: 2,
+                      minimumFractionDigits: 0,
                     })}
                   </td>
-                  <td className="border px-4 py-2">{nextDueDate(trx)}</td>
-                  <td className="border px-4 py-2">
-                    {/* Pada desktop, aksi tampil inline */}
+                  <td className="border px-4 py-2 text-sm dark:text-white">
+                    {nextDueDate(trx)}
+                  </td>
+                  <td className="border px-4 py-2 text-sm">
                     <div className="flex justify-center space-x-2">
                       <button
                         onClick={() => openPartialModal(trx)}
-                        className="rounded bg-blue-500 px-2 py-1 text-white"
+                        className="rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
                         disabled={outstanding <= 0}
                       >
                         Bayar Cicilan
                       </button>
                       <button
                         onClick={() => openSettleModal(trx)}
-                        className="rounded bg-green-500 px-2 py-1 text-white"
+                        className="rounded bg-green-500 px-2 py-1 text-white hover:bg-green-600"
                         disabled={outstanding <= 0}
                       >
                         Lunasi
@@ -324,7 +402,7 @@ export default function HutangPage() {
         </table>
       </div>
 
-      {/* Tampilan Mobile (Accordion) */}
+      {/* Mobile (Accordion) */}
       <div className="block md:hidden">
         {transactions.length > 0 ? (
           transactions.map((trx) => {
@@ -332,66 +410,66 @@ export default function HutangPage() {
             return (
               <div
                 key={trx._id}
-                className="border-t border-gray-300 px-4 py-4 dark:border-gray-600"
+                className="mb-2 rounded border bg-white p-4 dark:bg-gray-800"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{trx.no_transaksi}</p>
-                    <p className="text-sm">
-                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
+                    <p className="font-bold">{trx.no_transaksi}</p>
+                    <p className="text-sm">{trx.supplier?.nama || "N/A"}</p>
                   </div>
                   <button
-                    onClick={() => toggleTransaction(trx._id)}
+                    onClick={() => toggleRow(trx._id)}
                     className="text-2xl font-bold"
                   >
-                    {expandedTransactions.includes(trx._id) ? "−" : "+"}
+                    {expandedRows.includes(trx._id) ? "−" : "+"}
                   </button>
                 </div>
-                {expandedTransactions.includes(trx._id) && (
+                {expandedRows.includes(trx._id) && (
                   <div className="mt-2 space-y-2">
-                    <p className="text-sm">
-                      <span className="font-medium">Pelanggan: </span>
-                      {trx.tipe_transaksi === "penjualan"
-                        ? trx.pembeli?.nama || "N/A"
-                        : trx.supplier?.nama || "N/A"}
+                    <p>
+                      <span className="font-medium">Tanggal: </span>
+                      {new Date(trx.createdAt)
+                        .toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                        .replace("pukul ", "")
+                        .replace(",", "")}
                     </p>
-                    <p className="text-sm">
+                    <p>
                       <span className="font-medium">Total Harga: </span>
                       {trx.total_harga.toLocaleString("id-ID", {
                         style: "currency",
                         currency: "IDR",
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                       })}
                     </p>
-                    <p className="text-sm">
+                    <p>
                       <span className="font-medium">Sudah Dibayar: </span>
-                      Rp{" "}
                       {trx.sudah_dibayar
                         ? trx.sudah_dibayar.toLocaleString("id-ID", {
                             style: "currency",
                             currency: "IDR",
-                            minimumFractionDigits: 2,
+                            minimumFractionDigits: 0,
                           })
                         : "0"}
                     </p>
-                    <p className="text-sm">
-                      <span className="font-medium">Outstanding: </span>
+                    <p>
+                      <span className="font-medium">Sisa Hutang: </span>
                       {outstanding.toLocaleString("id-ID", {
                         style: "currency",
                         currency: "IDR",
-                        minimumFractionDigits: 2,
+                        minimumFractionDigits: 0,
                       })}
                     </p>
-                    <p className="text-sm">
-                      <span className="font-medium">Next Due Date: </span>
+                    <p>
+                      <span className="font-medium">Jatuh Tempo: </span>
                       {nextDueDate(trx)}
                     </p>
-                    {/* Menu aksi tampil langsung */}
                     <div className="mt-2 flex flex-col space-y-2">
                       <button
                         onClick={() => openPartialModal(trx)}
@@ -431,11 +509,11 @@ export default function HutangPage() {
               No. Transaksi: {selectedTransaction.no_transaksi}
             </p>
             <p className="mb-2">
-              Outstanding: Rp{" "}
+              Outstanding:{" "}
               {computeOutstanding(selectedTransaction).toLocaleString("id-ID", {
                 style: "currency",
                 currency: "IDR",
-                minimumFractionDigits: 2,
+                minimumFractionDigits: 0,
               })}
             </p>
             {modalType === "partial" && (
@@ -446,7 +524,7 @@ export default function HutangPage() {
                   min={selectedTransaction.cicilanPerBulan}
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                  className="w-full rounded border px-3 py-2"
+                  className="w-full rounded border px-3 py-2 dark:bg-gray-700 dark:text-white"
                 />
               </div>
             )}
@@ -458,7 +536,7 @@ export default function HutangPage() {
                   min={computeOutstanding(selectedTransaction)}
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                  className="w-full rounded border px-3 py-2"
+                  className="w-full rounded border px-3 py-2 dark:bg-gray-700 dark:text-white"
                 />
               </div>
             )}
@@ -468,7 +546,7 @@ export default function HutangPage() {
                   setModalType(null);
                   setSelectedTransaction(null);
                 }}
-                className="rounded bg-gray-300 px-4 py-2 text-sm"
+                className="rounded bg-gray-300 px-4 py-2 text-sm text-gray-800"
               >
                 Batal
               </button>

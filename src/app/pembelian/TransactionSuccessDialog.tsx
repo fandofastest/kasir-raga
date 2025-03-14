@@ -20,7 +20,7 @@ const TransactionSuccessDialog: React.FC<TransactionSuccessDialogProps> = ({
 
   // Fungsi untuk mencetak invoice
   const handlePrint = () => {
-    window.print();
+    window.open(`/invoice/${transactionData.no_transaksi}`, "_blank");
   };
 
   // Hitung subtotal dari produk (sebelum diskon)

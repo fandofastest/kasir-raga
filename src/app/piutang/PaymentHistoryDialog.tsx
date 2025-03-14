@@ -64,7 +64,7 @@ const PaymentHistoryDialog: React.FC<PaymentHistoryDialogProps> = ({
             })}
           </p>
           <p className="text-sm font-bold text-gray-800 dark:text-gray-100">
-            Outstanding:{" "}
+            Sisa Tagihan:{" "}
             {outstanding.toLocaleString("id-ID", {
               style: "currency",
               currency: "IDR",

@@ -9,6 +9,7 @@ const PreferenceSchema = new mongoose.Schema({
   companyLogo: { type: String },
   companyAddress: { type: String },
   companyPhone: { type: String },
+  maxPelunasanHari: { type: Number, required: true, default: 30 },
 });
 
 // Gunakan model global jika sudah ada (agar tidak mendefinisikan ulang saat hot-reloading)

@@ -33,7 +33,7 @@ function CustomersList({
   }, []);
 
   return (
-    <div className="border-b border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
+    <div>
       <h3 className="mb-2 text-lg font-semibold text-black dark:text-white">
         Pilih Pelanggan
       </h3>

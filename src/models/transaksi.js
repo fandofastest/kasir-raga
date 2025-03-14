@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import Konsumen from "@/models/konsumen";
 import Product from "@/models/product";
+import User from "@/models/user";
+import Supplier from "@/models/supplier";
+import Satuan from "@/models/satuan";
 
 const ProductDetailSchema = new mongoose.Schema({
   productId: {
@@ -9,7 +12,13 @@ const ProductDetailSchema = new mongoose.Schema({
   },
   quantity: Number,
   harga: Number,
-  // Anda dapat menambahkan field lain, misalnya satuan, dsb.
+  // Tambahan field jika diperlukan, misalnya satuans
+  satuans: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Satuan",
+    },
+  ],
 });
 
 const transactionSchema = new mongoose.Schema(
@@ -73,19 +82,11 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    // Field tambahan untuk transaksi cicilan
     dp: {
       type: Number,
       default: 0,
     },
-    tenor: {
-      type: Number,
-      default: 0,
-    },
-    cicilanPerBulan: {
-      type: Number,
-      default: 0,
-    },
+    // Field untuk mencatat histori pembayaran cicilan
     jadwalPembayaran: [
       {
         dueDate: {
@@ -106,10 +107,20 @@ const transactionSchema = new mongoose.Schema(
         },
       },
     ],
-    // Field tambahan untuk transaksi hutang (pembelian yang belum lunas)
-    sudah_dibayar: {
+    // Field untuk durasi pelunasan cicilan
+    durasiPelunasan: {
       type: Number,
       default: 0,
+    },
+    // Unit pelunasan: "hari" atau "bulan"
+    unitPelunasan: {
+      type: String,
+      enum: ["hari", "bulan"],
+      default: "hari",
+    },
+    // Tanggal maksimal pelunasan yang dihitung berdasarkan durasi dan unit yang dipilih
+    tanggalMaksimalPelunasan: {
+      type: Date,
     },
   },
   {
@@ -117,12 +128,11 @@ const transactionSchema = new mongoose.Schema(
   },
 );
 
-// Pre-validate hook untuk menghasilkan no_transaksi sebelum validasi
+// Pre-validate hook untuk menghasilkan no_transaksi jika belum ada
 transactionSchema.pre("validate", function (next) {
   if (!this.no_transaksi) {
-    // Buat bagian unik, misalnya 6 digit terakhir dari timestamp
+    // Contoh membuat nomor unik berdasarkan 6 digit terakhir dari timestamp
     const uniquePart = Date.now().toString().slice(-6);
-    // Tentukan prefix berdasarkan tipe transaksi, misalnya:
     let prefix = "INV-"; // default prefix
     if (this.tipe_transaksi === "penjualan") {
       prefix = "PJL-";

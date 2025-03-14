@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import {
   fetchTransaction,
   fetchSupplier,
@@ -11,24 +12,25 @@ import {
 } from "@/lib/dataService";
 import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
-import TransactionDetailDialog from "./detailtransaksi";
 
-export default function TransactionHistoryPage() {
+export default function TransactionDraftPage() {
+  const router = useRouter();
+
   const [transactions, setTransactions] = useState<Transaksi[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
-  // Filter state
+  // Filter state, dengan status_transaksi default "tunda"
   const [searchTerm, setSearchTerm] = useState<string>(""); // nomor transaksi
   const [metodePembayaran, setMetodePembayaran] = useState<string>("");
-  const [statusTransaksi, setStatusTransaksi] = useState<string>("");
+  const [statusTransaksi, setStatusTransaksi] = useState<string>("tunda");
   const [tipeTransaksi, setTipeTransaksi] = useState<string>("");
 
   // Filter berdasarkan relasi (select)
   const [supplier, setSupplier] = useState<string>("");
   const [pembeli, setPembeli] = useState<string>("");
-  const [pengantar, setPengantar] = useState<string>(""); // Armada
-  const [staffBongkar, setStaffBongkar] = useState<string>(""); // Buruh Bongkar
+  const [pengantar, setPengantar] = useState<string>("");
+  const [staffBongkar, setStaffBongkar] = useState<string>("");
   const [kasir, setKasir] = useState<string>("");
 
   const [minTotal, setMinTotal] = useState<string>("");
@@ -61,13 +63,26 @@ export default function TransactionHistoryPage() {
   // State untuk mengelola baris yang di-expand pada tampilan mobile
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
-  // Fungsi membuka dialog detail transaksi (digunakan pada kedua tampilan)
+  // 1) State untuk dialog konfirmasi batal
+  const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
+  const [transactionToCancel, setTransactionToCancel] =
+    useState<Transaksi | null>(null);
+
+  // Toggle row di mobile
+  const toggleRow = (id: string) => {
+    if (expandedRows.includes(id)) {
+      setExpandedRows(expandedRows.filter((rowId) => rowId !== id));
+    } else {
+      setExpandedRows([...expandedRows, id]);
+    }
+  };
+
+  // Fungsi buka detail (jika ada)
   const openDetailDialog = (trx: Transaksi) => {
     setSelectedTransaction(trx);
   };
 
   const handleUpdateTransaction = (updatedTransaction: Transaksi) => {
-    console.log("Updated Transaction:", updatedTransaction);
     updateDataTransaction(updatedTransaction._id, updatedTransaction);
     loadData();
   };
@@ -85,7 +100,6 @@ export default function TransactionHistoryPage() {
     }
   };
 
-  // Load opsi saat pertama kali render
   useEffect(() => {
     loadOptions();
   }, []);
@@ -98,9 +112,11 @@ export default function TransactionHistoryPage() {
     setLoading(true);
     try {
       const params: { [key: string]: string } = {};
+
       if (searchTerm) params.search = searchTerm;
       if (metodePembayaran) params.metode_pembayaran = metodePembayaran;
-      if (statusTransaksi) params.status_transaksi = statusTransaksi;
+      // status_transaksi selalu "tunda"
+      params.status_transaksi = "tunda";
       if (tipeTransaksi) params.tipe_transaksi = tipeTransaksi;
       if (supplier) params.supplier = supplier;
       if (pembeli) params.pembeli = pembeli;
@@ -120,7 +136,6 @@ export default function TransactionHistoryPage() {
       }
 
       const data = await fetchTransaction(params);
-      console.log(data);
       setTransactions(data.data.transactions);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat memuat data");
@@ -139,7 +154,7 @@ export default function TransactionHistoryPage() {
     loadData();
   };
 
-  // Sorting saat header diklik
+  // Sorting
   const handleSort = (column: string) => {
     let newSortDirection = "asc";
     if (sortColumn === column) {
@@ -157,40 +172,51 @@ export default function TransactionHistoryPage() {
     return "";
   };
 
-  // Menghitung total keseluruhan harga dari semua transaksi
+  // Total draft
+  const totalDraft = transactions.reduce(
+    (sum, trx) => sum + trx.total_harga,
+    0,
+  );
 
-  // Summary: Total Pemasukan, Pengeluaran, dan Laba Rugi
-  const totalPemasukan = transactions
-    .filter(
-      (trx) =>
-        trx.tipe_transaksi === "pemasukan" ||
-        trx.tipe_transaksi === "penjualan",
-    )
-    .reduce((sum, trx) => sum + trx.total_harga, 0);
-
-  const totalPengeluaran = transactions
-    .filter(
-      (trx) =>
-        trx.tipe_transaksi === "pengeluaran" ||
-        trx.tipe_transaksi === "pembelian",
-    )
-    .reduce((sum, trx) => sum + trx.total_harga, 0);
-
-  const labaRugi = totalPemasukan - totalPengeluaran;
-
-  // Fungsi toggle untuk row di tampilan mobile
-  const toggleRow = (id: string) => {
-    if (expandedRows.includes(id)) {
-      setExpandedRows(expandedRows.filter((rowId) => rowId !== id));
+  // Lanjutkan draft
+  const handleContinueDraft = (draft: Transaksi) => {
+    if (!draft.no_transaksi) {
+      router.push(`/`);
+      return;
+    }
+    if (draft.no_transaksi.startsWith("PJL")) {
+      router.push(`/transaksi?draftId=${draft._id}`);
+    } else if (draft.no_transaksi.startsWith("BELI")) {
+      router.push(`/pembelian?draftId=${draft._id}`);
     } else {
-      setExpandedRows([...expandedRows, id]);
+      router.push(`/`);
     }
   };
 
+  // 2) Fungsi panggil PUT "batal"
+  const handleCancelTransaction = async () => {
+    if (!transactionToCancel) return;
+    try {
+      // Panggil updateDataTransaction dengan status_transaksi = "batal"
+      const payload = { status_transaksi: "batal" };
+      const res = await updateDataTransaction(transactionToCancel._id, payload);
+      toast.success("Transaksi berhasil dibatalkan");
+      // Tutup dialog
+      setShowCancelDialog(false);
+      setTransactionToCancel(null);
+      // Reload data
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal membatalkan transaksi");
+      console.error("Cancel transaction error:", err);
+    }
+  };
+
+  // 3) Tampilkan data
   return (
     <div className="p-4">
       <h1 className="mb-4 text-2xl font-bold text-gray-800 dark:text-gray-100">
-        Riwayat Transaksi
+        Transaksi Draft (Tunda)
       </h1>
 
       {/* Filter Form */}
@@ -204,7 +230,7 @@ export default function TransactionHistoryPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm  dark:border-gray-600 dark:bg-gray-700"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
             placeholder="Cari nomor transaksi"
           />
         </div>
@@ -223,146 +249,7 @@ export default function TransactionHistoryPage() {
             <option value="hutang">Hutang</option>
           </select>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Status Transaksi</label>
-          <select
-            value={statusTransaksi}
-            onChange={(e) => setStatusTransaksi(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Semua</option>
-            <option value="lunas">Lunas</option>
-            <option value="belum_lunas">Belum Lunas</option>
-            <option value="tunda">Tunda</option>
-            <option value="batal">Batal</option>
-            <option value="cicilan">Cicilan</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Tipe Transaksi</label>
-          <select
-            value={tipeTransaksi}
-            onChange={(e) => setTipeTransaksi(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Semua</option>
-            <option value="pembelian">Pembelian</option>
-            <option value="penjualan">Penjualan</option>
-            <option value="pengeluaran">Pengeluaran</option>
-            <option value="pemasukan">Pemasukan</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Pelanggan</label>
-          <select
-            value={pembeli}
-            onChange={(e) => setPembeli(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Semua Pelanggan</option>
-            {pembeliOptions.map((item: any) => (
-              <option key={item._id} value={item._id}>
-                {item.nama}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Supplier</label>
-          <select
-            value={supplier}
-            onChange={(e) => setSupplier(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Semua Supplier</option>
-            {supplierOptions.map((item: any) => (
-              <option key={item._id} value={item._id}>
-                {item.nama}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Armada</label>
-          <select
-            value={pengantar}
-            onChange={(e) => setPengantar(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Semua Armada</option>
-            {pengantarOptions.map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Buruh Bongkar</label>
-          <select
-            value={staffBongkar}
-            onChange={(e) => setStaffBongkar(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Semua Buruh Bongkar</option>
-            {staffBongkarOptions.map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Kasir</label>
-          <select
-            value={kasir}
-            onChange={(e) => setKasir(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          >
-            <option value="">Semua Kasir</option>
-            {kasirOptions.map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Min Total</label>
-          <input
-            type="number"
-            value={minTotal}
-            onChange={(e) => setMinTotal(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm  dark:border-gray-600 dark:bg-gray-700"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Max Total</label>
-          <input
-            type="number"
-            value={maxTotal}
-            onChange={(e) => setMaxTotal(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm  dark:border-gray-600 dark:bg-gray-700"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Tanggal Mulai</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm  dark:border-gray-600 dark:bg-gray-700"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Tanggal Akhir</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm  dark:border-gray-600 dark:bg-gray-700"
-          />
-        </div>
+        {/* Filter lainnya dapat ditambahkan sesuai kebutuhan */}
         <button
           type="submit"
           className="col-span-1 rounded bg-blue-500 px-4 py-2 text-white sm:col-span-3"
@@ -371,30 +258,16 @@ export default function TransactionHistoryPage() {
         </button>
       </form>
 
-      {/* Ringkasan Data Transaksi */}
+      {/* Ringkasan Draft Transaksi */}
       <div className="mb-4 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
         <p className="text-sm">
-          Total Transaksi: {transactions.length} <br />
-          Total Pemasukan:{" "}
-          {totalPemasukan.toLocaleString("id-ID", {
+          Total Draft: {transactions.length} <br />
+          Total Draft:{" "}
+          {totalDraft.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
-          })}{" "}
-          <br />
-          Total Pengeluaran:{" "}
-          {totalPengeluaran.toLocaleString("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-          })}{" "}
-          <br />
-          Laba Rugi:{" "}
-          {labaRugi.toLocaleString("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-          })}{" "}
+          })}
         </p>
       </div>
 
@@ -425,10 +298,7 @@ export default function TransactionHistoryPage() {
                   >
                     Kasir{renderSortIndicator("kasir")}
                   </th>
-                  <th
-                    className="cursor-pointer border px-4 py-2 text-right text-sm font-medium text-gray-600 dark:text-gray-200"
-                    onClick={() => handleSort("total_harga")}
-                  >
+                  <th className="border px-4 py-2 text-right text-sm font-medium text-gray-600 dark:text-gray-200">
                     Total
                   </th>
                   <th
@@ -447,25 +317,7 @@ export default function TransactionHistoryPage() {
                     className="cursor-pointer border px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-200"
                     onClick={() => handleSort("status_transaksi")}
                   >
-                    Status Transaksi{renderSortIndicator("status_transaksi")}
-                  </th>
-                  <th
-                    className="cursor-pointer border px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-200"
-                    onClick={() => handleSort("tipe_transaksi")}
-                  >
-                    Tipe Transaksi{renderSortIndicator("tipe_transaksi")}
-                  </th>
-                  <th
-                    className="cursor-pointer border px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-200"
-                    onClick={() => handleSort("pengantar")}
-                  >
-                    Armada{renderSortIndicator("pengantar")}
-                  </th>
-                  <th
-                    className="cursor-pointer border px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-200"
-                    onClick={() => handleSort("staff_bongkar")}
-                  >
-                    Buruh Bongkar{renderSortIndicator("staff_bongkar")}
+                    Status{renderSortIndicator("status_transaksi")}
                   </th>
                   <th className="border px-4 py-2 text-center text-sm font-medium text-gray-600 dark:text-gray-200">
                     Aksi
@@ -473,7 +325,7 @@ export default function TransactionHistoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((trx, idx) => (
+                {transactions.map((trx) => (
                   <tr
                     key={trx._id}
                     className="odd:bg-white even:bg-gray-50 dark:odd:bg-gray-800 dark:even:bg-gray-700"
@@ -512,29 +364,22 @@ export default function TransactionHistoryPage() {
                     <td className="border px-4 py-2 text-left text-sm text-gray-700 dark:text-white">
                       {trx.status_transaksi}
                     </td>
-                    <td className="border px-4 py-2 text-left text-sm text-gray-700 dark:text-white">
-                      {trx.tipe_transaksi}
-                    </td>
-                    <td className="border px-4 py-2 text-left text-sm text-gray-700 dark:text-white">
-                      {trx.pengantar
-                        ? typeof trx.pengantar === "object"
-                          ? trx.pengantar.name
-                          : trx.pengantar
-                        : ""}
-                    </td>
-                    <td className="border px-4 py-2 text-left text-sm text-gray-700 dark:text-white">
-                      {trx.staff_bongkar
-                        ? typeof trx.staff_bongkar === "object"
-                          ? trx.staff_bongkar.name
-                          : trx.staff_bongkar
-                        : ""}
-                    </td>
                     <td className="border px-4 py-2 text-center text-sm">
                       <button
-                        onClick={() => openDetailDialog(trx)}
-                        className="rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                        onClick={() => {
+                          // Tampilkan dialog konfirmasi
+                          setTransactionToCancel(trx);
+                          setShowCancelDialog(true);
+                        }}
+                        className="rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600"
                       >
-                        Detail
+                        Batalkan
+                      </button>
+                      <button
+                        onClick={() => handleContinueDraft(trx)}
+                        className="ml-3 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                      >
+                        Lanjutkan
                       </button>
                     </td>
                   </tr>
@@ -544,7 +389,9 @@ export default function TransactionHistoryPage() {
           </div>
         ) : (
           !loading && (
-            <p className="text-gray-500">Tidak ada data transaksi ditemukan</p>
+            <p className="text-gray-500">
+              Tidak ada data transaksi draft ditemukan
+            </p>
           )
         )}
       </div>
@@ -607,57 +454,94 @@ export default function TransactionHistoryPage() {
                         .replace(",", "")}
                     </p>
                     <p>
-                      <span className="font-medium">Metode Pembayaran: </span>
+                      <span className="font-medium">Metode: </span>
                       {trx.metode_pembayaran}
                     </p>
                     <p>
                       <span className="font-medium">Status: </span>
                       {trx.status_transaksi}
                     </p>
-                    <p>
-                      <span className="font-medium">Tipe: </span>
-                      {trx.tipe_transaksi}
-                    </p>
-                    <p>
-                      <span className="font-medium">Armada: </span>
-                      {trx.pengantar
-                        ? typeof trx.pengantar === "object"
-                          ? trx.pengantar.name
-                          : trx.pengantar
-                        : ""}
-                    </p>
-                    <p>
-                      <span className="font-medium">Buruh Bongkar: </span>
-                      {trx.staff_bongkar
-                        ? typeof trx.staff_bongkar === "object"
-                          ? trx.staff_bongkar.name
-                          : trx.staff_bongkar
-                        : ""}
-                    </p>
-                    <button
-                      onClick={() => openDetailDialog(trx)}
-                      className="mt-2 block w-full rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-                    >
-                      Detail
-                    </button>
+
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => {
+                          setTransactionToCancel(trx);
+                          setShowCancelDialog(true);
+                        }}
+                        className="flex-1 rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600"
+                      >
+                        Batalkan
+                      </button>
+                      <button
+                        onClick={() => handleContinueDraft(trx)}
+                        className="flex-1 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                      >
+                        Lanjutkan
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             ))
           : !loading && (
               <p className="text-gray-500">
-                Tidak ada data transaksi ditemukan
+                Tidak ada data transaksi draft ditemukan
               </p>
             )}
       </div>
 
-      {selectedTransaction && (
-        <TransactionDetailDialog
-          transaction={selectedTransaction}
-          staffOptions={staffOptions}
-          onClose={() => setSelectedTransaction(null)}
-          onUpdate={handleUpdateTransaction}
-        />
+      {/* Dialog Konfirmasi Batalkan */}
+      {showCancelDialog && transactionToCancel && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => setShowCancelDialog(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-md bg-white p-4 shadow dark:bg-gray-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
+              Konfirmasi Pembatalan
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-200">
+              Apakah Anda yakin ingin membatalkan transaksi{" "}
+              <span className="font-semibold">
+                {transactionToCancel.no_transaksi}
+              </span>
+              ? Tindakan ini akan mengubah status menjadi{" "}
+              <span className="font-semibold">batal</span> dan mengembalikan
+              stok.
+            </p>
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => setShowCancelDialog(false)}
+                className="rounded bg-gray-300 px-3 py-1 text-sm text-black hover:bg-gray-400 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+              >
+                Batal
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const payload = { status_transaksi: "batal" };
+                    await updateDataTransaction(
+                      transactionToCancel._id,
+                      payload,
+                    );
+                    toast.success("Transaksi dibatalkan");
+                    setShowCancelDialog(false);
+                    setTransactionToCancel(null);
+                    loadData();
+                  } catch (err: any) {
+                    toast.error(err.message || "Gagal membatalkan transaksi");
+                  }
+                }}
+                className="rounded bg-red-500 px-3 py-1 text-sm font-semibold text-white hover:bg-red-600"
+              >
+                Ya, Batalkan
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

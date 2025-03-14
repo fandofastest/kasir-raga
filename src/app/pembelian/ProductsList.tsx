@@ -119,8 +119,8 @@ export default function ProductsList({
   const [showAddSatuan, setShowAddSatuan] = useState(false);
 
   // Form di modal pembelian
-  const [purchasePrice, setPurchasePrice] = useState<number>(0);
-  const [quantity, setQuantity] = useState<number>(1);
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [quantity, setQuantity] = useState("1");
 
   // Edit satuan
   const [editSatuans, setEditSatuans] = useState<EditSatuan[]>([]);
@@ -178,8 +178,8 @@ export default function ProductsList({
   // -------------------------------------------------------------------
   const handleTambahClick = (product: Product) => {
     setActiveProduct(product);
-    setPurchasePrice(product.harga_modal || 0);
-    setQuantity(1);
+    setPurchasePrice((product.harga_modal || 0).toString());
+    setQuantity("1");
 
     // Buat array editSatuans dari product.satuans
     const newEditSatuans: EditSatuan[] = (product.satuans || []).map((s) => {
@@ -203,8 +203,8 @@ export default function ProductsList({
   // -------------------------------------------------------------------
   // Purchase Price berubah => update profit di semua baris
   // -------------------------------------------------------------------
-  const handlePurchasePriceChange = (newVal: number) => {
-    setPurchasePrice(newVal);
+  const handlePurchasePriceChange = (newVal: any) => {
+    setPurchasePrice(newVal.toString());
     setEditSatuans((prev) =>
       prev.map((ed) => {
         const costSatuan = newVal * ed.konversi;
@@ -245,7 +245,7 @@ export default function ProductsList({
           _id: generateUUID(),
           satuanId: "",
           konversi: 1,
-          hargaJual: purchasePrice,
+          hargaJual: Number(purchasePrice),
           profitPercent: 0,
         },
       ]);
@@ -283,7 +283,7 @@ export default function ProductsList({
     setEditSatuans((prev) => {
       const clone = [...prev];
       const old = clone[index];
-      const costSatuan = purchasePrice * old.konversi;
+      const costSatuan = Number(purchasePrice) * old.konversi;
       let profit = 0;
       if (costSatuan > 0) {
         profit = ((newHJ - costSatuan) / costSatuan) * 100;
@@ -304,7 +304,7 @@ export default function ProductsList({
     setEditSatuans((prev) => {
       const clone = [...prev];
       const old = clone[index];
-      const costSatuan = purchasePrice * old.konversi;
+      const costSatuan = Number(purchasePrice) * old.konversi;
       const newHJ = costSatuan * (1 + newProfit / 100);
       clone[index] = {
         ...old,
@@ -318,7 +318,7 @@ export default function ProductsList({
   // -------------------------------------------------------------------
   // Hitung total beli
   // -------------------------------------------------------------------
-  const totalBeli = purchasePrice * quantity;
+  const totalBeli = Number(purchasePrice) * Number(quantity);
 
   // -------------------------------------------------------------------
   // Konfirmasi: tambah ke cart
@@ -340,10 +340,10 @@ export default function ProductsList({
     const cartItem: CartItem = {
       ...activeProduct,
       satuans: newSatuans,
-      quantity,
-      harga: purchasePrice,
+      quantity: Number(quantity),
+      harga: Number(purchasePrice),
     };
-    addToCart(cartItem, quantity, purchasePrice);
+    addToCart(cartItem, Number(quantity), Number(purchasePrice));
     handleCloseModal();
   };
 
@@ -365,7 +365,7 @@ export default function ProductsList({
         _id: newSat._id,
         satuanId: newSat._id,
         konversi: 1,
-        hargaJual: purchasePrice,
+        hargaJual: Number(purchasePrice),
         profitPercent: 0,
       },
     ]);
@@ -511,9 +511,7 @@ export default function ProductsList({
                     min={0}
                     className="mt-1 w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
                     value={purchasePrice}
-                    onChange={(e) =>
-                      handlePurchasePriceChange(Number(e.target.value))
-                    }
+                    onChange={(e) => handlePurchasePriceChange(e.target.value)}
                   />
                 </div>
                 <div>
@@ -525,7 +523,7 @@ export default function ProductsList({
                     min={1}
                     className="mt-1 w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
                     value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    onChange={(e) => setQuantity(e.target.value)}
                   />
                 </div>
                 <div>

@@ -3,41 +3,54 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import toast from "react-hot-toast";
 import { photoUpload } from "@/lib/dataService"; // Fungsi upload foto yang sudah diimplementasikan
+import { getPreferences, updatePreferences } from "@/lib/dataService";
 
 const PreferencesPage: React.FC = () => {
   // Preferensi tampilan
   const [darkMode, setDarkMode] = useState<boolean>(false);
-  const [language, setLanguage] = useState<string>("id"); // Default: Bahasa Indonesia
-  const [dateFormat, setDateFormat] = useState<string>("DD MMMM YYYY"); // Format tanggal default
+  const [language, setLanguage] = useState<string>("id");
+  const [dateFormat, setDateFormat] = useState<string>("DD MMMM YYYY");
 
   // Setting profil perusahaan
   const [companyName, setCompanyName] = useState<string>("");
-  // Simpan URL logo yang sudah diupload
-  const [imageUrl, setImageUrl] = useState<string>("");
+  const [imageUrl, setImageUrl] = useState<string>(""); // URL logo yang sudah diupload
   const [companyAddress, setCompanyAddress] = useState<string>("");
   const [companyPhone, setCompanyPhone] = useState<string>("");
 
-  // Misalnya token didapat dari localStorage atau context
-  const token = localStorage.getItem("token");
+  // Preference tambahan: maksimal hari pelunasan yang dianggap aman
+  const [maxPelunasanHari, setMaxPelunasanHari] = useState<number>(30);
 
   useEffect(() => {
-    // Muat preferensi tampilan dari localStorage jika tersedia
-    const storedDarkMode = localStorage.getItem("darkMode");
-    const storedLanguage = localStorage.getItem("language");
-    const storedDateFormat = localStorage.getItem("dateFormat");
-    if (storedDarkMode !== null) setDarkMode(storedDarkMode === "true");
-    if (storedLanguage) setLanguage(storedLanguage);
-    if (storedDateFormat) setDateFormat(storedDateFormat);
+    const fetchData = async () => {
+      try {
+        const { data } = await getPreferences();
 
-    // Muat setting profil perusahaan dari localStorage
-    const storedCompanyName = localStorage.getItem("companyName");
-    const storedCompanyAddress = localStorage.getItem("companyAddress");
-    const storedCompanyPhone = localStorage.getItem("companyPhone");
-    const storedImageUrl = localStorage.getItem("companyLogo");
-    if (storedCompanyName) setCompanyName(storedCompanyName);
-    if (storedCompanyAddress) setCompanyAddress(storedCompanyAddress);
-    if (storedCompanyPhone) setCompanyPhone(storedCompanyPhone);
-    if (storedImageUrl) setImageUrl(storedImageUrl);
+        // Update state dengan data dari server
+        setDarkMode(data.darkMode);
+        setLanguage(data.language);
+        setDateFormat(data.dateFormat);
+        setCompanyName(data.companyName);
+        setImageUrl(data.companyLogo);
+        setCompanyAddress(data.companyAddress);
+        setCompanyPhone(data.companyPhone);
+        setMaxPelunasanHari(data.maxPelunasanHari);
+
+        // Simpan ke localStorage untuk keperluan halaman lain
+        localStorage.setItem("darkMode", data.darkMode || "false");
+        localStorage.setItem("language", data.language);
+        localStorage.setItem("dateFormat", data.dateFormat);
+        localStorage.setItem("companyName", data.companyName);
+        localStorage.setItem("companyAddress", data.companyAddress);
+        localStorage.setItem("companyPhone", data.companyPhone);
+        localStorage.setItem("companyLogo", data.companyLogo);
+        localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
+      } catch (error: any) {
+        console.error("Error fetching preferences:", error);
+        toast.error("Gagal mengambil preferensi dari server");
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Fungsi upload logo menggunakan file input dan fungsi photoUpload
@@ -51,43 +64,43 @@ const PreferencesPage: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Buat objek preferensi
+    // Buat objek preferensi untuk dikirim ke server
     const preferences = {
-      darkMode,
-      language,
-      dateFormat,
-      companyName,
-      companyLogo: imageUrl,
-      companyAddress,
-      companyPhone,
+      darkMode: darkMode || false,
+      language: language || "id",
+      dateFormat: dateFormat || "DD MMMM YYYY",
+      companyName: companyName || " ",
+      companyLogo: imageUrl || "",
+      companyAddress: companyAddress || "",
+      companyPhone: companyPhone || "",
+      maxPelunasanHari: maxPelunasanHari || 30,
     };
 
     try {
-      const res = await fetch("/api/preferences", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(preferences),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal menyimpan preferensi");
-      }
+      const { data } = await updatePreferences(preferences);
 
-      // Simpan juga ke localStorage jika diperlukan
-      localStorage.setItem("darkMode", darkMode.toString());
-      localStorage.setItem("language", language);
-      localStorage.setItem("dateFormat", dateFormat);
-      localStorage.setItem("companyName", companyName);
-      localStorage.setItem("companyAddress", companyAddress);
-      localStorage.setItem("companyPhone", companyPhone);
-      localStorage.setItem("companyLogo", imageUrl);
+      // Perbarui state dan localStorage dengan data terbaru dari server
+      setDarkMode(data.darkMode);
+      setLanguage(data.language);
+      setDateFormat(data.dateFormat);
+      setCompanyName(data.companyName);
+      setImageUrl(data.companyLogo);
+      setCompanyAddress(data.companyAddress);
+      setCompanyPhone(data.companyPhone);
+      setMaxPelunasanHari(data.maxPelunasanHari);
+
+      localStorage.setItem("darkMode", data.darkMode);
+      localStorage.setItem("language", data.language);
+      localStorage.setItem("dateFormat", data.dateFormat);
+      localStorage.setItem("companyName", data.companyName);
+      localStorage.setItem("companyAddress", data.companyAddress);
+      localStorage.setItem("companyPhone", data.companyPhone);
+      localStorage.setItem("companyLogo", data.companyLogo);
+      localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
 
       toast.success("Preferensi berhasil disimpan");
     } catch (error: any) {
-      console.error("Error:", error);
+      console.error("Error updating preferences:", error);
       toast.error(error.message);
     }
   };
@@ -204,6 +217,20 @@ const PreferencesPage: React.FC = () => {
               value={companyPhone}
               onChange={(e) => setCompanyPhone(e.target.value)}
               placeholder="Masukkan nomor HP perusahaan"
+              className="w-full rounded border border-stroke bg-gray px-4 py-3 text-black focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            />
+          </div>
+
+          {/* Maksimal Hari Pelunasan */}
+          <div className="mb-5">
+            <label className="mb-3 block text-sm font-medium text-black dark:text-white">
+              Maksimal Hari Pelunasan
+            </label>
+            <input
+              type="number"
+              value={maxPelunasanHari}
+              onChange={(e) => setMaxPelunasanHari(Number(e.target.value))}
+              placeholder="Masukkan maksimal hari pelunasan"
               className="w-full rounded border border-stroke bg-gray px-4 py-3 text-black focus:border-primary focus:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
             />
           </div>

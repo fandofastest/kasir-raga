@@ -6,7 +6,7 @@ export function withAuth(
   handler,
   { requiredRole = null, requiredPermissions = [] } = {},
 ) {
-  return async (req) => {
+  return async (req, context) => {
     const authHeader = req.headers.get("authorization");
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -49,7 +49,7 @@ export function withAuth(
       }
 
       req.user = decoded;
-      return handler(req);
+      return handler(req, context); // ✅ param kedua ikut disalurkan
     } catch (error) {
       return NextResponse.json({ error: "Invalid Token" }, { status: 403 });
     }

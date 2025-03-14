@@ -70,6 +70,11 @@ const menuGroups: MenuGroup[] = [
             route: "/history",
             requiredPermission: "history:view",
           },
+          {
+            label: "Draft",
+            route: "/draft",
+            requiredPermission: "draft:view",
+          },
         ],
       },
       {
