@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import React, { useState, useEffect, FormEvent, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import {
   fetchTransaction,
-  payHutang,
-  fetchSupplier, // Untuk memuat data supplier
+  payInstallment,
+  fetchSupplier,
 } from "@/lib/dataService";
 import Transaksi from "@/models/modeltsx/Transaksi";
+import PaymentHistoryDialog from "../piutang/PaymentHistoryDialog";
+import ActionDropdown from "@/app/piutang/ActionDropdown";
 
-interface HutangTransaction extends Transaksi {
-  sudah_dibayar?: number; // nominal yang sudah dibayar
+// Interface untuk transaksi hutang
+export interface HutangTransaction extends Transaksi {
   dp: number;
-  tenor: number;
-  cicilanPerBulan: number;
+  durasiPelunasan: number;
+  unitPelunasan: "hari" | "bulan";
+  tanggalMaksimalPelunasan: Date;
   jadwalPembayaran: {
     dueDate: Date;
     installment: number;
@@ -23,65 +26,50 @@ interface HutangTransaction extends Transaksi {
 }
 
 export default function HutangPage() {
-  // State transaksi hutang
   const [transactions, setTransactions] = useState<HutangTransaction[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // Filter: supplier, startDate, endDate
-  const [supplier, setSupplier] = useState<string>("");
+  // Filter state (supplier, tanggal)
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Data Supplier untuk select
-  const [supplierOptions, setSupplierOptions] = useState<any[]>([]);
-
-  // Modal state untuk pembayaran
+  // Modal state
   const [selectedTransaction, setSelectedTransaction] =
     useState<HutangTransaction | null>(null);
-  const [modalType, setModalType] = useState<"partial" | "settle" | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [modalType, setModalType] = useState<
+    "installment" | "settle" | "partial" | null
+  >(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
 
-  // Expanded rows (mobile)
-  const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  // Riwayat pembayaran
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] =
+    useState<boolean>(false);
+  const [historyTransaction, setHistoryTransaction] =
+    useState<HutangTransaction | null>(null);
 
-  // Sorting state
-  const [sortColumn, setSortColumn] = useState<string>("");
+  // State untuk tampilan mobile
+  const [expandedTransactions, setExpandedTransactions] = useState<string[]>(
+    [],
+  );
+
+  // State untuk sorting
+  const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // 1. Load data supplier
-  const loadSupplier = async () => {
-    try {
-      const res = await fetchSupplier();
-      setSupplierOptions(res.data); // res.data diharapkan berisi array supplier
-    } catch (err) {
-      console.error("Gagal memuat supplier:", err);
-    }
-  };
-
-  // 2. Load data hutang
-  const loadData = async (
-    overrideSortColumn?: string,
-    overrideSortDirection?: "asc" | "desc",
-  ) => {
+  // Fungsi untuk memuat data transaksi cicilan dengan filter
+  const loadData = async () => {
     setLoading(true);
     try {
       const params: { [key: string]: string } = {
+        metode_pembayaran: "cicilan",
         tipe_transaksi: "pembelian",
-        metode_pembayaran: "hutang",
       };
-      if (supplier) params.supplier = supplier;
+      if (selectedSupplierId) params.supplier = selectedSupplierId;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
-
-      // Sorting
-      const col = overrideSortColumn || sortColumn;
-      const dir = overrideSortDirection || sortDirection;
-      if (col) {
-        params.sortBy = col;
-        params.sortOrder = dir;
-      }
-
       const res = await fetchTransaction(params);
       setTransactions(res.data.transactions);
     } catch (err: any) {
@@ -91,97 +79,89 @@ export default function HutangPage() {
     }
   };
 
+  // Fungsi untuk memuat data supplier
+  const loadSuppliers = async () => {
+    try {
+      const res = await fetchSupplier();
+      setSuppliers(res.data);
+    } catch (err: any) {
+      console.error("Gagal memuat supplier:", err);
+    }
+  };
+
   useEffect(() => {
-    loadSupplier();
     loadData();
+    loadSuppliers();
   }, []);
 
-  // Hitung sisa hutang (outstanding)
-  const computeOutstanding = (trx: HutangTransaction) => {
-    const paid = trx.sudah_dibayar || 0;
-    const outstanding = trx.total_harga - trx.dp - paid;
-    return outstanding > 0 ? outstanding : 0;
+  // Fungsi untuk menghitung total pembayaran yang sudah dilakukan
+  const sumPaidInstallments = (trx: HutangTransaction) => {
+    return trx.jadwalPembayaran
+      .filter((inst) => inst.paid)
+      .reduce((sum, inst) => sum + inst.installment, 0);
   };
 
-  // Dapatkan tanggal jatuh tempo berikutnya
+  // Fungsi untuk menghitung sisa hutang
+  const computeSisaHutang = (trx: HutangTransaction) => {
+    const paidSum = sumPaidInstallments(trx);
+    const sisa = trx.total_harga - trx.dp - paidSum;
+    return sisa > 0 ? sisa : 0;
+  };
+
+  // Mengambil jatuh tempo berikutnya sebagai Date (untuk keperluan sorting)
+  const getNextDueDateAsDate = (trx: HutangTransaction): Date => {
+    const nextInst = trx.jadwalPembayaran.find((inst) => !inst.paid);
+    return nextInst
+      ? new Date(nextInst.dueDate)
+      : new Date(trx.tanggalMaksimalPelunasan);
+  };
+
+  // Format tampilan jatuh tempo
   const nextDueDate = (trx: HutangTransaction) => {
-    if (trx.jadwalPembayaran && trx.jadwalPembayaran.length > 0) {
-      const nextInst = trx.jadwalPembayaran.find((inst) => !inst.paid);
-      return nextInst
-        ? new Date(nextInst.dueDate).toLocaleDateString("id-ID", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })
-        : "Lunas";
-    }
-    return "N/A";
+    const dateObj = getNextDueDateAsDate(trx);
+    return dateObj.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   };
 
-  // Summary
-  const totalUtang = transactions.reduce(
-    (sum, trx) => sum + trx.total_harga,
-    0,
-  );
-  const totalPaid = transactions.reduce(
-    (sum, trx) => sum + (trx.sudah_dibayar || 0) + trx.dp,
-    0,
-  );
-  const totalOutstanding = transactions.reduce(
-    (sum, trx) => sum + computeOutstanding(trx),
-    0,
-  );
-
-  // Sorting
-  const handleSort = (column: string) => {
-    let newDirection: "asc" | "desc" = "asc";
-    if (sortColumn === column) {
-      newDirection = sortDirection === "asc" ? "desc" : "asc";
-    }
-    setSortColumn(column);
-    setSortDirection(newDirection);
-    loadData(column, newDirection);
-  };
-
-  const renderSortIndicator = (column: string) => {
-    if (sortColumn === column) {
-      return sortDirection === "asc" ? " ▲" : " ▼";
-    }
-    return "";
-  };
-
-  // Modal Payment
-  const openPartialModal = (trx: HutangTransaction) => {
+  // Modal: Buka untuk bayar cicilan
+  const openInstallmentModal = (trx: HutangTransaction) => {
     setSelectedTransaction(trx);
-    setModalType("partial");
-    setPaymentAmount(0);
+    setModalType("installment");
+    setPaymentAmount("0");
   };
 
+  // Modal: Buka untuk pelunasan
   const openSettleModal = (trx: HutangTransaction) => {
     setSelectedTransaction(trx);
     setModalType("settle");
-    setPaymentAmount(computeOutstanding(trx));
+    setPaymentAmount(computeSisaHutang(trx).toString());
   };
 
+  // Modal: Buka riwayat pembayaran
+  const openHistoryModal = (trx: HutangTransaction) => {
+    setHistoryTransaction(trx);
+    setIsHistoryDialogOpen(true);
+  };
+
+  // Fungsi submit modal pembayaran
   const handlePaymentSubmit = async () => {
     if (!selectedTransaction) return;
-    const outstanding = computeOutstanding(selectedTransaction);
+    const sisaHutang = computeSisaHutang(selectedTransaction);
 
-    if (modalType === "partial") {
-      if (paymentAmount <= 0 || paymentAmount > outstanding) {
-        toast.error("Jumlah pembayaran tidak valid untuk pembayaran sebagian");
-        return;
-      }
-    } else if (modalType === "settle") {
-      if (paymentAmount < outstanding) {
-        toast.error("Jumlah pembayaran kurang dari sisa hutang");
-        return;
-      }
+    if (modalType === "installment" && Number(paymentAmount) <= 0) {
+      toast.error("Jumlah pembayaran minimal harus lebih dari 0");
+      return;
     }
-
+    if (modalType === "settle" && Number(paymentAmount) < sisaHutang) {
+      toast.error("Jumlah pembayaran kurang dari sisa hutang.");
+      return;
+    }
     try {
-      const res = await payHutang(selectedTransaction._id, paymentAmount);
+      const res = await payInstallment(selectedTransaction._id, paymentAmount);
       if (res.data.status === 200) {
         toast.success("Pembayaran berhasil");
         setModalType(null);
@@ -195,41 +175,114 @@ export default function HutangPage() {
     }
   };
 
-  // Toggle row (mobile)
-  const toggleRow = (id: string) => {
-    if (expandedRows.includes(id)) {
-      setExpandedRows(expandedRows.filter((rowId) => rowId !== id));
-    } else {
-      setExpandedRows([...expandedRows, id]);
-    }
-  };
-
-  // Filter submit
+  // Handler untuk submit form filter
   const handleFilterSubmit = (e: FormEvent) => {
     e.preventDefault();
     loadData();
   };
 
+  // Summary: Total Hutang, Sudah Dibayar, dan Sisa Hutang
+  const totalHutang = transactions.reduce(
+    (sum, trx) => sum + trx.total_harga,
+    0,
+  );
+  const totalPaid = transactions.reduce(
+    (sum, trx) => sum + (trx.dp + sumPaidInstallments(trx)),
+    0,
+  );
+  const totalSisaHutang = transactions.reduce(
+    (sum, trx) => sum + computeSisaHutang(trx),
+    0,
+  );
+
+  // Handler untuk toggle tampilan detail transaksi (mobile)
+  const toggleTransaction = (id: string) => {
+    if (expandedTransactions.includes(id)) {
+      setExpandedTransactions(expandedTransactions.filter((tid) => tid !== id));
+    } else {
+      setExpandedTransactions([...expandedTransactions, id]);
+    }
+  };
+
+  // Handler klik header untuk sorting
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Gunakan useMemo untuk menghindari re-sorting di setiap render
+  const sortedTransactions = useMemo(() => {
+    // Copy data agar tidak mengubah state asli
+    const sorted = [...transactions];
+    sorted.sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      switch (sortField) {
+        case "no_transaksi":
+          aVal = a.no_transaksi || "";
+          bVal = b.no_transaksi || "";
+          return aVal.localeCompare(bVal);
+        case "tanggal":
+          aVal = new Date(a.createdAt).getTime();
+          bVal = new Date(b.createdAt).getTime();
+          return aVal - bVal;
+        case "supplier":
+          aVal = a.supplier?.nama || "";
+          bVal = b.supplier?.nama || "";
+          return aVal.localeCompare(bVal);
+        case "total_harga":
+          aVal = a.total_harga;
+          bVal = b.total_harga;
+          return aVal - bVal;
+        case "dp":
+          aVal = a.dp;
+          bVal = b.dp;
+          return aVal - bVal;
+        case "sisa_hutang":
+          aVal = computeSisaHutang(a);
+          bVal = computeSisaHutang(b);
+          return aVal - bVal;
+        case "jatuh_tempo":
+          aVal = getNextDueDateAsDate(a).getTime();
+          bVal = getNextDueDateAsDate(b).getTime();
+          return aVal - bVal;
+        default:
+          return 0;
+      }
+    });
+    if (sortDirection === "desc") sorted.reverse();
+    return sorted;
+  }, [transactions, sortField, sortDirection]);
+
   return (
     <div className="p-4 dark:bg-gray-900 dark:text-gray-100">
-      <h1 className="mb-4 text-2xl font-bold">Daftar Hutang</h1>
-      {/* Summary */}
-      <div className="mb-4 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
+      <h1 className="mb-4 text-2xl font-bold">Daftar Hutang Cicilan</h1>
+
+      {/* Summary Hutang */}
+      <div className="mb-4 rounded-md bg-gray-100 p-4 dark:bg-gray-800">
+        <p className="text-sm">
           Total Hutang:{" "}
-          {totalUtang.toLocaleString("id-ID", {
+          {totalHutang.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
-          })}{" "}
-          | Sudah Dibayar:{" "}
+          })}
+        </p>
+        <p className="text-sm">
+          Sudah Dibayar:{" "}
           {totalPaid.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
-          })}{" "}
-          | Sisa Hutang:{" "}
-          {totalOutstanding.toLocaleString("id-ID", {
+          })}
+        </p>
+        <p className="text-sm">
+          Sisa Hutang:{" "}
+          {totalSisaHutang.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
@@ -237,7 +290,7 @@ export default function HutangPage() {
         </p>
       </div>
 
-      {/* Filter Form */}
+      {/* Form Filter */}
       <form
         onSubmit={handleFilterSubmit}
         className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
@@ -245,14 +298,14 @@ export default function HutangPage() {
         <div>
           <label className="block text-sm font-medium">Supplier</label>
           <select
-            value={supplier}
-            onChange={(e) => setSupplier(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            value={selectedSupplierId}
+            onChange={(e) => setSelectedSupplierId(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
           >
             <option value="">Semua Supplier</option>
-            {supplierOptions.map((sup) => (
-              <option key={sup._id} value={sup._id}>
-                {sup.nama}
+            {suppliers.map((supplier) => (
+              <option key={supplier._id} value={supplier._id}>
+                {supplier.nama}
               </option>
             ))}
           </select>
@@ -263,7 +316,7 @@ export default function HutangPage() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
           />
         </div>
         <div>
@@ -272,7 +325,7 @@ export default function HutangPage() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
           />
         </div>
         <button
@@ -283,116 +336,169 @@ export default function HutangPage() {
         </button>
       </form>
 
-      {loading && <p className="text-gray-500">Memuat data...</p>}
+      {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Table Desktop */}
+      {/* Tampilan Desktop (Table) */}
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-full table-auto border-collapse border border-gray-300 dark:border-gray-600">
+        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
           <thead className="bg-gray-100 dark:bg-gray-700">
             <tr className="text-center">
+              {/* Kolom No tidak kita beri sorting */}
+              <th className="border px-4 py-2">No</th>
+
+              {/* Contoh header dengan sorting */}
               <th
-                className="cursor-pointer border px-4 py-2 text-sm font-medium"
+                className="cursor-pointer border px-4 py-2"
                 onClick={() => handleSort("no_transaksi")}
               >
-                No Transaksi{renderSortIndicator("no_transaksi")}
+                No Transaksi{" "}
+                {sortField === "no_transaksi"
+                  ? sortDirection === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
               </th>
+
               <th
-                className="cursor-pointer border px-4 py-2 text-sm font-medium"
+                className="cursor-pointer border px-4 py-2"
+                onClick={() => handleSort("tanggal")}
+              >
+                Tanggal{" "}
+                {sortField === "tanggal"
+                  ? sortDirection === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
+              </th>
+
+              <th
+                className="cursor-pointer border px-4 py-2"
                 onClick={() => handleSort("supplier")}
               >
-                Supplier{renderSortIndicator("supplier")}
+                Supplier{" "}
+                {sortField === "supplier"
+                  ? sortDirection === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
               </th>
+
               <th
-                className="cursor-pointer border px-4 py-2 text-sm font-medium"
-                onClick={() => handleSort("createdAt")}
-              >
-                Tanggal{renderSortIndicator("createdAt")}
-              </th>
-              <th
-                className="cursor-pointer border px-4 py-2 text-right text-sm font-medium"
+                className="cursor-pointer border px-4 py-2"
                 onClick={() => handleSort("total_harga")}
               >
-                Total Harga{renderSortIndicator("total_harga")}
+                Total Harga{" "}
+                {sortField === "total_harga"
+                  ? sortDirection === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
               </th>
-              <th className="border px-4 py-2 text-sm font-medium">
-                Sudah Dibayar
-              </th>
-              <th className="border px-4 py-2 text-sm font-medium">
-                Sisa Hutang
-              </th>
+
               <th
-                className="cursor-pointer border px-4 py-2 text-sm font-medium"
-                onClick={() => handleSort("jadwalPembayaran")}
+                className="cursor-pointer border px-4 py-2"
+                onClick={() => handleSort("dp")}
               >
-                Jatuh Tempo{renderSortIndicator("jadwalPembayaran")}
+                DP{" "}
+                {sortField === "dp"
+                  ? sortDirection === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
               </th>
-              <th className="border px-4 py-2 text-sm font-medium">Aksi</th>
+
+              <th
+                className="cursor-pointer border px-4 py-2"
+                onClick={() => handleSort("sisa_hutang")}
+              >
+                Sisa Hutang{" "}
+                {sortField === "sisa_hutang"
+                  ? sortDirection === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
+              </th>
+
+              <th
+                className="cursor-pointer border px-4 py-2"
+                onClick={() => handleSort("jatuh_tempo")}
+              >
+                Jatuh Tempo{" "}
+                {sortField === "jatuh_tempo"
+                  ? sortDirection === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
+              </th>
+
+              <th className="border px-4 py-2">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {transactions.map((trx) => {
-              const outstanding = computeOutstanding(trx);
+            {sortedTransactions.map((trx, idx) => {
+              const sisaHutang = computeSisaHutang(trx);
               return (
-                <tr
-                  key={trx._id}
-                  className="text-center odd:bg-white even:bg-gray-50 dark:odd:bg-gray-800 dark:even:bg-gray-700"
-                >
-                  <td className="border px-4 py-2 text-sm dark:text-white">
-                    {trx.no_transaksi}
-                  </td>
-                  <td className="border px-4 py-2 text-sm dark:text-white">
-                    {trx.supplier?.nama || "N/A"}
-                  </td>
-                  <td className="border px-4 py-2 text-sm dark:text-white">
+                <tr key={trx._id} className="text-center">
+                  <td className="border px-4 py-2">{idx + 1}</td>
+                  <td className="border px-4 py-2">{trx.no_transaksi}</td>
+                  <td className="border px-4 py-2">
                     {new Date(trx.createdAt).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
                     })}
                   </td>
-                  <td className="border px-4 py-2 text-right text-sm dark:text-white">
+                  <td className="border px-4 py-2">
+                    {trx.supplier?.nama || "N/A"}
+                  </td>
+                  <td className="border px-4 py-2">
                     {trx.total_harga.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
                       minimumFractionDigits: 0,
                     })}
                   </td>
-                  <td className="border px-4 py-2 text-sm dark:text-white">
-                    {trx.sudah_dibayar
-                      ? trx.sudah_dibayar.toLocaleString("id-ID", {
-                          style: "currency",
-                          currency: "IDR",
-                          minimumFractionDigits: 0,
-                        })
-                      : "0"}
+                  <td className="border px-4 py-2">
+                    {trx.dp ??
+                      (0).toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                      })}
                   </td>
-                  <td className="border px-4 py-2 text-sm dark:text-white">
-                    {outstanding.toLocaleString("id-ID", {
+                  <td className="border px-4 py-2">
+                    {sisaHutang.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
                       minimumFractionDigits: 0,
                     })}
                   </td>
-                  <td className="border px-4 py-2 text-sm dark:text-white">
-                    {nextDueDate(trx)}
-                  </td>
-                  <td className="border px-4 py-2 text-sm">
-                    <div className="flex justify-center space-x-2">
-                      <button
-                        onClick={() => openPartialModal(trx)}
-                        className="rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-                        disabled={outstanding <= 0}
-                      >
-                        Bayar Cicilan
-                      </button>
-                      <button
-                        onClick={() => openSettleModal(trx)}
-                        className="rounded bg-green-500 px-2 py-1 text-white hover:bg-green-600"
-                        disabled={outstanding <= 0}
-                      >
-                        Lunasi
-                      </button>
+                  <td className="border px-4 py-2">{nextDueDate(trx)}</td>
+                  <td className="border px-4 py-2">
+                    <div className="hidden space-x-2 md:flex">
+                      <div className="flex-1">
+                        <ActionDropdown
+                          trx={trx}
+                          outstanding={sisaHutang}
+                          openInstallmentModal={openInstallmentModal as any}
+                          openSettleModal={openSettleModal as any}
+                          openHistoryModal={openHistoryModal as any}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <button
+                          onClick={() =>
+                            window.open(
+                              `/invoice/${trx.no_transaksi}`,
+                              "_blank",
+                            )
+                          }
+                          className="w-full rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
+                        >
+                          Invoice
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -402,45 +508,41 @@ export default function HutangPage() {
         </table>
       </div>
 
-      {/* Mobile (Accordion) */}
+      {/* Tampilan Mobile (Accordion) */}
       <div className="block md:hidden">
-        {transactions.length > 0 ? (
-          transactions.map((trx) => {
-            const outstanding = computeOutstanding(trx);
+        {sortedTransactions.length > 0 ? (
+          sortedTransactions.map((trx) => {
+            const sisaHutang = computeSisaHutang(trx);
             return (
               <div
                 key={trx._id}
-                className="mb-2 rounded border bg-white p-4 dark:bg-gray-800"
+                className="border-t border-gray-300 px-4 py-4 dark:border-gray-600"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-bold">{trx.no_transaksi}</p>
-                    <p className="text-sm">{trx.supplier?.nama || "N/A"}</p>
+                    <p className="font-medium">{trx.no_transaksi}</p>
+                    <p className="text-sm">
+                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
                   </div>
                   <button
-                    onClick={() => toggleRow(trx._id)}
+                    onClick={() => toggleTransaction(trx._id)}
                     className="text-2xl font-bold"
                   >
-                    {expandedRows.includes(trx._id) ? "−" : "+"}
+                    {expandedTransactions.includes(trx._id) ? "−" : "+"}
                   </button>
                 </div>
-                {expandedRows.includes(trx._id) && (
+                {expandedTransactions.includes(trx._id) && (
                   <div className="mt-2 space-y-2">
-                    <p>
-                      <span className="font-medium">Tanggal: </span>
-                      {new Date(trx.createdAt)
-                        .toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })
-                        .replace("pukul ", "")
-                        .replace(",", "")}
+                    <p className="text-sm">
+                      <span className="font-medium">Supplier: </span>
+                      {trx.supplier?.nama || "N/A"}
                     </p>
-                    <p>
+                    <p className="text-sm">
                       <span className="font-medium">Total Harga: </span>
                       {trx.total_harga.toLocaleString("id-ID", {
                         style: "currency",
@@ -448,42 +550,44 @@ export default function HutangPage() {
                         minimumFractionDigits: 0,
                       })}
                     </p>
-                    <p>
-                      <span className="font-medium">Sudah Dibayar: </span>
-                      {trx.sudah_dibayar
-                        ? trx.sudah_dibayar.toLocaleString("id-ID", {
-                            style: "currency",
-                            currency: "IDR",
-                            minimumFractionDigits: 0,
-                          })
-                        : "0"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Sisa Hutang: </span>
-                      {outstanding.toLocaleString("id-ID", {
+                    <p className="text-sm">
+                      <span className="font-medium">DP: </span>
+                      {trx.dp.toLocaleString("id-ID", {
                         style: "currency",
                         currency: "IDR",
                         minimumFractionDigits: 0,
                       })}
                     </p>
-                    <p>
+                    <p className="text-sm">
+                      <span className="font-medium">Sisa Hutang: </span>
+                      {sisaHutang.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                      })}
+                    </p>
+                    <p className="text-sm">
                       <span className="font-medium">Jatuh Tempo: </span>
                       {nextDueDate(trx)}
                     </p>
                     <div className="mt-2 flex flex-col space-y-2">
                       <button
-                        onClick={() => openPartialModal(trx)}
+                        onClick={() => openInstallmentModal(trx)}
                         className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
-                        disabled={outstanding <= 0}
                       >
                         Bayar Cicilan
                       </button>
                       <button
                         onClick={() => openSettleModal(trx)}
                         className="rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
-                        disabled={outstanding <= 0}
                       >
                         Lunasi
+                      </button>
+                      <button
+                        onClick={() => openHistoryModal(trx)}
+                        className="rounded bg-gray-500 px-4 py-2 text-sm text-white hover:bg-gray-600"
+                      >
+                        Riwayat
                       </button>
                     </div>
                   </div>
@@ -493,37 +597,39 @@ export default function HutangPage() {
           })
         ) : (
           <p className="py-4 text-center text-gray-500">
-            Tidak ada transaksi hutang ditemukan.
+            Tidak ada transaksi cicilan ditemukan.
           </p>
         )}
       </div>
 
-      {/* Modal Pembayaran Hutang */}
+      {/* Modal Pembayaran */}
       {modalType && selectedTransaction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">
-              {modalType === "partial" ? "Bayar Cicilan" : "Lunasi Transaksi"}
+              {modalType === "installment"
+                ? "Bayar Cicilan"
+                : "Lunasi Transaksi"}
             </h2>
             <p className="mb-2">
               No. Transaksi: {selectedTransaction.no_transaksi}
             </p>
             <p className="mb-2">
-              Outstanding:{" "}
-              {computeOutstanding(selectedTransaction).toLocaleString("id-ID", {
+              Sisa Hutang:{" "}
+              {computeSisaHutang(selectedTransaction).toLocaleString("id-ID", {
                 style: "currency",
                 currency: "IDR",
                 minimumFractionDigits: 0,
               })}
             </p>
-            {modalType === "partial" && (
+            {modalType === "installment" && (
               <div className="mb-4">
                 <label className="mb-1 block">Jumlah Pembayaran</label>
                 <input
                   type="number"
-                  min={selectedTransaction.cicilanPerBulan}
+                  min={1}
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full rounded border px-3 py-2 dark:bg-gray-700 dark:text-white"
                 />
               </div>
@@ -533,9 +639,9 @@ export default function HutangPage() {
                 <label className="mb-1 block">Jumlah Pelunasan</label>
                 <input
                   type="number"
-                  min={computeOutstanding(selectedTransaction)}
+                  min={computeSisaHutang(selectedTransaction)}
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full rounded border px-3 py-2 dark:bg-gray-700 dark:text-white"
                 />
               </div>
@@ -554,11 +660,19 @@ export default function HutangPage() {
                 onClick={handlePaymentSubmit}
                 className="rounded bg-blue-600 px-4 py-2 text-sm text-white"
               >
-                {modalType === "partial" ? "Bayar Cicilan" : "Lunasi"}
+                {modalType === "installment" ? "Bayar Cicilan" : "Lunasi"}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Riwayat Pembayaran */}
+      {isHistoryDialogOpen && historyTransaction && (
+        <PaymentHistoryDialog
+          transaction={historyTransaction}
+          onClose={() => setIsHistoryDialogOpen(false)}
+        />
       )}
     </div>
   );

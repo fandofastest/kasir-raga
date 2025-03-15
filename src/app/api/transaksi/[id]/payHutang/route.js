@@ -32,7 +32,7 @@ export async function PUT(request, { params }) {
       );
     }
 
-    if (transaction.metode_pembayaran !== "hutang") {
+    if (transaction.metode_pembayaran !== "cicilan") {
       return NextResponse.json(
         { error: "Transaksi ini bukan transaksi hutang" },
         { status: 400 },

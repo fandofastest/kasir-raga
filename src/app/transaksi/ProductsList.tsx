@@ -102,12 +102,14 @@ export default function ProductsList({
       return;
     }
 
-    // Bentuk CartItem
+    // Update harga pada satuan yang dipilih sesuai dengan unitPrice yang sudah diubah
+    const updatedChosenSatuan = { ...chosenSatuan, harga: unitPrice };
+
+    // Buat cart item dengan satuan yang sudah diperbarui
     const cartItem: CartItem = {
       ...activeProduct,
-      // Hanya 1 satuan terpilih
-      satuans: [chosenSatuan],
-      harga: unitPrice,
+      satuans: [updatedChosenSatuan],
+      harga: unitPrice, // opsional, karena perhitungan total memakai satuans[0].harga
       quantity,
     };
 

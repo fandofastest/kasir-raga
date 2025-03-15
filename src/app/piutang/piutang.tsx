@@ -73,6 +73,7 @@ export default function PiutangPage() {
     try {
       const params: { [key: string]: string } = {
         metode_pembayaran: "cicilan",
+        tipe_transaksi: "penjualan",
       };
       if (selectedCustomerId) params.pelanggan = selectedCustomerId;
       if (startDate) params.startDate = startDate;
@@ -482,11 +483,12 @@ export default function PiutangPage() {
                     })}
                   </td>
                   <td className="border px-4 py-2">
-                    {trx.dp.toLocaleString("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      minimumFractionDigits: 0,
-                    })}
+                    {trx.dp ??
+                      (0).toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                      })}
                   </td>
                   <td className="border px-4 py-2">
                     {sisaUtang.toLocaleString("id-ID", {

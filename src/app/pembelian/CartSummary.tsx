@@ -48,6 +48,11 @@ export default function CartSummary({
   const [discount, setDiscount] = useState<string>(""); // string agar mudah diinput
   const discountValue = Number(discount) || 0;
 
+  // Tambahan state untuk metode cicilan
+  const [dp, setDp] = useState<string>("0");
+  const [durasiPelunasan, setDurasiPelunasan] = useState<number>(0);
+  const [unitPelunasan, setUnitPelunasan] = useState<"hari" | "bulan">("hari");
+
   // Staf (Tukang Antar & Bongkar)
   const [staffOptions, setStaffOptions] = useState<
     { _id: string; name: string; role: string }[]
@@ -140,6 +145,12 @@ export default function CartSummary({
         setDiscount(String(draft.diskon));
       }
       if (draft.metode_pembayaran) setPaymentMethod(draft.metode_pembayaran);
+      // Jika draft memakai cicilan, set juga DP, durasi, unit pelunasan
+      if (draft.metode_pembayaran === "cicilan") {
+        if (draft.dp) setDp(String(draft.dp));
+        if (draft.durasiPelunasan) setDurasiPelunasan(draft.durasiPelunasan);
+        if (draft.unitPelunasan) setUnitPelunasan(draft.unitPelunasan);
+      }
 
       // Transform produk => cart
       if (draft.produk && Array.isArray(draft.produk)) {
@@ -220,6 +231,11 @@ export default function CartSummary({
       tipe_transaksi: "pembelian",
       keterangan,
       diskon: enableDiscount ? discountValue : 0,
+      ...(paymentMethod === "cicilan" && {
+        dp,
+        durasiPelunasan,
+        unitPelunasan,
+      }),
     };
 
     try {
@@ -236,10 +252,7 @@ export default function CartSummary({
           toast.error(res.data.error || "Gagal menyimpan draft");
         } else {
           toast.success("Draft pembelian berhasil disimpan");
-          // Boleh update cart atau redirect
-          // example: redirect to /transaksi?draftId=<new ID>
           router.push(`/pembelian`);
-
           updateCart([]);
         }
       }
@@ -272,10 +285,19 @@ export default function CartSummary({
       staff_bongkar: selectedUnloading || null,
       total_harga: totalPrice,
       metode_pembayaran: paymentMethod,
-      status_transaksi: paymentMethod === "hutang" ? "belum_lunas" : "lunas",
+      // Jika metode adalah hutang atau cicilan, status tetap "belum_lunas"
+      status_transaksi:
+        paymentMethod === "hutang" || paymentMethod === "cicilan"
+          ? "belum_lunas"
+          : "lunas",
       tipe_transaksi: "pembelian",
       keterangan,
       diskon: enableDiscount ? discountValue : 0,
+      ...(paymentMethod === "cicilan" && {
+        dp,
+        durasiPelunasan,
+        unitPelunasan,
+      }),
     };
 
     try {
@@ -399,7 +421,9 @@ export default function CartSummary({
                     <div className="flex items-center space-x-2">
                       {item.image && (
                         <Image
-                          src={`/api/image-proxy?url=${encodeURIComponent(item.image)}`}
+                          src={`/api/image-proxy?url=${encodeURIComponent(
+                            item.image,
+                          )}`}
                           alt={item.nama_produk}
                           width={48}
                           height={48}
@@ -464,7 +488,7 @@ export default function CartSummary({
             )}
           </div>
 
-          {/* Bagian Bawah: Diskon, Tombol Bayar, Tombol Simpan Draft */}
+          {/* Bagian Bawah: Diskon, Metode Pembayaran, Cicilan, Tombol Bayar/Simpan Draft */}
           <div className="sticky bottom-0 border-t border-stroke bg-white p-4 shadow-md dark:border-strokedark dark:bg-boxdark">
             <div className="mb-3 flex items-center justify-between text-sm font-semibold">
               <span>Total:</span>
@@ -478,11 +502,19 @@ export default function CartSummary({
                 <select
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  onChange={(e) => {
+                    setPaymentMethod(e.target.value);
+                    if (e.target.value !== "cicilan") {
+                      setDurasiPelunasan(0);
+                      setUnitPelunasan("hari");
+                      setDp("0");
+                    }
+                  }}
                 >
                   <option value="tunai">Tunai</option>
                   <option value="bank_transfer">Bank Transfer</option>
-                  <option value="hutang">Hutang</option>
+                  {/* <option value="hutang">Hutang</option> */}
+                  <option value="cicilan">Cicilan</option>
                 </select>
               </div>
               <div>
@@ -498,29 +530,58 @@ export default function CartSummary({
                 />
               </div>
             </div>
-            <div>
-              <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
-                Diskon
-              </h3>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={enableDiscount}
-                  onChange={() => setEnableDiscount(!enableDiscount)}
-                  className="h-4 w-4"
-                />
-                {enableDiscount && (
-                  <input
-                    type="number"
-                    min={0}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    placeholder="Masukkan diskon"
-                    value={discount}
-                    onChange={(e) => setDiscount(e.target.value)}
-                  />
-                )}
+
+            {/* Tampilan input cicilan jika metode cicilan dipilih */}
+            {paymentMethod === "cicilan" && (
+              <div className="mt-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Down Payment (DP)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      placeholder="Masukkan DP"
+                      value={dp}
+                      onChange={(e) => setDp(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Durasi Pelunasan
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      placeholder="Masukkan durasi"
+                      value={durasiPelunasan}
+                      onChange={(e) =>
+                        setDurasiPelunasan(Number(e.target.value))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Unit Pelunasan
+                  </label>
+                  <select
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    value={unitPelunasan}
+                    onChange={(e) =>
+                      setUnitPelunasan(e.target.value as "hari" | "bulan")
+                    }
+                  >
+                    <option value="hari">Hari</option>
+                    <option value="bulan">Bulan</option>
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
+
             <div className="mt-4 flex space-x-2">
               <button
                 className="flex-1 rounded-md bg-blue-500 py-2 text-white hover:bg-blue-600"
@@ -582,7 +643,9 @@ export default function CartSummary({
                     <div className="flex items-center space-x-2">
                       {item.image && (
                         <Image
-                          src={`/api/image-proxy?url=${encodeURIComponent(item.image)}`}
+                          src={`/api/image-proxy?url=${encodeURIComponent(
+                            item.image,
+                          )}`}
                           alt={item.nama_produk}
                           width={40}
                           height={40}
@@ -610,11 +673,19 @@ export default function CartSummary({
             <select
               className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => {
+                setPaymentMethod(e.target.value);
+                if (e.target.value !== "cicilan") {
+                  setDurasiPelunasan(0);
+                  setUnitPelunasan("hari");
+                  setDp("0");
+                }
+              }}
             >
               <option value="tunai">Tunai</option>
               <option value="bank_transfer">Bank Transfer</option>
               <option value="hutang">Hutang</option>
+              <option value="cicilan">Cicilan</option>
             </select>
           </div>
           <div className="mt-4">
@@ -627,27 +698,56 @@ export default function CartSummary({
               onChange={(e) => setKeterangan(e.target.value)}
             />
           </div>
-          <div className="mt-4">
-            <label className="block text-sm font-medium">Diskon</label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={enableDiscount}
-                onChange={() => setEnableDiscount(!enableDiscount)}
-                className="h-4 w-4"
-              />
-              {enableDiscount && (
-                <input
-                  type="number"
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  min={0}
-                  placeholder="Masukkan diskon"
-                  value={discount}
-                  onChange={(e) => setDiscount(e.target.value)}
-                />
-              )}
+
+          {/* Input Cicilan di Mobile */}
+          {paymentMethod === "cicilan" && (
+            <div className="mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">
+                    Down Payment (DP)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    placeholder="Masukkan DP"
+                    value={dp}
+                    onChange={(e) => setDp(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">
+                    Durasi Pelunasan
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    placeholder="Masukkan durasi"
+                    value={durasiPelunasan}
+                    onChange={(e) => setDurasiPelunasan(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+              <div className="mt-2">
+                <label className="block text-sm font-medium">
+                  Unit Pelunasan
+                </label>
+                <select
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  value={unitPelunasan}
+                  onChange={(e) =>
+                    setUnitPelunasan(e.target.value as "hari" | "bulan")
+                  }
+                >
+                  <option value="hari">Hari</option>
+                  <option value="bulan">Bulan</option>
+                </select>
+              </div>
             </div>
-          </div>
+          )}
+
           {/* Tombol Checkout Mobile */}
           <button
             className="mt-4 w-full rounded bg-blue-500 py-2 text-white hover:bg-blue-600"
