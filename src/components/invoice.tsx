@@ -131,11 +131,14 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
         {/* Kiri: Info Perusahaan */}
         <div className="flex-1">
           {companyLogo && (
-            <Image
-              src={`/api/image-proxy?url=${encodeURIComponent(companyLogo)}`}
-              alt="Company Logo"
-              className="mb-2 h-16 object-contain"
-            />
+            <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
+              <Image
+                src={`/api/image-proxy?url=${encodeURIComponent(companyLogo)}`}
+                alt="Product"
+                fill
+                className="rounded-md object-cover"
+              />
+            </div>
           )}
           <h2 className="text-base font-bold">{companyName}</h2>
           <p>{companyAddress}</p>

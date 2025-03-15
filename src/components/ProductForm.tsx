@@ -14,161 +14,21 @@ import {
   updateProduct,
   createProduct,
   photoUpload,
+  fetchSupplier,
 } from "@/lib/dataService";
+import StaffFormModal from "@/app/staff/StaffForm";
+import SupplierFormModal from "@/app/supplier/SupplierForm";
 
-// -------------------------------------------------------------------
-// Sub-komponen: AddSatuanModal
-// -------------------------------------------------------------------
-function AddSatuanModal({
-  isOpen,
-  onClose,
-  onCreatedSatuan,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onCreatedSatuan: (newSat: { _id: string; nama: string }) => void;
-}) {
-  const [satName, setSatName] = useState("");
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!satName.trim()) return;
-    try {
-      const res = await addSatuan(satName);
-      const data = res.data; // { _id, nama } dari server
-      onCreatedSatuan(data);
-      onClose();
-    } catch (error) {
-      toast.error("Terjadi kesalahan saat menambah satuan.");
-      console.error(error);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-black bg-opacity-50"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-sm rounded-lg bg-white p-4 shadow dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b pb-2 dark:border-gray-700">
-          <h2 className="text-lg font-semibold dark:text-white">
-            Tambah Satuan
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <XCircleIcon className="h-5 w-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <input
-            type="text"
-            placeholder="Nama Satuan"
-            value={satName}
-            onChange={(e) => setSatName(e.target.value)}
-            className="w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-          />
-          <button
-            type="submit"
-            className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-          >
-            Simpan
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+interface Supplier {
+  _id?: string;
+  nama: string;
+  alamat: string;
+  kontak: string;
 }
-
-// -------------------------------------------------------------------
-// Sub-komponen: RemoveSatuanModal
-// -------------------------------------------------------------------
-function RemoveSatuanModal({
-  isOpen,
-  onClose,
-  satuanOptions,
-  onDeleteSatuan,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  satuanOptions: { _id: string; nama: string }[];
-  onDeleteSatuan: (id: string) => void;
-}) {
-  const [selectedSatuanId, setSelectedSatuanId] = useState("");
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedSatuanId) return;
-    try {
-      await deleteSatuan(selectedSatuanId);
-      onDeleteSatuan(selectedSatuanId);
-      onClose();
-    } catch (error) {
-      toast.error("Terjadi kesalahan saat menghapus satuan.");
-      console.error(error);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-black bg-opacity-50"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-sm rounded-lg bg-white p-4 shadow dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b pb-2 dark:border-gray-700">
-          <h2 className="text-lg font-semibold dark:text-white">
-            Hapus Satuan
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <XCircleIcon className="h-5 w-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <select
-            className="w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-            value={selectedSatuanId}
-            onChange={(e) => setSelectedSatuanId(e.target.value)}
-          >
-            <option value="">--Pilih Satuan--</option>
-            {satuanOptions.map((opt) => (
-              <option key={opt._id} value={opt._id}>
-                {opt.nama}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="w-full rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-          >
-            Hapus
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// -------------------------------------------------------------------
-// Komponen Utama: ProductFormModal
-// -------------------------------------------------------------------
 
 interface SatuanPembelian {
-  _id: string; // ID unik baris (untuk form)
-  satuanId: string; // _id dari dokumen satuan yang dipilih
+  _id: string;
+  satuanId: string;
   konversi: number;
   harga: number;
 }
@@ -196,9 +56,9 @@ export default function ProductFormModal({
   const [namaProduk, setNamaProduk] = useState("");
   const [hargaModal, setHargaModal] = useState("");
   const [jumlah, setJumlah] = useState("");
-  const [supplier, setSupplier] = useState("");
-  // const [sku, setSku] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+
+  // Ubah ke object Supplier
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
 
   // Brand & Kategori
   const [brand, setBrand] = useState<{ _id: string; nama: string } | null>(
@@ -209,28 +69,36 @@ export default function ProductFormModal({
     nama: string;
   } | null>(null);
 
-  // Data satuans di form (multi baris)
+  // Data satuans di form
   const [satuans, setSatuans] = useState<SatuanPembelian[]>([]);
-  // Daftar satuan dari DB
   const [satuanOptions, setSatuanOptions] = useState<SatuanData[]>([]);
+  const [supplierOptions, setSupplierOptions] = useState<Supplier[]>([]);
+
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Toggle modal tambah/hapus satuan
+  // Modal tambah/hapus satuan
   const [showAddSatuan, setShowAddSatuan] = useState(false);
   const [showRemoveSatuan, setShowRemoveSatuan] = useState(false);
 
+  // ---- (1) Tambah state modal untuk Staff ----
+  const [showStaffModal, setShowStaffModal] = useState(false);
+
+  // Token
   const token =
     typeof window !== "undefined" ? localStorage.getItem("mytoken") : null;
-  async function getSatuan() {
+
+  // Ambil daftar satuan & supplier
+  async function loadDataAwal() {
     try {
-      const res = await fetchSatuan();
-      const data = res.data;
-      setSatuanOptions(data);
+      const satuanRes = await fetchSatuan();
+      const supplierRes = await fetchSupplier();
+      setSatuanOptions(satuanRes.data);
+      setSupplierOptions(supplierRes.data);
     } catch (error) {
-      console.error("Failed to fetch satuan:", error);
+      console.error("Failed to fetch:", error);
     }
   }
-  // Fetch data satuan saat mount
 
   function generateUUID() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
@@ -243,19 +111,26 @@ export default function ProductFormModal({
     );
   }
 
-  // Set data form jika mode edit
   useEffect(() => {
-    getSatuan();
+    loadDataAwal();
+  }, []);
 
+  useEffect(() => {
     if (product) {
       setNamaProduk(product.nama_produk);
       setHargaModal(product.harga_modal.toString());
       setJumlah(product.jumlah.toString());
-      setSupplier(product.supplier);
-      // setSku(product.sku);
-      setImageUrl(product.image);
+
+      // Pastikan product.supplier adalah object { _id, nama, dll }
+      if (product.supplier && typeof product.supplier === "object") {
+        setSupplier(product.supplier as Supplier);
+      } else {
+        setSupplier(null);
+      }
+
       setBrand(product.brand || null);
       setKategori(product.kategori || null);
+      setImageUrl(product.image);
 
       if (Array.isArray(product.satuans) && product.satuans.length > 0) {
         setSatuans(
@@ -272,19 +147,20 @@ export default function ProductFormModal({
         ]);
       }
     } else {
+      // Reset form
       setNamaProduk("");
       setHargaModal("");
       setJumlah("");
-      setSupplier("");
-      // setSku("");
-      setImageUrl("");
+      setSupplier(null);
       setBrand(null);
       setKategori(null);
+      setImageUrl("");
       setSatuans([
         { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
       ]);
     }
   }, [product]);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -296,8 +172,7 @@ export default function ProductFormModal({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
+  // Satuan row handling
   const addSatuanRow = () => {
     setSatuans((prev) => [
       ...prev,
@@ -332,6 +207,7 @@ export default function ProductFormModal({
     e.preventDefault();
     if (!token) return;
     setLoading(true);
+
     const filteredSatuans = satuans
       .filter((s) => s.satuanId !== "")
       .map((s) => ({
@@ -340,15 +216,15 @@ export default function ProductFormModal({
         harga: s.harga,
       }));
 
+    // Supplier kita kirim minimal { _id } atau object penuh jika di-backend butuh
     const productData = {
       nama_produk: namaProduk,
       harga_modal: parseFloat(hargaModal),
       jumlah,
-      supplier,
-      // sku,
-      image: imageUrl,
+      supplier: supplier ? { _id: supplier._id, nama: supplier.nama } : null,
       brand,
       kategori,
+      image: imageUrl,
       satuans: filteredSatuans,
     };
 
@@ -358,12 +234,9 @@ export default function ProductFormModal({
     } else {
       res = await createProduct(productData);
     }
-    // console.log("====================================");
-    // console.log(res);
-    // console.log("====================================");
 
     setLoading(false);
-    const responseData = await res;
+
     if (res.status === 200 || res.status === 201) {
       toast.success(
         product ? "Produk berhasil diupdate!" : "Produk berhasil ditambahkan!",
@@ -371,31 +244,20 @@ export default function ProductFormModal({
       onSubmit();
       onClose();
     } else {
+      const responseData = await res;
       toast.error(`Gagal menyimpan produk: ${responseData.error}`);
     }
   };
 
+  // Modal tambah/hapus satuan
   const handleCreatedSatuan = (newSat: { _id: string; nama: string }) => {
     setSatuanOptions((prev) => [...prev, newSat]);
   };
-
   const handleDeleteSatuan = (id: string) => {
     setSatuanOptions((prev) => prev.filter((item) => item._id !== id));
   };
 
-  const getAvailableOptionsForRow = (rowIndex: number) => {
-    const usedSatuanIds = satuans
-      .filter((_, i) => i !== rowIndex)
-      .map((row) => row.satuanId)
-      .filter(Boolean);
-    return satuanOptions.filter((opt) => {
-      const thisRowSatuanId = satuans[rowIndex].satuanId;
-      if (usedSatuanIds.includes(opt._id) && opt._id !== thisRowSatuanId) {
-        return false;
-      }
-      return true;
-    });
-  };
+  if (!isOpen) return null;
 
   return (
     <>
@@ -460,30 +322,42 @@ export default function ProductFormModal({
                   className="w-full rounded-lg border p-2 dark:bg-gray-800"
                 />
               </div>
+
+              {/*  (2) Ubah jadi SELECT + tombol + */}
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Supplier
                 </label>
-                <input
-                  type="text"
-                  placeholder="Supplier"
-                  value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
-                  className="w-full rounded-lg border p-2 dark:bg-gray-800"
-                />
+                <div className="flex items-center gap-2">
+                  <select
+                    className="w-full rounded-lg border p-2 dark:bg-gray-800"
+                    value={supplier?._id || ""}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const foundSup = supplierOptions.find(
+                        (sup) => sup._id === selectedId,
+                      );
+                      setSupplier(foundSup || null);
+                    }}
+                  >
+                    <option value="">--Pilih Supplier--</option>
+                    {supplierOptions.map((sup) => (
+                      <option key={sup._id} value={sup._id}>
+                        {sup.nama}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Tombol + untuk buka modal Staff (atau Supplier) */}
+                  <button
+                    type="button"
+                    onClick={() => setShowStaffModal(true)}
+                    className="rounded bg-green-500 px-2 py-1 text-white hover:bg-green-600"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-              {/* <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  SKU
-                </label>
-                <input
-                  type="text"
-                  placeholder="SKU"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  className="w-full rounded-lg border p-2 dark:bg-gray-800"
-                />
-              </div> */}
+
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Upload Gambar
@@ -558,6 +432,7 @@ export default function ProductFormModal({
                   .filter((_, i) => i !== idx)
                   .map((row) => row.satuanId)
                   .filter(Boolean);
+
                 const availableOptions = satuanOptions.filter((opt) => {
                   const thisRowSatuanId = satuans[idx].satuanId;
                   if (
@@ -581,6 +456,7 @@ export default function ProductFormModal({
                         onChange={(e) => {
                           const newVal = e.target.value;
                           updateSatuan(idx, "satuanId", newVal);
+                          // Menambahkan row baru otomatis jika user memilih satuan di baris terakhir
                           if (idx === satuans.length - 1 && newVal) {
                             addSatuanRow();
                           }
@@ -665,17 +541,17 @@ export default function ProductFormModal({
         </div>
       </div>
 
-      <AddSatuanModal
-        isOpen={showAddSatuan}
-        onClose={() => setShowAddSatuan(false)}
-        onCreatedSatuan={handleCreatedSatuan}
-      />
-
-      <RemoveSatuanModal
-        isOpen={showRemoveSatuan}
-        onClose={() => setShowRemoveSatuan(false)}
-        satuanOptions={satuanOptions}
-        onDeleteSatuan={handleDeleteSatuan}
+      {/* Di sini panggil modal Tambah/Hapus Satuan (jika Anda punya) */}
+      {/* Modal Staff untuk Supplier (atau menyesuaikan) */}
+      <SupplierFormModal
+        isOpen={showStaffModal}
+        onClose={() => setShowStaffModal(false)}
+        onSubmit={() => {
+          // Setelah sukses tambah staff/supplier (tergantung),
+          // Anda bisa reload data supplier agar langsung tampil di select
+          loadDataAwal();
+          setShowStaffModal(false);
+        }}
       />
     </>
   );
