@@ -1,59 +1,34 @@
 // middleware.ts
-import { withAuth } from "next-auth/middleware";
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export default withAuth(
-  // 1) FUNGSI MIDDLEWARE KUSTOM
-  function middleware(req: NextRequest) {
-    // Tangani preflight request (OPTIONS) agar tidak terblokir oleh CORS
-    if (req.method === "OPTIONS") {
-      const headers = new Headers({
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      });
-      return new Response(null, { status: 200, headers });
-    }
+export function middleware(request: NextRequest) {
+  const origin = request.headers.get("origin") || "";
+  const allowedOrigins = ["*"];
 
-    // Untuk request lain, buat NextResponse dan set header CORS
-    const res = NextResponse.next();
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set(
+  const response = NextResponse.next();
+
+  if (allowedOrigins.includes(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set(
       "Access-Control-Allow-Methods",
       "GET, POST, PUT, DELETE, OPTIONS",
     );
-    res.headers.set(
+    response.headers.set(
       "Access-Control-Allow-Headers",
       "Content-Type, Authorization",
     );
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+  }
 
-    return res;
-  },
+  // Handle preflight OPTIONS request
+  if (request.method === "OPTIONS") {
+    return new NextResponse(null, { status: 200, headers: response.headers });
+  }
 
-  // 2) KONFIGURASI NEXT-AUTH
-  {
-    pages: {
-      signIn: "/auth/signin",
-      signOut: "/auth/signout",
-    },
-    callbacks: {
-      authorized: ({ req, token }) => {
-        // Endpoint API bebas akses tanpa login
-        if (req.nextUrl.pathname.startsWith("/api")) {
-          return true;
-        }
-        // Halaman invoice dapat diakses publik
-        if (req.nextUrl.pathname.startsWith("/invoice")) {
-          return true;
-        }
-        // Endpoint lainnya memerlukan token
-        return !!token;
-      },
-    },
-  },
-);
+  return response;
+}
 
-// 3) MATCHER UNTUK ROUTE YANG DIPROTEKSI & BUTUH CORS
+// Atur middleware ini hanya untuk route API kamu
 export const config = {
-  matcher: ["/:path*"],
+  matcher: "/api/:path*",
 };

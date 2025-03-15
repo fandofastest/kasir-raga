@@ -4,6 +4,7 @@ import React, { useState, useEffect, FormEvent } from "react";
 import toast from "react-hot-toast";
 import { photoUpload } from "@/lib/dataService"; // Fungsi upload foto yang sudah diimplementasikan
 import { getPreferences, updatePreferences } from "@/lib/dataService";
+import Image from "next/image";
 
 const PreferencesPage: React.FC = () => {
   // Preferensi tampilan
@@ -187,8 +188,14 @@ const PreferencesPage: React.FC = () => {
             />
             {/* Preview logo jika sudah diupload */}
             {imageUrl && (
-              <div className="mt-3">
-                <img src={imageUrl} alt="Logo Preview" className="max-h-20" />
+              <div className="mt-2 flex ">
+                <Image
+                  src={`/api/image-proxy?url=${encodeURIComponent(imageUrl)}`}
+                  alt="Logo Preview"
+                  height={100}
+                  width={100}
+                  className="max-h-20 rounded-lg object-cover "
+                />
               </div>
             )}
           </div>

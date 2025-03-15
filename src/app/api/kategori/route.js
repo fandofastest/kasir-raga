@@ -44,9 +44,52 @@ export const DELETE = withAuth(async (req) => {
   return NextResponse.json({ message: "Kategori deleted successfully" });
 });
 
+// ✅ Handler PUT untuk update brand
 export const PUT = withAuth(async (req) => {
   await connectToDatabase();
-  const { id, ...updateData } = await req.json();
-  await Kategori.findByIdAndUpdate(id, updateData);
-  return NextResponse.json({ message: "Kategori updated successfully" });
+
+  const { id, nama, deskripsi } = await req.json();
+  console.log("Data diterima untuk update:", { id, nama, deskripsi });
+
+  if (!id || !nama) {
+    return NextResponse.json(
+      { error: "ID dan Nama wajib diisi" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    // Cari data brand berdasarkan ID
+    let brand = await Kategori.findById(id);
+
+    if (!brand) {
+      return NextResponse.json(
+        { error: "Brand tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
+    // Update data brand
+    brand.nama = nama;
+    if (deskripsi !== undefined) {
+      brand.deskripsi = deskripsi;
+    }
+    await brand.save();
+
+    console.log("Brand berhasil diperbarui:", brand);
+
+    return NextResponse.json(
+      { data: brand, message: "Brand updated successfully" },
+      {
+        status: 200,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      },
+    );
+  } catch (error) {
+    console.error("Error saat update brand:", error);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan saat update brand" },
+      { status: 500 },
+    );
+  }
 });

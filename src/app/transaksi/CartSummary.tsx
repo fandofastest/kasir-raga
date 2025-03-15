@@ -496,7 +496,7 @@ function CartSummary({
                 <div className="flex items-center space-x-2">
                   {item.image && (
                     <Image
-                      src={item.image}
+                      src={`/api/image-proxy?url=${encodeURIComponent(item.image)}`}
                       alt={item.nama_produk}
                       width={40}
                       height={40}
@@ -725,7 +725,7 @@ function CartSummary({
                     <div className="flex items-center space-x-2">
                       {item.image && (
                         <Image
-                          src={item.image}
+                          src={`/api/image-proxy?url=${encodeURIComponent(item.image)}`}
                           alt={item.nama_produk}
                           width={48}
                           height={48}

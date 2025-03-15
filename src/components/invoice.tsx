@@ -5,6 +5,7 @@ import Transaksi from "@/models/modeltsx/Transaksi";
 import QRCode from "react-qr-code";
 import { useSession } from "next-auth/react";
 import { getPreferences } from "@/lib/dataService"; // Pastikan fungsi ini sudah diimplementasikan
+import Image from "next/image";
 
 interface InvoiceProps {
   transaksi: Transaksi;
@@ -130,8 +131,8 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
         {/* Kiri: Info Perusahaan */}
         <div className="flex-1">
           {companyLogo && (
-            <img
-              src={companyLogo}
+            <Image
+              src={`/api/image-proxy?url=${encodeURIComponent(companyLogo)}`}
               alt="Company Logo"
               className="mb-2 h-16 object-contain"
             />

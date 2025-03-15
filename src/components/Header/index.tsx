@@ -71,7 +71,7 @@ const Header = (props: {
             <Image
               width={32}
               height={32}
-              src={logoUrl || "/images/logo/logo-icon.svg"}
+              src={`/api/image-proxy?url=${encodeURIComponent(logoUrl)}`}
               alt="Logo"
             />
           </Link>

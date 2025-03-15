@@ -112,7 +112,7 @@ const ProductList = () => {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
                     <Image
-                      src={product.image ?? "/images/product/product-01.png"}
+                      src={`/api/image-proxy?url=${encodeURIComponent(product.image)}`}
                       alt="Product"
                       fill
                       className="rounded-md object-cover"
@@ -178,7 +178,7 @@ const ProductList = () => {
                 <div className="flex items-center gap-4">
                   <div className="relative h-16 w-16 rounded-md border border-gray-300">
                     <Image
-                      src={product.image ?? "/images/product/product-01.png"}
+                      src={`/api/image-proxy?url=${encodeURIComponent(product.image)}`}
                       alt="Product"
                       fill
                       className="rounded-md object-cover"

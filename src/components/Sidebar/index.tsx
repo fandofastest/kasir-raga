@@ -236,7 +236,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
         <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
           <Link href="/">
             <div className="flex items-center gap-2">
-              <Image width={60} height={32} src={logoUrl} alt="Logo" priority />
+              <Image
+                width={60}
+                height={32}
+                src={`/api/image-proxy?url=${encodeURIComponent(logoUrl)}`}
+                alt="Logo"
+                priority
+              />
               <span className=" font-bold text-black dark:text-white">
                 {storeName}
               </span>

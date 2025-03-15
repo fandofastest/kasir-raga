@@ -183,7 +183,11 @@ export default function ProductsList({
                 {/* Gambar Produk */}
                 <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
                   <Image
-                    src={product.image ?? "/images/product/product-01.png"}
+                    src={
+                      product.image
+                        ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
+                        : "/images/product/product-01.png"
+                    }
                     alt="Product"
                     fill
                     className="rounded-md object-cover"

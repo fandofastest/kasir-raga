@@ -496,7 +496,7 @@ export default function ProductFormModal({
                 {imageUrl && (
                   <div className="mt-2 flex justify-center">
                     <Image
-                      src={imageUrl}
+                      src={`/api/image-proxy?url=${encodeURIComponent(imageUrl)}`}
                       alt="Preview"
                       width={100}
                       height={100}
