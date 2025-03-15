@@ -317,9 +317,14 @@ export default function ProductsList({
                 </label>
                 <input
                   type="text"
-                  readOnly
                   className="w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-                  value={`Rp ${unitPrice.toLocaleString()}`}
+                  value={`Rp ${unitPrice.toLocaleString()}`} // Menampilkan “Rp …”
+                  onChange={(e) => {
+                    // Ambil isi input, buang semua karakter non-digit
+                    const val = e.target.value.replace(/\D/g, "");
+                    const numericVal = parseInt(val, 10) || 0;
+                    setUnitPrice(numericVal);
+                  }}
                 />
               </div>
 

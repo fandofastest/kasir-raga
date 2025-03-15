@@ -156,9 +156,7 @@ function CartSummary({
     try {
       const res = await fetchDraftTransaction(id); // GET /transaksi/[id]/draft
       const draftData = res.data; // { data: transaction }
-      console.log("==============draftData======================");
-      console.log(draftData);
-      console.log("====================================");
+
       // Isi state form: misalnya pembeli, method, pengantar, dsb.
       if (draftData.pembeli) setSelectedCustomer(draftData.pembeli);
       if (draftData.pengantar)
@@ -754,7 +752,13 @@ function CartSummary({
                       </span>
                       <button
                         className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600"
-                        onClick={() =>
+                        onClick={() => {
+                          // Jika sudah mencapai stok, tampilkan error
+                          if (item.quantity >= item.jumlah) {
+                            toast.error("Stok tidak cukup!");
+                            return;
+                          }
+                          // Jika stok masih cukup, tambahkan
                           updateCart(
                             cartItems.map((ci) =>
                               ci._id === item._id &&
@@ -765,11 +769,12 @@ function CartSummary({
                                 ? { ...ci, quantity: ci.quantity + 1 }
                                 : ci,
                             ),
-                          )
-                        }
+                          );
+                        }}
                       >
                         +
                       </button>
+
                       <p className="ml-2 w-20 text-right text-sm font-medium text-black dark:text-white">
                         Rp {itemTotal.toLocaleString()}
                       </p>
