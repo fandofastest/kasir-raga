@@ -102,7 +102,12 @@ interface EditSatuan {
 // Komponen utama: ProductsList
 // -------------------------------------------------------------------
 interface ProductsListProps {
-  addToCart: (item: CartItem, quantity: number, harga: number) => void;
+  addToCart: (
+    item: CartItem,
+    quantity: number,
+    harga: number,
+    harga_modal: number,
+  ) => void;
   refreshKey: number;
 }
 
@@ -342,8 +347,14 @@ export default function ProductsList({
       satuans: newSatuans,
       quantity: Number(quantity),
       harga: Number(purchasePrice),
+      harga_modal: Number(hargaModalBaru),
     };
-    addToCart(cartItem, Number(quantity), Number(purchasePrice));
+    addToCart(
+      cartItem,
+      Number(quantity),
+      Number(purchasePrice),
+      Number(hargaModalBaru),
+    );
     handleCloseModal();
   };
 
@@ -371,6 +382,14 @@ export default function ProductsList({
     ]);
     setSatuanOptions((prev) => [...prev, newSat]);
   };
+
+  const hargaModalBaru = activeProduct
+    ? (
+        (Number(activeProduct.harga_modal) * Number(activeProduct.jumlah) +
+          Number(purchasePrice) * Number(quantity)) /
+        (Number(activeProduct.jumlah) + Number(quantity))
+      ).toFixed(2)
+    : "";
 
   // -------------------------------------------------------------------
   // Render
@@ -449,13 +468,20 @@ export default function ProductsList({
                     {product.nama_produk}
                   </p>
                   {product.satuans && product.satuans.length > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      Rp{firstPrice.toLocaleString()}
-                    </p>
+                    <>
+                      <p className="text-sm text-gray-500">
+                        Rp{firstPrice.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Harga Modal: Rp
+                        {Number(product.harga_modal).toLocaleString()}
+                      </p>
+                    </>
                   ) : (
                     <p className="text-sm text-gray-500">No Price</p>
                   )}
                 </div>
+
                 {/* Stok */}
                 <div>
                   <p className="text-sm text-gray-500">
@@ -506,18 +532,38 @@ export default function ProductsList({
             <div className="space-y-4">
               {/* Form: Harga Beli & Quantity */}
               <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                    Harga Beli /1 unit
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    className="mt-1 w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-                    value={purchasePrice}
-                    onChange={(e) => handlePurchasePriceChange(e.target.value)}
-                  />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                      Harga Beli /1 unit
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      className="mt-1 w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
+                      value={purchasePrice}
+                      onChange={(e) =>
+                        handlePurchasePriceChange(e.target.value)
+                      }
+                    />
+                  </div>
+                  {activeProduct &&
+                    Number(purchasePrice) !==
+                      Number(activeProduct.harga_modal) && (
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                          Harga Modal Terbaru
+                        </label>
+                        <input
+                          type="number"
+                          readOnly
+                          className="mt-1 w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
+                          value={hargaModalBaru}
+                        />
+                      </div>
+                    )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                     Quantity

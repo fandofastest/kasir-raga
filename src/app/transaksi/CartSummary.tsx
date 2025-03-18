@@ -327,6 +327,7 @@ function CartSummary({
         setTransactionData(respon.data.data);
         setIsSuccessDialogOpen(true);
         onCheckoutSuccess();
+        router.push("/transaksi");
       } else {
         // Create new
         const respon = await createTransaction(payload);
@@ -339,6 +340,7 @@ function CartSummary({
           setTransactionData(respon.data.data);
           setIsSuccessDialogOpen(true);
           onCheckoutSuccess();
+          router.push("/transaksi");
         }
       }
     } catch (err: any) {
@@ -379,10 +381,13 @@ function CartSummary({
     try {
       if (draftId) {
         // Update existing draft
+        console.log(draftPayload);
+
         const { data } = await updateDataTransaction(draftId, draftPayload);
         toast.success("Draft diperbarui");
-        router.push(`/transaksi`);
         updateCart([]);
+        router.push(`/transaksi`);
+        onCheckoutSuccess();
       } else {
         // Create new draft
         const respon = await createTransaction(draftPayload);
@@ -393,6 +398,7 @@ function CartSummary({
           // const newDraft = respon.data.data; // { _id, ... }
           updateCart([]);
           router.push(`/transaksi`);
+          onCheckoutSuccess();
 
           // Opsional: router.push(`/transaksi?draftId=${newDraft._id}`);
         }

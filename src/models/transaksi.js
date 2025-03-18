@@ -12,6 +12,7 @@ const ProductDetailSchema = new mongoose.Schema({
   },
   quantity: Number,
   harga: Number,
+  harga_modal: Number,
   // Tambahan field jika diperlukan, misalnya satuans
   satuans: [
     {

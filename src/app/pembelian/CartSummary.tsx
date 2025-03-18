@@ -168,6 +168,7 @@ export default function CartSummary({
             quantity: p.quantity,
             harga: p.harga,
             satuans: mappedSatuans,
+            harga_modal: p.harga_modal,
             // stok dummy
             jumlah: 9999,
           };
@@ -221,6 +222,7 @@ export default function CartSummary({
         quantity: item.quantity,
         harga: item.harga,
         satuans: item.satuans?.[0]?.satuan?._id || null,
+        harga_modal: item.harga_modal,
       })),
       supplier: selectedSupplier._id,
       pengantar: selectedDelivery || null,
@@ -242,9 +244,15 @@ export default function CartSummary({
       if (draftId) {
         // Update draft
         const res = await updateDataTransaction(draftId, draftPayload);
-        toast.success("Draft pembelian diperbarui");
-        router.push(`/pembelian`);
-        updateCart([]);
+        console.log(res.data);
+
+        if (res.data.status !== 200) {
+          toast.error(res.data.error || "Gagal memperbarui draft");
+        } else {
+          toast.success("Draft pembelian diperbarui");
+          router.push(`/pembelian`);
+          updateCart([]);
+        }
       } else {
         // Create new draft
         const res = await createTransaction(draftPayload);
@@ -279,6 +287,7 @@ export default function CartSummary({
         quantity: item.quantity,
         harga: item.harga,
         satuans: item.satuans?.[0]?.satuan?._id || null,
+        harga_modal: item.harga_modal,
       })),
       supplier: selectedSupplier._id,
       pengantar: selectedDelivery || null,
@@ -303,12 +312,16 @@ export default function CartSummary({
     try {
       if (draftId) {
         // Update existing draft, ubah status menjadi lunas / belum_lunas
+        console.log("====================================");
+        console.log(finalPayload);
+        console.log("====================================");
         const res = await updateDataTransaction(draftId, finalPayload);
         toast.success("Transaksi draft pembelian diselesaikan");
         updateCart([]);
         setTransactionData(res.data.data);
         setIsSuccessDialogOpen(true);
         onCheckoutSuccess();
+        router.push(`/pembelian`);
       } else {
         // Create new
         const respon = await createTransaction(finalPayload);
@@ -321,6 +334,7 @@ export default function CartSummary({
           setIsSuccessDialogOpen(true);
           onCheckoutSuccess();
           setEnableDiscount(false);
+          router.push(`/pembelian`);
         }
       }
     } catch (error: any) {

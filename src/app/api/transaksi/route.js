@@ -6,6 +6,7 @@ import Supplier from "@/models/supplier";
 import Product from "@/models/product"; // Pastikan path dan nama model sesuai
 
 import { connectToDatabase } from "@/lib/mongodb";
+import { updateDataTransaction } from "@/lib/dataService";
 
 export const POST = withAuth(async (req) => {
   try {
@@ -73,6 +74,19 @@ export const POST = withAuth(async (req) => {
           await Product.findByIdAndUpdate(detail.productId, {
             $inc: { jumlah: -adjustment },
           });
+        }
+        if (
+          newTransaction.tipe_transaksi === "pembelian" &&
+          newTransaction.status_transaksi === "lunas"
+        ) {
+          await Product.findByIdAndUpdate(detail.productId, {
+            $inc: { jumlah: adjustment },
+          });
+          if (detail.harga !== detail.harga_modal) {
+            await Product.findByIdAndUpdate(detail.productId, {
+              harga_modal: detail.harga_modal,
+            });
+          }
         }
       }
     }
@@ -286,6 +300,10 @@ export const PUT = withAuth(async (req) => {
     }
 
     let updateData = await req.json();
+
+    // console.log("====================================");
+    // console.log(updateData);
+    // console.log("====================================");
     updateData.kasir = userid;
 
     // Normalisasi field pengantar dan staff_bongkar
@@ -305,7 +323,70 @@ export const PUT = withAuth(async (req) => {
         { status: 404 },
       );
     }
+    // ---------- LOGIKA PENJUALAN TUNDA STOCK ADJUSTMENT ----------
+    if (
+      transaction.tipe_transaksi === "penjualan" &&
+      transaction.status_transaksi === "tunda" &&
+      updateData.status_transaksi === "tunda"
+    ) {
+      // Buat mapping untuk detail produk asli berdasarkan productId
+      const originalDetailsMap = {};
 
+      if (transaction.produk && Array.isArray(transaction.produk)) {
+        for (const detail of transaction.produk) {
+          if (!detail.productId) continue;
+
+          const productId = detail.productId._id.toString();
+          const conversion =
+            detail.satuans &&
+            Array.isArray(detail.satuans) &&
+            detail.satuans[0]?.konversi
+              ? detail.satuans[0].konversi
+              : 1;
+          const oldDeduction = detail.quantity * conversion;
+
+          originalDetailsMap[productId] = oldDeduction;
+        }
+      }
+
+      // Bandingkan dengan detail produk yang baru
+      if (updateData.produk && Array.isArray(updateData.produk)) {
+        for (const detail of updateData.produk) {
+          if (!detail.productId) continue;
+          const productId = detail.productId;
+          console.log(detail);
+
+          const conversion =
+            detail.satuans &&
+            Array.isArray(detail.satuans) &&
+            detail.satuans[0]?.konversi
+              ? detail.satuans[0].konversi
+              : 1;
+          const newDeduction = detail.quantity * conversion;
+          const oldDeduction = originalDetailsMap[productId];
+          const difference = newDeduction - oldDeduction;
+
+          if (difference !== 0) {
+            // Untuk transaksi penjualan, stok sudah dikurangi sebesar oldDeduction,
+            // jadi jika newDeduction lebih besar, perlu pengurangan stok tambahan (dengan nilai -difference)
+            // dan sebaliknya jika newDeduction lebih kecil, stok dikembalikan.
+            await Product.findByIdAndUpdate(productId, {
+              $inc: { jumlah: -difference },
+            });
+          }
+          // Hapus item yang sudah diproses
+          delete originalDetailsMap[productId];
+        }
+      }
+
+      // Untuk produk yang tadinya ada tapi di update tidak ada, kembalikan stoknya
+      for (const productId in originalDetailsMap) {
+        const oldDeduction = originalDetailsMap[productId];
+        await Product.findByIdAndUpdate(productId, {
+          $inc: { jumlah: oldDeduction },
+        });
+      }
+    }
     // ---------- LOGIKA CICILAN ----------
     if (transaction.metode_pembayaran === "cicilan") {
       updateData.metode_pembayaran = "cicilan";
@@ -364,9 +445,7 @@ export const PUT = withAuth(async (req) => {
       ) {
         return NextResponse.json(
           {
-            error: `Transaksi sudah ${
-              transaction.status_transaksi
-            }, tidak bisa dibatalkan`,
+            error: `Transaksi sudah ${transaction.status_transaksi}, tidak bisa dibatalkan`,
           },
           { status: 400 },
         );
@@ -380,7 +459,7 @@ export const PUT = withAuth(async (req) => {
       ) {
         for (const detail of transaction.produk) {
           const productDoc = detail.productId;
-          if (!productDoc) continue; // jaga2
+          if (!productDoc) continue; // jaga-jaga
           // asumsikan field konversi di detail.satuans[0] (atau di detail?).
           // jika tidak ada, default 1
           const conversion =
@@ -405,11 +484,39 @@ export const PUT = withAuth(async (req) => {
     // Terapkan update & simpan
     transaction.set(updateData);
     const updatedTransaction = await transaction.save();
-    if (!updatedTransaction) {
-      return NextResponse.json(
-        { error: "Transaksi tidak ditemukan" },
-        { status: 404 },
-      );
+
+    // ---------- LOGIKA PEMBELIAN ----------
+    // Jika tipe transaksi pembelian dan status baru adalah "lunas",
+    // serta sebelumnya belum lunas, maka tambahkan stok produk.
+    if (
+      updatedTransaction.tipe_transaksi === "pembelian" &&
+      updatedTransaction.status_transaksi === "lunas"
+    ) {
+      if (
+        updatedTransaction.produk &&
+        Array.isArray(updatedTransaction.produk) &&
+        updatedTransaction.produk.length > 0
+      ) {
+        for (const detail of updatedTransaction.produk) {
+          const productDoc = detail.productId;
+          if (!productDoc) continue;
+          const conversion =
+            detail.satuans &&
+            Array.isArray(detail.satuans) &&
+            detail.satuans[0]?.konversi
+              ? detail.satuans[0].konversi
+              : 1;
+          const adjustment = detail.quantity * conversion;
+          if (detail.harga !== detail.harga_modal) {
+            await Product.findByIdAndUpdate(productDoc._id, {
+              harga_modal: detail.harga_modal,
+            });
+          }
+          await Product.findByIdAndUpdate(productDoc._id, {
+            $inc: { jumlah: adjustment },
+          });
+        }
+      }
     }
 
     const populatedTransactionFull = await Transaksi.findById(id)
@@ -424,6 +531,7 @@ export const PUT = withAuth(async (req) => {
     return NextResponse.json({
       message: "Transaksi berhasil diperbarui",
       data: populatedTransactionFull,
+      status: 200,
     });
   } catch (error) {
     console.error("Gagal mengupdate transaksi:", error);
