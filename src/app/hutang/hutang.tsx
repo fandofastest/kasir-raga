@@ -626,6 +626,7 @@ export default function HutangPage() {
               <div className="mb-4">
                 <label className="mb-1 block">Jumlah Pembayaran</label>
                 <input
+                  onFocus={(e) => e.target.select()}
                   type="number"
                   min={1}
                   value={paymentAmount}
@@ -638,6 +639,7 @@ export default function HutangPage() {
               <div className="mb-4">
                 <label className="mb-1 block">Jumlah Pelunasan</label>
                 <input
+                  onFocus={(e) => e.target.select()}
                   type="number"
                   min={computeSisaHutang(selectedTransaction)}
                   value={paymentAmount}

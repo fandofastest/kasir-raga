@@ -79,7 +79,7 @@ const transactionSchema = new mongoose.Schema(
     },
     status_transaksi: {
       type: String,
-      enum: ["lunas", "belum_lunas", "tunda", "batal", "cicilan"],
+      enum: ["lunas", "belum_lunas", "tunda", "batal", "lunas_cepat"],
       required: true,
     },
     tipe_transaksi: {

@@ -70,14 +70,19 @@ export const POST = withAuth(async (req) => {
             ? detail.satuans[0].konversi
             : 1;
         const adjustment = detail.quantity * conversion;
+
         if (newTransaction.tipe_transaksi === "penjualan") {
           await Product.findByIdAndUpdate(detail.productId, {
             $inc: { jumlah: -adjustment },
           });
         }
+        console.log("====================================");
+        console.log("adjustment", newTransaction);
+        console.log("====================================");
         if (
           newTransaction.tipe_transaksi === "pembelian" &&
-          newTransaction.status_transaksi === "lunas"
+          (newTransaction.status_transaksi === "lunas" ||
+            newTransaction.metode_pembayaran === "cicilan")
         ) {
           await Product.findByIdAndUpdate(detail.productId, {
             $inc: { jumlah: adjustment },
@@ -156,9 +161,15 @@ export const GET = withAuth(async (req) => {
     if (searchParams.has("metode_pembayaran")) {
       filter.metode_pembayaran = searchParams.get("metode_pembayaran");
     }
-    if (searchParams.has("status_transaksi")) {
-      filter.status_transaksi = searchParams.get("status_transaksi");
+    const statusTransaksiParam = searchParams.get("status_transaksi");
+    if (statusTransaksiParam) {
+      const statusTransaksiValues = statusTransaksiParam.split(",");
+      filter.status_transaksi =
+        statusTransaksiValues.length === 1
+          ? statusTransaksiValues[0]
+          : { $in: statusTransaksiValues };
     }
+
     if (searchParams.has("tipe_transaksi")) {
       filter.tipe_transaksi = searchParams.get("tipe_transaksi");
     }
@@ -170,6 +181,7 @@ export const GET = withAuth(async (req) => {
       // Asumsikan field supplier menyimpan _id_ supplier
       filter.supplier = supplierDoc ? supplierDoc._id : null;
     }
+
     if (searchParams.has("pelanggan")) {
       // Filter berdasarkan pelanggan, misalnya field 'pembeli'
       // Pastikan bahwa nilai yang dikirim adalah ID pelanggan

@@ -435,3 +435,21 @@ export async function fetchDraftTransaction(draftId) {
   }
   return { data: data.data, token };
 }
+
+export async function fetchKategori() {
+  const token = await fetchUser(); // fungsi yang mengambil token
+  const res = await fetch(`${apiUrl}/kategori`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const data = await res.json();
+  console.log("==================dadada==================");
+  console.log(data);
+  console.log("====================================");
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to fetch kategori");
+  }
+  return { data: data, token };
+}

@@ -241,6 +241,16 @@ export default function ProductFormModal({
       toast.success(
         product ? "Produk berhasil diupdate!" : "Produk berhasil ditambahkan!",
       );
+      setNamaProduk("");
+      setHargaModal("");
+      setJumlah("");
+      setSupplier(null);
+      setBrand(null);
+      setKategori(null);
+      setImageUrl("");
+      setSatuans([
+        { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
+      ]);
       onSubmit();
       onClose();
     } else {
@@ -318,7 +328,6 @@ export default function ProductFormModal({
                   placeholder="Stok"
                   value={jumlah}
                   onChange={(e) => setJumlah(e.target.value)}
-                  required
                   className="w-full rounded-lg border p-2 dark:bg-gray-800"
                 />
               </div>

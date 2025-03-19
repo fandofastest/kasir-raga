@@ -67,7 +67,7 @@ export async function PUT(request, { params }) {
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         // Jika jarak hari kurang atau sama dengan maxPelunasanHari, ubah metode pembayaran menjadi "tunai"
         if (diffDays <= pref.maxPelunasanHari) {
-          transaction.metode_pembayaran = "tunai";
+          transaction.status_transaksi = "lunas_cepat";
         }
       }
     }

@@ -50,7 +50,7 @@ export default function CartSummary({
 
   // Tambahan state untuk metode cicilan
   const [dp, setDp] = useState<string>("0");
-  const [durasiPelunasan, setDurasiPelunasan] = useState<number>(0);
+  const [durasiPelunasan, setDurasiPelunasan] = useState<string>("0");
   const [unitPelunasan, setUnitPelunasan] = useState<"hari" | "bulan">("hari");
 
   // Staf (Tukang Antar & Bongkar)
@@ -529,7 +529,7 @@ export default function CartSummary({
                   onChange={(e) => {
                     setPaymentMethod(e.target.value);
                     if (e.target.value !== "cicilan") {
-                      setDurasiPelunasan(0);
+                      setDurasiPelunasan("0");
                       setUnitPelunasan("hari");
                       setDp("0");
                     }
@@ -582,9 +582,7 @@ export default function CartSummary({
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                       placeholder="Masukkan durasi"
                       value={durasiPelunasan}
-                      onChange={(e) =>
-                        setDurasiPelunasan(Number(e.target.value))
-                      }
+                      onChange={(e) => setDurasiPelunasan(e.target.value)}
                     />
                   </div>
                 </div>
@@ -700,7 +698,7 @@ export default function CartSummary({
               onChange={(e) => {
                 setPaymentMethod(e.target.value);
                 if (e.target.value !== "cicilan") {
-                  setDurasiPelunasan(0);
+                  setDurasiPelunasan("0");
                   setUnitPelunasan("hari");
                   setDp("0");
                 }
@@ -750,7 +748,7 @@ export default function CartSummary({
                     className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
                     placeholder="Masukkan durasi"
                     value={durasiPelunasan}
-                    onChange={(e) => setDurasiPelunasan(Number(e.target.value))}
+                    onChange={(e) => setDurasiPelunasan(e.target.value)}
                   />
                 </div>
               </div>
