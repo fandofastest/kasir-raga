@@ -155,19 +155,22 @@ export default function CartSummary({
       // Transform produk => cart
       if (draft.produk && Array.isArray(draft.produk)) {
         const newCart = draft.produk.map((p: any) => {
-          // p = { productId, quantity, harga, satuans, dsb. }
-          // Map satuans array
-          const mappedSatuans = p.satuans.map((s: any) => ({
-            satuan: { _id: s._id, nama: s.nama },
-            harga: p.harga, // atau s.harga jika per-satuan harganya beda
-          }));
+          // Pastikan p.satuans adalah array
+          // const mappedSatuans = Array.isArray(p.satuans)
+          //   ? p.satuans.map((s: any) => ({
+          //       satuan: { _id: s._id, nama: s.nama },
+          //       harga: s.harga, // gunakan s.harga jika ada, jika tidak, gunakan p.harga
+          //     }))
+          //   : [];
+          // console.log(p.satuans);
+
           return {
-            _id: p.productId._id,
-            nama_produk: p.productId.nama_produk,
-            image: p.productId.image,
+            _id: (p.productId && p.productId._id) || p.productId, // jika productId merupakan objek, gunakan _id; jika sudah string, gunakan langsung
+            nama_produk: (p.productId && p.productId.nama_produk) || "",
+            image: (p.productId && p.productId.image) || "",
             quantity: p.quantity,
             harga: p.harga,
-            satuans: mappedSatuans,
+            satuans: p.satuans,
             harga_modal: p.harga_modal,
             // stok dummy
             jumlah: 9999,
@@ -221,7 +224,7 @@ export default function CartSummary({
         productId: item._id,
         quantity: item.quantity,
         harga: item.harga,
-        satuans: item.satuans?.[0]?.satuan?._id || null,
+        satuans: item.satuans,
         harga_modal: item.harga_modal,
       })),
       supplier: selectedSupplier._id,
@@ -242,6 +245,8 @@ export default function CartSummary({
 
     try {
       if (draftId) {
+        console.log(draftPayload);
+
         // Update draft
         const res = await updateDataTransaction(draftId, draftPayload);
         console.log(res.data);
@@ -255,6 +260,8 @@ export default function CartSummary({
         }
       } else {
         // Create new draft
+        console.log(draftPayload);
+
         const res = await createTransaction(draftPayload);
         if (res.data.status !== 201) {
           toast.error(res.data.error || "Gagal menyimpan draft");
@@ -286,7 +293,7 @@ export default function CartSummary({
         productId: item._id,
         quantity: item.quantity,
         harga: item.harga,
-        satuans: item.satuans?.[0]?.satuan?._id || null,
+        satuans: item.satuans,
         harga_modal: item.harga_modal,
       })),
       supplier: selectedSupplier._id,
@@ -323,6 +330,9 @@ export default function CartSummary({
         onCheckoutSuccess();
         router.push(`/pembelian`);
       } else {
+        console.log("====================================");
+        console.log(finalPayload);
+        console.log("====================================");
         // Create new
         const respon = await createTransaction(finalPayload);
         if (respon.data.status !== 201) {

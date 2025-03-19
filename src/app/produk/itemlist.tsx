@@ -19,6 +19,8 @@ const ProductList = () => {
     const getProducts = async () => {
       try {
         const res = await fetchProducts();
+        console.log(res.data);
+
         setProducts(res.data);
         setFilteredProducts(res.data);
       } catch (error) {
@@ -145,7 +147,7 @@ const ProductList = () => {
               </div>
               <div className="col-span-1 flex items-center">
                 <p className="text-sm text-meta-3">
-                  {product.supplier ?? "N/A"}
+                  {product.supplier ? product.supplier.nama : "N/A"}
                 </p>
               </div>
               <div className="col-span-1 flex items-center space-x-2">

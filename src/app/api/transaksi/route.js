@@ -13,7 +13,7 @@ export const POST = withAuth(async (req) => {
     await connectToDatabase();
     const data = await req.json();
     const userid = req.user?.id;
-    console.log("Data transaksi:", data);
+    console.log("Data transaksi:", data.produk[0].satuans[0].satuan);
 
     // Validasi: pastikan kasir ada
     const kasir = await User.findById(userid);
@@ -86,6 +86,32 @@ export const POST = withAuth(async (req) => {
             await Product.findByIdAndUpdate(detail.productId, {
               harga_modal: detail.harga_modal,
             });
+          }
+          if (detail.satuans && detail.satuans.length > 0) {
+            for (const satuanId of detail.satuans) {
+              await Product.updateOne(
+                { _id: detail.productId, "satuans.satuan": satuanId._id },
+                { $set: { "satuans.$.harga": detail.harga } },
+              );
+            }
+          }
+          // Update detail satuans di produk
+          if (detail.satuans && detail.satuans.length > 0) {
+            for (const satuanDetail of detail.satuans) {
+              // satuanDetail harus memiliki: satuan, konversi, harga
+              await Product.updateOne(
+                {
+                  _id: detail.productId,
+                  "satuans.satuan": satuanDetail.satuan,
+                },
+                {
+                  $set: {
+                    "satuans.$.harga": satuanDetail.harga,
+                    "satuans.$.konversi": satuanDetail.konversi,
+                  },
+                },
+              );
+            }
           }
         }
       }
@@ -248,7 +274,7 @@ export const GET = withAuth(async (req) => {
     const transactions = await Transaksi.find(filter)
       .populate("kasir supplier pembeli pengantar staff_bongkar")
       .populate("produk.productId")
-      .populate("produk.satuans", "nama") // hanya ambil field nama dari Satuan
+      .populate("produk.satuans")
 
       .sort(sort);
 

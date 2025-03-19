@@ -21,8 +21,10 @@ export const GET = withAuth(async (req, { params }) => {
     })
       .populate("kasir supplier pembeli pengantar staff_bongkar")
       .populate("produk.productId")
-      .populate("produk.satuans", "nama");
-
+      .populate({
+        path: "produk.satuans",
+        populate: { path: "satuan", select: "nama" },
+      });
     // Jika tidak ditemukan, return 404
     if (!transaction) {
       return NextResponse.json(

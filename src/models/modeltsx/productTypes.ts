@@ -1,8 +1,10 @@
+import { Supplier } from "./supplierTypes";
+
 export interface Product {
   _id: string;
   nama_produk: string;
   harga_modal: number;
-  supplier: string;
+  supplier: any;
   sku: string;
   image: string;
   jumlah: number;

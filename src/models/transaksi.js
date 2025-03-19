@@ -5,6 +5,21 @@ import User from "@/models/user";
 import Supplier from "@/models/supplier";
 import Satuan from "@/models/satuan";
 
+// Tambahkan subschema untuk detail satuan di transaksi
+const ProductSatuanDetailSchema = new mongoose.Schema(
+  {
+    satuan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Satuan",
+      required: true,
+    },
+    konversi: { type: Number, default: 1 },
+    harga: { type: Number, required: true },
+  },
+  { _id: false }, // jika Anda tidak perlu _id untuk setiap satuan detail
+);
+
+// Ubah ProductDetailSchema untuk menyimpan informasi satuan lebih lengkap
 const ProductDetailSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,15 +28,12 @@ const ProductDetailSchema = new mongoose.Schema({
   quantity: Number,
   harga: Number,
   harga_modal: Number,
-  // Tambahan field jika diperlukan, misalnya satuans
-  satuans: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Satuan",
-    },
-  ],
+  // Gantikan field satuans yang lama dengan subschema baru
+  satuans: {
+    type: [ProductSatuanDetailSchema],
+    default: [],
+  },
 });
-
 const transactionSchema = new mongoose.Schema(
   {
     no_transaksi: {

@@ -328,19 +328,24 @@ export default function ProductsList({
   // -------------------------------------------------------------------
   // Konfirmasi: tambah ke cart
   // -------------------------------------------------------------------
+  // Konfirmasi: tambah ke cart
+  // Konfirmasi: tambah ke cart
   const handleConfirmAdd = () => {
     if (!activeProduct) return;
 
-    // Perbarui product.satuans => harga = editSatuan.hargaJual
-    const newSatuans: SatuanPembelian[] = (activeProduct.satuans || []).map(
-      (s) => {
-        const found = editSatuans.find((ed) => ed._id === s._id);
-        if (found) {
-          return { ...s, harga: found.hargaJual };
-        }
-        return s;
-      },
-    );
+    // Buat array satuan untuk cart dari data editSatuans
+    const newSatuans: SatuanPembelian[] = editSatuans.map((ed) => {
+      const satuanOption = satuanOptions.find((opt) => opt._id === ed.satuanId);
+      return {
+        _id: ed.satuanId,
+        satuan: {
+          _id: satuanOption ? satuanOption._id : "",
+          nama: satuanOption ? satuanOption.nama : "",
+        },
+        konversi: ed.konversi,
+        harga: ed.hargaJual,
+      };
+    });
 
     const cartItem: CartItem = {
       ...activeProduct,
@@ -349,6 +354,7 @@ export default function ProductsList({
       harga: Number(purchasePrice),
       harga_modal: Number(hargaModalBaru),
     };
+
     addToCart(
       cartItem,
       Number(quantity),
