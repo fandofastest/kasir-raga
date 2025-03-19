@@ -176,10 +176,10 @@ function CartSummary({
       if (draftData.produk && Array.isArray(draftData.produk)) {
         const newCart: CartItem[] = draftData.produk.map((p: any) => {
           // p: { productId, quantity, harga, satuans, ... }
-          const mappedSatuans = p.satuans.map((satuanObj: any) => ({
-            satuan: { _id: satuanObj._id, nama: satuanObj.nama },
-            harga: p.harga, // Atau p.satuans[i].harga? Tergantung field di server
-          }));
+          // const mappedSatuans = p.satuans.map((satuanObj: any) => ({
+          //   satuan: { _id: satuanObj._id, nama: satuanObj.nama },
+          //   harga: p.harga, // Atau p.satuans[i].harga? Tergantung field di server
+          // }));
 
           return {
             _id: p.productId._id,
@@ -187,7 +187,7 @@ function CartSummary({
             image: p.productId.image,
             quantity: p.quantity,
             harga: p.harga,
-            satuans: mappedSatuans,
+            satuans: p.satuans,
             jumlah: 99999, // misal stok
           };
         });
@@ -297,7 +297,7 @@ function CartSummary({
         productId: item._id,
         quantity: item.quantity,
         harga: item.satuans[0].harga,
-        satuans: item.satuans[0].satuan._id,
+        satuans: item.satuans,
       })),
       pembeli: selectedCustomer._id,
       pengantar: selectedDelivery || null,
@@ -360,7 +360,7 @@ function CartSummary({
         productId: item._id,
         quantity: item.quantity,
         harga: item.satuans[0].harga,
-        satuans: item.satuans[0].satuan._id,
+        satuans: item.satuans,
       })),
       pembeli: selectedCustomer?._id || null,
       pengantar: selectedDelivery || null,
