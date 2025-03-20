@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body suppressHydrationWarning={true}>
         <SessionProvider>
-          <div className=" h-fit dark:bg-boxdark-2 dark:text-bodydark">
+          <div className=" h-fit text-black-2 dark:bg-boxdark dark:text-bodydark">
             {loading ? <Loader /> : children}
           </div>
         </SessionProvider>

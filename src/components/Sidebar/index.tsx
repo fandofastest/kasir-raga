@@ -202,7 +202,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const { user } = useAuth();
 
   // Hanya ubah bagian logo di header sidebar
-  const [logoUrl, setLogoUrl] = useState<string>("/images/logo/logo.svg");
+  const [logoUrl, setLogoUrl] = useState<string>("");
   const [storeName, setStoreName] = useState<string>("Toko Default");
 
   useEffect(() => {
