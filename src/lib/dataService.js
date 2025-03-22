@@ -257,6 +257,30 @@ export const createTransaction = async (transactionData) => {
   return { data, token };
 };
 
+export const createPengeluaran = async (transactionData) => {
+  // Ambil token dari session (pastikan fungsi fetchUser sudah tersedia)
+  const token = await fetchUser();
+
+  // Bangun URL dengan parameter tipe_transaksi (misalnya "pembelian" atau "penjualan")
+  // Jika transactionData.tipe_transaksi sudah ada, gunakan nilainya; jika tidak, bisa di-set default.
+  const tipe = transactionData.tipe_transaksi || "pembelian";
+  const response = await fetch(apiUrl + `/transaksi/pengeluaran`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(transactionData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Failed to create transaction");
+  }
+  const data = await response.json();
+  return { data, token };
+};
+
 export async function updateDataTransaction(transactionId, updateData) {
   const token = await fetchUser();
   const response = await fetch(apiUrl + `/transaksi?id=${transactionId}`, {
@@ -312,7 +336,7 @@ export const payInstallment = async (transactionId, amount, paymentDate) => {
       },
       body: JSON.stringify({
         amount,
-        paymentDate: paymentDate || new Date().toISOString(),
+        paymentDate,
       }),
     },
   );

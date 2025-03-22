@@ -77,19 +77,60 @@ export default function CartSummary({
   const [animateCart, setAnimateCart] = useState(false);
   const prevCartCount = useRef(0);
 
-  // Modal tambah staff
-  const [showStaffFormModal, setShowStaffFormModal] = useState(false);
-  const [staffRoleToAdd, setStaffRoleToAdd] = useState<
-    "staffAntar" | "staffBongkar" | null
-  >(null);
-
   // Hitung total
   const rawTotal = cartItems.reduce(
     (sum, item) => sum + item.harga * item.quantity,
     0,
   );
   const totalPrice = rawTotal - discountValue;
+  // Tambahan: State untuk tanggal, default ke hari ini
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  function getTimestampWithCurrentTime(dateString: string): string {
+    const now = new Date();
+    // Ambil bagian jam, menit, detik (format "HH:MM:SS")
+    const timePart = now.toTimeString().split(" ")[0];
+    return `${dateString}T${timePart}`;
+  }
+  // =============== FUNGSI STAFF (MODAL) ===============
+  // =============== FUNGSI STAFF (MODAL) ===============
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [staffModalRole, setStaffModalRole] = useState<
+    "kasir" | "staffAntar" | "staffBongkar" | "superadmin"
+  >("staffAntar");
 
+  function handleAddStaff(
+    role: "kasir" | "staffAntar" | "staffBongkar" | "superadmin",
+  ) {
+    setStaffModalRole(role);
+    setShowAddStaffModal(true);
+  }
+  function handleStaffSubmit() {
+    setShowAddStaffModal(false);
+    loadStaffData();
+  }
+  async function loadStaffData() {
+    try {
+      const res = await fetchStaff();
+      setStaffOptions(res.data);
+    } catch (error) {
+      console.error("Gagal mengambil staff:", error);
+    }
+  }
+
+  const resetForm = () => {
+    setPaymentMethod("tunai");
+    setKeterangan("");
+    setEnableDiscount(false);
+    setDiscount("0");
+    setDp("0");
+    setDurasiPelunasan("0");
+    setUnitPelunasan("hari");
+    setSelectedDelivery("");
+    setSelectedUnloading("");
+  };
   // ================== USE EFFECTS ==================
   useEffect(() => {
     // Animasi keranjang
@@ -187,10 +228,6 @@ export default function CartSummary({
   }
 
   // ================== HANDLE STAFF MODAL ==================
-  function handleAddStaff(role: "staffAntar" | "staffBongkar") {
-    setStaffRoleToAdd(role);
-    setShowStaffFormModal(true);
-  }
 
   // ================== HANDLE QUANTITY & REMOVE ==================
   function handleRemoveItem(item: CartItem) {
@@ -227,6 +264,7 @@ export default function CartSummary({
         satuans: item.satuans,
         harga_modal: item.harga_modal,
       })),
+      tanggal_transaksi: getTimestampWithCurrentTime(selectedDate),
       supplier: selectedSupplier._id,
       pengantar: selectedDelivery || null,
       staff_bongkar: selectedUnloading || null,
@@ -257,6 +295,7 @@ export default function CartSummary({
           toast.success("Draft pembelian diperbarui");
           router.push(`/pembelian`);
           updateCart([]);
+          resetForm();
         }
       } else {
         // Create new draft
@@ -269,6 +308,7 @@ export default function CartSummary({
           toast.success("Draft pembelian berhasil disimpan");
           router.push(`/pembelian`);
           updateCart([]);
+          resetForm();
         }
       }
     } catch (err: any) {
@@ -296,6 +336,8 @@ export default function CartSummary({
         satuans: item.satuans,
         harga_modal: item.harga_modal,
       })),
+      tanggal_transaksi: getTimestampWithCurrentTime(selectedDate),
+
       supplier: selectedSupplier._id,
       pengantar: selectedDelivery || null,
       staff_bongkar: selectedUnloading || null,
@@ -328,6 +370,7 @@ export default function CartSummary({
         setTransactionData(res.data.data);
         setIsSuccessDialogOpen(true);
         onCheckoutSuccess();
+        resetForm();
         router.push(`/pembelian`);
       } else {
         console.log("====================================");
@@ -344,6 +387,7 @@ export default function CartSummary({
           setIsSuccessDialogOpen(true);
           onCheckoutSuccess();
           setEnableDiscount(false);
+          resetForm();
           router.push(`/pembelian`);
         }
       }
@@ -360,6 +404,19 @@ export default function CartSummary({
       {!isMobile && (
         <>
           <div className="border-b border-stroke p-4 dark:border-strokedark">
+            {/* Field tambahan untuk tanggal transaksi */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Tanggal Transaksi
+              </label>
+              <input
+                type="date"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+
             <SupplierList
               selectedSupplier={selectedSupplier}
               setSelectedSupplier={setSelectedSupplier}
@@ -387,8 +444,8 @@ export default function CartSummary({
                   </select>
                   <button
                     onClick={() => {
-                      setStaffRoleToAdd("staffAntar");
-                      setShowStaffFormModal(true);
+                      setStaffModalRole("staffAntar");
+                      setShowAddStaffModal(true);
                     }}
                     className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
                   >
@@ -419,8 +476,8 @@ export default function CartSummary({
                   </select>
                   <button
                     onClick={() => {
-                      setStaffRoleToAdd("staffBongkar");
-                      setShowStaffFormModal(true);
+                      setStaffModalRole("staffBongkar");
+                      setShowAddStaffModal(true);
                     }}
                     className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
                   >
@@ -646,10 +703,94 @@ export default function CartSummary({
         >
           {/* SupplierList */}
           <div className="mb-4">
+            {/* Field Tanggal di Mobile */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium">
+                Tanggal Transaksi
+              </label>
+              <input
+                type="date"
+                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+
             <SupplierList
               selectedSupplier={selectedSupplier}
               setSelectedSupplier={setSelectedSupplier}
             />
+            {/* Pilihan Staff Antar dan Bongkar */}
+            <div className="mt-4 grid grid-cols-1 gap-4">
+              <div>
+                <label className="text-sm font-medium">Pilih Armada</label>
+                <div className="flex items-center">
+                  <select
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    value={selectedUnloading}
+                    onChange={(e) => setSelectedUnloading(e.target.value)}
+                  >
+                    <option value="">--Tidak Ada--</option>
+                    {staffOptions
+                      .filter(
+                        (staff) =>
+                          staff.role !== "superadmin" &&
+                          staff.role !== "kasir" &&
+                          staff.role == "staffAntar",
+                      )
+                      .map((staff) => (
+                        <option key={staff._id} value={staff._id}>
+                          {staff.name}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      setStaffModalRole("staffAntar");
+                      setShowAddStaffModal(true);
+                    }}
+                    className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">
+                  Pilih Buruh Bongkar
+                </label>
+                <div className="flex items-center">
+                  <select
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    value={selectedUnloading}
+                    onChange={(e) => setSelectedUnloading(e.target.value)}
+                  >
+                    <option value="">--Tidak Ada--</option>
+                    {staffOptions
+                      .filter(
+                        (staff) =>
+                          staff.role !== "superadmin" &&
+                          staff.role !== "kasir" &&
+                          staff.role !== "staffBongkar",
+                      )
+                      .map((staff) => (
+                        <option key={staff._id} value={staff._id}>
+                          {staff.name}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      setStaffModalRole("staffBongkar");
+                      setShowAddStaffModal(true);
+                    }}
+                    className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           {/* Daftar Produk di Modal */}
           <div className="mb-4 border-b border-t border-strokedark py-4 dark:border-strokedark">
@@ -898,20 +1039,13 @@ export default function CartSummary({
         </div>
       )}
 
-      {/* Modal Tambah Staff */}
-      {showStaffFormModal && (
-        <StaffFormModal
-          isOpen={showStaffFormModal}
-          onClose={() => {
-            setShowStaffFormModal(false);
-            setStaffRoleToAdd(null);
-          }}
-          onSubmit={() => {
-            refreshStaffList();
-          }}
-          initialRole={staffRoleToAdd || undefined}
-        />
-      )}
+      {/* MODAL ADD STAFF */}
+      <StaffFormModal
+        isOpen={showAddStaffModal}
+        onClose={() => setShowAddStaffModal(false)}
+        onSubmit={handleStaffSubmit}
+        initialRole={staffModalRole}
+      />
     </div>
   );
 }

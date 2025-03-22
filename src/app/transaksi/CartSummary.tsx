@@ -94,7 +94,16 @@ function CartSummary({
     return sum;
   }, 0);
   const totalHarga = totalPrice - Number(discount);
-
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  function getTimestampWithCurrentTime(dateString: string): string {
+    const now = new Date();
+    // Ambil bagian jam, menit, detik (format "HH:MM:SS")
+    const timePart = now.toTimeString().split(" ")[0];
+    return `${dateString}T${timePart}`;
+  }
   // =============== USEEFFECTS ===============
   // Animasi keranjang
   useEffect(() => {
@@ -122,6 +131,19 @@ function CartSummary({
   useEffect(() => {
     loadStaffData();
   }, []);
+
+  const resetForm = () => {
+    setSelectedCustomer(null);
+    setPaymentMethod("tunai");
+    setKeterangan("");
+    setEnableDiscount(false);
+    setDiscount("0");
+    setDp("0");
+    setDurasiPelunasan(0);
+    setUnitPelunasan("hari");
+    setSelectedDelivery("");
+    setSelectedUnloading("");
+  };
 
   // Load Supplier & Pelanggan
   useEffect(() => {
@@ -299,6 +321,8 @@ function CartSummary({
         harga: item.satuans[0].harga,
         satuans: item.satuans,
       })),
+      tanggal_transaksi: getTimestampWithCurrentTime(selectedDate),
+
       pembeli: selectedCustomer._id,
       pengantar: selectedDelivery || null,
       staff_bongkar: selectedUnloading || null,
@@ -327,6 +351,7 @@ function CartSummary({
         setTransactionData(respon.data.data);
         setIsSuccessDialogOpen(true);
         onCheckoutSuccess();
+        resetForm();
         router.push("/transaksi");
       } else {
         // Create new
@@ -340,6 +365,7 @@ function CartSummary({
           setTransactionData(respon.data.data);
           setIsSuccessDialogOpen(true);
           onCheckoutSuccess();
+          resetForm();
           router.push("/transaksi");
         }
       }
@@ -362,6 +388,8 @@ function CartSummary({
         harga: item.satuans[0].harga,
         satuans: item.satuans,
       })),
+      tanggal_transaksi: getTimestampWithCurrentTime(selectedDate),
+
       pembeli: selectedCustomer?._id || null,
       pengantar: selectedDelivery || null,
       staff_bongkar: selectedUnloading || null,
@@ -388,6 +416,7 @@ function CartSummary({
         updateCart([]);
         router.push(`/transaksi`);
         onCheckoutSuccess();
+        resetForm();
       } else {
         // Create new draft
         const respon = await createTransaction(draftPayload);
@@ -399,7 +428,7 @@ function CartSummary({
           updateCart([]);
           router.push(`/transaksi`);
           onCheckoutSuccess();
-
+          resetForm();
           // Opsional: router.push(`/transaksi?draftId=${newDraft._id}`);
         }
       }
@@ -415,6 +444,17 @@ function CartSummary({
   const mobileCheckoutContent = (
     <div className="space-y-4 ">
       {/* Pilih Pelanggan */}
+      {/* Field Tanggal di Mobile */}
+      <div className="mt-4">
+        <label className="block text-sm font-medium">Tanggal Transaksi</label>
+        <input
+          type="date"
+          className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+        />
+      </div>
+
       <CustomersList
         selectedCustomer={selectedCustomer}
         setSelectedCustomer={setSelectedCustomer}
@@ -434,7 +474,9 @@ function CartSummary({
               {staffOptions
                 .filter(
                   (staff) =>
-                    staff.role !== "superadmin" && staff.role !== "kasir",
+                    staff.role !== "superadmin" &&
+                    staff.role !== "kasir" &&
+                    staff.role !== "staffAntar",
                 )
                 .map((staff) => (
                   <option key={staff._id} value={staff._id}>
@@ -465,7 +507,9 @@ function CartSummary({
               {staffOptions
                 .filter(
                   (staff) =>
-                    staff.role !== "superadmin" && staff.role !== "kasir",
+                    staff.role !== "superadmin" &&
+                    staff.role !== "kasir" &&
+                    staff.role !== "staffBongkar",
                 )
                 .map((staff) => (
                   <option key={staff._id} value={staff._id}>
@@ -648,6 +692,19 @@ function CartSummary({
         <>
           {/* Bagian Pelanggan, Staff Antar, Staff Bongkar */}
           <div className="border-b border-stroke p-4 dark:border-strokedark dark:bg-boxdark">
+            {/* Field tambahan untuk tanggal transaksi */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Tanggal Transaksi
+              </label>
+              <input
+                type="date"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+
             <CustomersList
               selectedCustomer={selectedCustomer}
               setSelectedCustomer={setSelectedCustomer}

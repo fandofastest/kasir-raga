@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "react-hot-toast";
-import { createTransaction } from "@/lib/dataService";
+import { createPengeluaran, createTransaction } from "@/lib/dataService";
 
 export default function TransaksiLainLainPage() {
   // Local state for the form
@@ -33,7 +33,7 @@ export default function TransaksiLainLainPage() {
 
     try {
       setLoading(true);
-      const res = await createTransaction(transactionPayload);
+      const res = await createPengeluaran(transactionPayload);
       if (res.data.status === 201) {
         toast.success("Transaksi berhasil dibuat");
         // Optionally, clear the form fields

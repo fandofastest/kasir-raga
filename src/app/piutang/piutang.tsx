@@ -66,6 +66,16 @@ export default function PiutangPage() {
   // State untuk sorting
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  function getTimestampWithCurrentTime(dateString: string): string {
+    const now = new Date();
+    // Ambil bagian jam, menit, detik (format "HH:MM:SS")
+    const timePart = now.toTimeString().split(" ")[0];
+    return `${dateString}T${timePart}`;
+  }
 
   // Fungsi untuk memuat data transaksi cicilan dengan filter
   const loadData = async () => {
@@ -169,7 +179,11 @@ export default function PiutangPage() {
       return;
     }
     try {
-      const res = await payInstallment(selectedTransaction._id, paymentAmount);
+      const res = await payInstallment(
+        selectedTransaction._id,
+        paymentAmount,
+        getTimestampWithCurrentTime(selectedDate),
+      );
       if (res.data.status === 200) {
         toast.success("Pembayaran berhasil");
         setModalType(null);
@@ -202,6 +216,8 @@ export default function PiutangPage() {
     (sum, trx) => sum + computeSisaUtang(trx),
     0,
   );
+
+  const totalDp = transactions.reduce((sum, trx) => sum + trx.dp, 0);
 
   // Handler untuk toggle tampilan detail transaksi (mobile)
   const toggleTransaction = (id: string) => {
@@ -288,6 +304,14 @@ export default function PiutangPage() {
         <p className="text-sm">
           Total Utang:{" "}
           {totalUtang.toLocaleString("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0,
+          })}
+        </p>
+        <p className="text-sm">
+          Total DP:{" "}
+          {totalDp.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
@@ -636,6 +660,17 @@ export default function PiutangPage() {
                 ? "Bayar Cicilan"
                 : "Lunasi Transaksi"}
             </h2>
+            <div className="mb-2 mt-4 flex items-center space-x-2">
+              <label className=" font-medium text-gray-700 dark:text-gray-200">
+                Tanggal Transaksi
+              </label>
+              <input
+                type="date"
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
             <p className="mb-2">
               No. Transaksi: {selectedTransaction.no_transaksi}
             </p>

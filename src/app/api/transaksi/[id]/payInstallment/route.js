@@ -23,6 +23,10 @@ export async function PUT(request, { params }) {
     }
     const payDate = paymentDate ? new Date(paymentDate) : new Date();
 
+    console.log("====================================");
+    console.log(amount, paymentDate);
+    console.log("====================================");
+
     // Temukan transaksi berdasarkan ID
     const transaction = await Transaksi.findById(id);
     if (!transaction) {

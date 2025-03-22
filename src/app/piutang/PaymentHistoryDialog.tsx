@@ -17,12 +17,17 @@ interface PaymentHistoryDialogProps {
   onClose: () => void;
 }
 
+const handleInvoiceClick = (transaction: any) => {
+  window.open(`/invoice/${transaction.no_transaksi}/cicilan`, "_blank");
+};
+
 const PaymentHistoryDialog: React.FC<PaymentHistoryDialogProps> = ({
   transaction,
   onClose,
 }) => {
   // Hitung summary:
   const totalHutang = transaction.total_harga - (transaction.dp || 0);
+  const totalDp = transaction.dp || 0;
   const paidAmount = transaction.jadwalPembayaran.reduce(
     (sum, inst) => (inst.paid ? sum + inst.installment : sum),
     0,
@@ -50,6 +55,14 @@ const PaymentHistoryDialog: React.FC<PaymentHistoryDialogProps> = ({
           <p className="text-sm text-gray-800 dark:text-gray-100">
             Total Hutang:{" "}
             {totalHutang.toLocaleString("id-ID", {
+              style: "currency",
+              currency: "IDR",
+              minimumFractionDigits: 2,
+            })}
+          </p>
+          <p className="text-sm text-gray-800 dark:text-gray-100">
+            DP:{" "}
+            {totalDp.toLocaleString("id-ID", {
               style: "currency",
               currency: "IDR",
               minimumFractionDigits: 2,
@@ -141,6 +154,13 @@ const PaymentHistoryDialog: React.FC<PaymentHistoryDialogProps> = ({
             className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             Tutup
+          </button>
+          <div className="px-2"></div>
+          <button
+            onClick={() => handleInvoiceClick(transaction)}
+            className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+          >
+            Invoice
           </button>
         </div>
       </div>

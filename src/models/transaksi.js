@@ -41,6 +41,11 @@ const transactionSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    tanggal_transaksi: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
     kasir: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

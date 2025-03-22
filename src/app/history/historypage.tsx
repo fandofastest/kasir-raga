@@ -137,6 +137,8 @@ export default function TransactionHistoryPage() {
       }
 
       const data = await fetchTransaction(params);
+      console.log(data);
+
       setTransactions(data.data.transactions);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat memuat data");

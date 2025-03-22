@@ -2,16 +2,27 @@
 
 import { useEffect, useState, FormEvent, MouseEvent } from "react";
 import * as XLSX from "xlsx";
+import Select from "react-select";
 import {
   fetchTransaction,
   fetchSupplier,
   fetchPelanggan,
+  fetchKategori, // API untuk mendapatkan data kategori
+  fetchProducts, // API untuk mendapatkan data produk
 } from "@/lib/dataService";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import Image from "next/image";
 import { formatRupiah } from "@/components/tools";
 
-export default function LaporanPenjualanPage() {
+interface LaporanTransaksiPageProps {
+  transactionType: "penjualan" | "pembelian";
+}
+
+export default function LaporanTransaksiPage({
+  transactionType,
+}: LaporanTransaksiPageProps) {
+  const isPenjualan = transactionType === "penjualan";
+
   // State untuk data transaksi, loading, dan error
   const [transactions, setTransactions] = useState<Transaksi[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -22,12 +33,15 @@ export default function LaporanPenjualanPage() {
   const [endDate, setEndDate] = useState<string>("");
   const [supplier, setSupplier] = useState<string>("");
   const [pembeli, setPembeli] = useState<string>("");
-  const [logo, setLogo] = useState<string>("");
   const [metodePembayaran, setMetodePembayaran] = useState<string>("");
+  const [kategori, setKategori] = useState<string>("");
+  const [produk, setProduk] = useState<string>("");
 
-  // Options untuk dropdown supplier dan pembeli
+  // Options untuk dropdown
   const [supplierOptions, setSupplierOptions] = useState<any[]>([]);
   const [pembeliOptions, setPembeliOptions] = useState<any[]>([]);
+  const [kategoriOptions, setKategoriOptions] = useState<any[]>([]);
+  const [produkOptions, setProdukOptions] = useState<any[]>([]);
 
   // State untuk menentukan apakah tampilan mobile atau desktop
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -43,6 +57,7 @@ export default function LaporanPenjualanPage() {
     "Jln. Alamat Surabaya",
   );
   const [storePhone, setStorePhone] = useState<string>("081353935206");
+  const [logo, setLogo] = useState<string>("");
 
   // --- Pagination & Sorting ---
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -72,19 +87,23 @@ export default function LaporanPenjualanPage() {
     if (localCompanyLogo) setLogo(localCompanyLogo);
   }, []);
 
-  // Load opsi supplier dan pembeli dari API
+  // Load opsi dari API
   const loadOptions = async () => {
     try {
       const supplierRes = await fetchSupplier();
       setSupplierOptions(supplierRes.data);
       const pembeliRes = await fetchPelanggan();
       setPembeliOptions(pembeliRes.data);
+      const kategoriRes = await fetchKategori();
+      setKategoriOptions(kategoriRes.data);
+      const produkRes = await fetchProducts();
+      setProdukOptions(produkRes.data);
     } catch (err) {
       console.error("Gagal memuat opsi:", err);
     }
   };
 
-  // Fungsi untuk memuat data transaksi berdasarkan filter, hanya transaksi penjualan
+  // Fungsi untuk memuat data transaksi berdasarkan filter
   const loadTransactions = async () => {
     setLoading(true);
     try {
@@ -94,7 +113,9 @@ export default function LaporanPenjualanPage() {
       if (supplier) params.supplier = supplier;
       if (pembeli) params.pelanggan = pembeli;
       if (metodePembayaran) params.metode_pembayaran = metodePembayaran;
-      params.tipe_transaksi = "penjualan";
+      if (kategori) params.kategori = kategori;
+      if (produk) params.produk = produk;
+      params.tipe_transaksi = transactionType;
 
       const result = await fetchTransaction(params);
       setTransactions(result.data.transactions);
@@ -106,7 +127,7 @@ export default function LaporanPenjualanPage() {
     }
   };
 
-  // Load opsi dan data transaksi saat pertama kali render
+  // Load opsi dan transaksi saat pertama kali render
   useEffect(() => {
     loadOptions();
     loadTransactions();
@@ -118,7 +139,7 @@ export default function LaporanPenjualanPage() {
     loadTransactions();
   };
 
-  // Toggle untuk membuka/tutup detail transaksi (hanya untuk mobile)
+  // Toggle detail transaksi (mobile)
   const toggleTransaction = (id: string) => {
     setOpenTransactions((prev) => {
       const newSet = new Set(prev);
@@ -131,7 +152,7 @@ export default function LaporanPenjualanPage() {
     });
   };
 
-  // Helper function: hitung modal untuk satu transaksi
+  // Helper: hitung modal transaksi
   const getTransactionModal = (trx: Transaksi): number => {
     return trx.produk.reduce((acc, pd) => {
       const hargaModal = pd.productId?.harga_modal || 0;
@@ -139,15 +160,14 @@ export default function LaporanPenjualanPage() {
     }, 0);
   };
 
-  // Helper function: hitung laba (total_harga - modal)
+  // Helper: hitung laba (total_harga - modal)
   const getTransactionLaba = (trx: Transaksi): number => {
     return trx.total_harga - getTransactionModal(trx);
   };
 
-  // Sorting: update sortColumn dan sortDirection
+  // Sorting
   const handleSort = (column: string) => {
     if (sortColumn === column) {
-      // Toggle arah sort
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortColumn(column);
@@ -155,11 +175,9 @@ export default function LaporanPenjualanPage() {
     }
   };
 
-  // Fungsi untuk mendapatkan data transaksi yang sudah diurutkan
   const getSortedTransactions = () => {
     const sorted = [...transactions];
     if (sortColumn) {
-      // Sorting untuk kolom computed modal dan laba
       if (sortColumn === "modal") {
         sorted.sort((a, b) => {
           const modalA = getTransactionModal(a);
@@ -176,21 +194,17 @@ export default function LaporanPenjualanPage() {
         });
         return sorted;
       }
-      // Sorting untuk kolom lainnya
       sorted.sort((a, b) => {
         let valA = a[sortColumn as keyof Transaksi];
         let valB = b[sortColumn as keyof Transaksi];
-        // Jika berupa string, lakukan compare
         if (typeof valA === "string" && typeof valB === "string") {
           return sortDirection === "asc"
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA);
         }
-        // Jika berupa number atau date
         if (typeof valA === "number" && typeof valB === "number") {
           return sortDirection === "asc" ? valA - valB : valB - valA;
         }
-        // Jika berupa tanggal (atau bisa dikonversi)
         if (sortColumn === "createdAt") {
           const dateA = new Date(valA as string).getTime();
           const dateB = new Date(valB as string).getTime();
@@ -202,7 +216,6 @@ export default function LaporanPenjualanPage() {
     return sorted;
   };
 
-  // Pagination: hitung data yang tampil untuk layar
   const sortedTransactions = getSortedTransactions();
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -212,8 +225,8 @@ export default function LaporanPenjualanPage() {
   );
   const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
 
-  // Hitung total penjualan, modal, dan laba (menggunakan data transaksi penuh)
-  const totalPenjualan = sortedTransactions.reduce(
+  // Summary
+  const totalValue = sortedTransactions.reduce(
     (sum, trx) => sum + trx.total_harga,
     0,
   );
@@ -226,45 +239,71 @@ export default function LaporanPenjualanPage() {
     0,
   );
 
-  // Fungsi cetak laporan (print seluruh data)
   const handlePrint = () => {
     window.print();
   };
 
-  // Fungsi export ke Excel (menggunakan data penuh, bukan yang dipagination)
   const handleExportToExcel = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    const dataToExport = sortedTransactions.map((trx, index) => ({
-      No: index + 1,
-      "No Transaksi": trx.no_transaksi,
-      Tanggal: new Date(trx.createdAt).toLocaleDateString("id-ID"),
-      Tipe: trx.tipe_transaksi,
-      Pelanggan: trx.pembeli?.nama || "-",
-      Modal: getTransactionModal(trx),
-      Total: trx.total_harga,
-      Laba: getTransactionLaba(trx),
-      Operator:
-        typeof trx.kasir === "object" && trx.kasir ? trx.kasir.name : trx.kasir,
-    }));
+    const dataToExport = sortedTransactions.map((trx, index) => {
+      const baseData = {
+        No: index + 1,
+        "No Transaksi": trx.no_transaksi,
+        Tanggal: new Date(trx.createdAt).toLocaleDateString("id-ID"),
+        Tipe: trx.tipe_transaksi,
+      };
+      if (isPenjualan) {
+        return {
+          ...baseData,
+          Pelanggan: trx.pembeli?.nama || "-",
+          Modal: getTransactionModal(trx),
+          Total: trx.total_harga,
+          Laba: getTransactionLaba(trx),
+          Operator:
+            typeof trx.kasir === "object" && trx.kasir
+              ? trx.kasir.name
+              : trx.kasir,
+        };
+      } else {
+        return {
+          ...baseData,
+          Supplier: trx.supplier?.nama || "-",
+          Total: trx.total_harga,
+          Operator:
+            typeof trx.kasir === "object" && trx.kasir
+              ? trx.kasir.name
+              : trx.kasir,
+        };
+      }
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-
-    // Tambahkan summary di paling bawah dengan "Rp" dan jumlah transaksi
-    const summaryRows = [
-      [], // baris kosong sebagai pemisah
-      ["Jumlah Transaksi", sortedTransactions.length],
-      ["Total Penjualan", "Rp " + totalPenjualan.toLocaleString("id-ID")],
-      ["Total Modal", "Rp " + totalModal.toLocaleString("id-ID")],
-      ["Total Laba", "Rp " + totalLaba.toLocaleString("id-ID")],
-    ];
+    const summaryRows = isPenjualan
+      ? [
+          [],
+          ["Jumlah Transaksi", sortedTransactions.length],
+          ["Total Penjualan", "Rp " + totalValue.toLocaleString("id-ID")],
+          ["Total Modal", "Rp " + totalModal.toLocaleString("id-ID")],
+          ["Total Laba", "Rp " + totalLaba.toLocaleString("id-ID")],
+        ]
+      : [
+          [],
+          ["Jumlah Transaksi", sortedTransactions.length],
+          ["Total Pembelian", "Rp " + totalValue.toLocaleString("id-ID")],
+        ];
     XLSX.utils.sheet_add_aoa(worksheet, summaryRows, { origin: -1 });
-
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "LaporanPenjualan");
-    XLSX.writeFile(workbook, "LaporanPenjualan.xlsx");
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      isPenjualan ? "LaporanPenjualan" : "LaporanPembelian",
+    );
+    XLSX.writeFile(
+      workbook,
+      isPenjualan ? "LaporanPenjualan.xlsx" : "LaporanPembelian.xlsx",
+    );
   };
 
-  // Pagination controls
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -279,7 +318,7 @@ export default function LaporanPenjualanPage() {
           onSubmit={handleSubmit}
           className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {/* Filter Tanggal Mulai */}
+          {/* Tanggal Mulai */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Tanggal Mulai
@@ -291,7 +330,7 @@ export default function LaporanPenjualanPage() {
               className="mt-1 block w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
-          {/* Filter Tanggal Akhir */}
+          {/* Tanggal Akhir */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Tanggal Akhir
@@ -303,60 +342,86 @@ export default function LaporanPenjualanPage() {
               className="mt-1 block w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
-          {/* Filter Supplier */}
+          {/* Supplier / Konsumen */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Supplier
+              {isPenjualan ? "Konsumen" : "Supplier"}
             </label>
-            <select
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            >
-              <option value="">Semua</option>
-              {supplierOptions.map((opt) => (
-                <option key={opt._id} value={opt.nama}>
-                  {opt.nama}
-                </option>
-              ))}
-            </select>
+            <Select
+              options={
+                isPenjualan
+                  ? pembeliOptions.map((opt) => ({
+                      value: opt._id,
+                      label: opt.nama,
+                    }))
+                  : supplierOptions.map((opt) => ({
+                      value: opt.nama,
+                      label: opt.nama,
+                    }))
+              }
+              onChange={(selected) =>
+                isPenjualan
+                  ? setPembeli(selected ? selected.value : "")
+                  : setSupplier(selected ? selected.value : "")
+              }
+              isClearable
+              placeholder={
+                isPenjualan ? "Pilih Konsumen..." : "Pilih Supplier..."
+              }
+            />
           </div>
-          {/* Filter Konsumen (Pembeli) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Konsumen
-            </label>
-            <select
-              value={pembeli}
-              onChange={(e) => setPembeli(e.target.value)}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            >
-              <option value="">Semua</option>
-              {pembeliOptions.map((opt) => (
-                <option key={opt._id} value={opt._id}>
-                  {opt.nama}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Filter Metode Pembayaran */}
+          {/* Metode Pembayaran */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Metode Pembayaran
             </label>
-            <select
-              value={metodePembayaran}
-              onChange={(e) => setMetodePembayaran(e.target.value)}
-              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            >
-              <option value="">Semua</option>
-              <option value="edc">EDC</option>
-              <option value="tunai">Tunai</option>
-              <option value="bank_transfer">Transfer</option>
-              <option value="cicilan">Cicilan</option>
-            </select>
+            <Select
+              options={[
+                { value: "edc", label: "EDC" },
+                { value: "tunai", label: "Tunai" },
+                { value: "bank_transfer", label: "Transfer" },
+                { value: "cicilan", label: "Cicilan" },
+              ]}
+              onChange={(selected) =>
+                setMetodePembayaran(selected ? selected.value : "")
+              }
+              isClearable
+              placeholder="Pilih Metode..."
+            />
           </div>
-          {/* Tombol Terapkan Filter */}
+          {/* Kategori */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Kategori
+            </label>
+            <Select
+              options={kategoriOptions.map((opt) => ({
+                value: opt._id,
+                label: opt.nama,
+              }))}
+              onChange={(selected) =>
+                setKategori(selected ? selected.value : "")
+              }
+              isClearable
+              placeholder="Pilih Kategori..."
+            />
+          </div>
+          {/* Produk */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Produk
+            </label>
+            <Select
+              options={produkOptions.map((opt) => ({
+                value: opt.nama_produk,
+                label: opt.nama_produk,
+              }))}
+              onChange={(selected) => setProduk(selected ? selected.value : "")}
+              isClearable
+              placeholder="Pilih Produk..."
+            />
+          </div>
+          {/* Tombol Filter */}
           <div className="flex items-end">
             <button
               type="submit"
@@ -367,17 +432,18 @@ export default function LaporanPenjualanPage() {
           </div>
         </form>
       </div>
+
       <div className="mb-10 mt-8 text-center sm:mt-0">
-        <h1 className="text-xl font-bold">LAPORAN PENJUALAN</h1>
+        <h1 className="text-xl font-bold">
+          LAPORAN {isPenjualan ? "PENJUALAN" : "PEMBELIAN"}
+        </h1>
       </div>
 
       {/* HEADER untuk cetak */}
       <div className="mb-4 flex flex-col items-center border-b pb-2 dark:border-gray-700 sm:flex-row sm:justify-between sm:space-y-0 print:bg-white print:text-black">
-        {/* Bagian Kiri: Logo & Info Toko */}
-
         <div className="flex items-center space-x-4">
           <Image
-            src={logo} // Ganti path sesuai logo Anda
+            src={logo}
             alt="Logo Toko"
             width={100}
             height={100}
@@ -389,26 +455,31 @@ export default function LaporanPenjualanPage() {
             <p>{storePhone}</p>
           </div>
         </div>
-
-        {/* Judul Tengah */}
-
-        {/* Bagian Kanan: Info Transaksi */}
         <div className="mt-4 text-right text-sm font-bold sm:mt-0">
           <p>
-            {" "}
             {new Date().toLocaleDateString("id-ID", {
               weekday: "long",
               day: "numeric",
               month: "long",
               year: "numeric",
-            })}{" "}
+            })}
           </p>
-          <p>Total Penjualan: {formatRupiah(totalPenjualan)}</p>
-          <p>Total modal: {formatRupiah(totalModal)} </p>
-          <p>Total Laba: {formatRupiah(totalLaba)}</p>
+          {isPenjualan ? (
+            <>
+              <p>Total Penjualan: {formatRupiah(totalValue)}</p>
+              <p>Total Modal: {formatRupiah(totalModal)}</p>
+              <p>Total Laba: {formatRupiah(totalLaba)}</p>
+            </>
+          ) : (
+            <>
+              <p>Total Pembelian: {formatRupiah(totalValue)}</p>
+              <p>Total Transaksi: {transactions.length}</p>
+            </>
+          )}
         </div>
       </div>
-      {/* Tabel untuk tampilan layar (menggunakan pagination) */}
+
+      {/* Tabel untuk desktop */}
       <div className={`${isMobile ? "hidden" : "block"} print:hidden`}>
         <div className="overflow-x-auto text-black-2 dark:text-white print:bg-white">
           <table className="w-full border text-xs dark:border-gray-700">
@@ -438,15 +509,19 @@ export default function LaporanPenjualanPage() {
                   {sortColumn === "tipe_transaksi" &&
                     (sortDirection === "asc" ? "▲" : "▼")}
                 </th>
-                <th className="border px-2 py-1">Pelanggan</th>
-                <th
-                  className="cursor-pointer border px-2 py-1"
-                  onClick={() => handleSort("modal")}
-                >
-                  Modal{" "}
-                  {sortColumn === "modal" &&
-                    (sortDirection === "asc" ? "▲" : "▼")}
+                <th className="border px-2 py-1">
+                  {isPenjualan ? "Pelanggan" : "Supplier"}
                 </th>
+                {isPenjualan && (
+                  <th
+                    className="cursor-pointer border px-2 py-1"
+                    onClick={() => handleSort("modal")}
+                  >
+                    Modal{" "}
+                    {sortColumn === "modal" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                )}
                 <th
                   className="cursor-pointer border px-2 py-1"
                   onClick={() => handleSort("total_harga")}
@@ -455,14 +530,16 @@ export default function LaporanPenjualanPage() {
                   {sortColumn === "total_harga" &&
                     (sortDirection === "asc" ? "▲" : "▼")}
                 </th>
-                <th
-                  className="cursor-pointer border px-2 py-1"
-                  onClick={() => handleSort("laba")}
-                >
-                  Laba{" "}
-                  {sortColumn === "laba" &&
-                    (sortDirection === "asc" ? "▲" : "▼")}
-                </th>
+                {isPenjualan && (
+                  <th
+                    className="cursor-pointer border px-2 py-1"
+                    onClick={() => handleSort("laba")}
+                  >
+                    Laba{" "}
+                    {sortColumn === "laba" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                )}
                 <th className="border px-2 py-1">Operator</th>
               </tr>
             </thead>
@@ -478,17 +555,23 @@ export default function LaporanPenjualanPage() {
                   </td>
                   <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
                   <td className="border px-2 py-1">
-                    {trx.pembeli?.nama || "-"}
+                    {isPenjualan
+                      ? trx.pembeli?.nama || "-"
+                      : trx.supplier?.nama || "-"}
                   </td>
-                  <td className="border px-2 py-1 text-right">
-                    {formatRupiah(getTransactionModal(trx))}
-                  </td>
+                  {isPenjualan && (
+                    <td className="border px-2 py-1 text-right">
+                      {formatRupiah(getTransactionModal(trx))}
+                    </td>
+                  )}
                   <td className="border px-2 py-1 text-right">
                     {formatRupiah(trx.total_harga)}
                   </td>
-                  <td className="border px-2 py-1 text-right">
-                    {formatRupiah(getTransactionLaba(trx))}
-                  </td>
+                  {isPenjualan && (
+                    <td className="border px-2 py-1 text-right">
+                      {formatRupiah(getTransactionLaba(trx))}
+                    </td>
+                  )}
                   <td className="border px-2 py-1">
                     {typeof trx.kasir === "object" && trx.kasir
                       ? trx.kasir.name
@@ -499,7 +582,6 @@ export default function LaporanPenjualanPage() {
             </tbody>
           </table>
         </div>
-        {/* Pagination Controls */}
         <div className="mt-4 flex justify-end space-x-2 text-sm print:hidden">
           <button
             onClick={() => goToPage(currentPage - 1)}
@@ -520,7 +602,96 @@ export default function LaporanPenjualanPage() {
           </button>
         </div>
       </div>
-      {/* Tabel untuk tampilan print (menampilkan seluruh data) */}
+
+      {/* Accordion untuk mobile */}
+      <div className={`${isMobile ? "block" : "hidden"} print:hidden`}>
+        {paginatedTransactions.map((trx) => (
+          <div key={trx._id} className="mb-2 rounded border">
+            <div
+              className="flex cursor-pointer items-center justify-between p-2"
+              onClick={() => toggleTransaction(trx._id)}
+            >
+              <div>
+                <p className="font-bold">{trx.no_transaksi}</p>
+                <p className="text-sm">
+                  {new Date(trx.createdAt).toLocaleDateString("id-ID")}
+                </p>
+              </div>
+              <div className="font-bold">
+                {openTransactions.has(trx._id) ? "-" : "+"}
+              </div>
+            </div>
+            {openTransactions.has(trx._id) && (
+              <div className="border-t p-2">
+                {isPenjualan ? (
+                  <>
+                    <p>
+                      <span className="font-semibold">Pelanggan:</span>{" "}
+                      {trx.pembeli?.nama || "-"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Modal:</span>{" "}
+                      {formatRupiah(getTransactionModal(trx))}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Total:</span>{" "}
+                      {formatRupiah(trx.total_harga)}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Laba:</span>{" "}
+                      {formatRupiah(getTransactionLaba(trx))}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Operator:</span>{" "}
+                      {typeof trx.kasir === "object" && trx.kasir
+                        ? trx.kasir.name
+                        : trx.kasir}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      <span className="font-semibold">Supplier:</span>{" "}
+                      {trx.supplier?.nama || "-"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Total:</span>{" "}
+                      {formatRupiah(trx.total_harga)}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Operator:</span>{" "}
+                      {typeof trx.kasir === "object" && trx.kasir
+                        ? trx.kasir.name
+                        : trx.kasir}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        <div className="mt-4 flex justify-end space-x-2 text-sm print:hidden">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="rounded border px-2 py-1 disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="rounded border px-2 py-1 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      {/* Tabel untuk tampilan print */}
       <div className="hidden print:block">
         <div className="overflow-x-auto">
           <table className="w-full border text-xs">
@@ -529,10 +700,12 @@ export default function LaporanPenjualanPage() {
                 <th className="border px-2 py-1">No. Transaksi</th>
                 <th className="border px-2 py-1">Tanggal</th>
                 <th className="border px-2 py-1">Tipe</th>
-                <th className="border px-2 py-1">Pelanggan</th>
-                <th className="border px-2 py-1">Modal</th>
+                <th className="border px-2 py-1">
+                  {isPenjualan ? "Pelanggan" : "Supplier"}
+                </th>
+                {isPenjualan && <th className="border px-2 py-1">Modal</th>}
                 <th className="border px-2 py-1">Total</th>
-                <th className="border px-2 py-1">Laba</th>
+                {isPenjualan && <th className="border px-2 py-1">Laba</th>}
                 <th className="border px-2 py-1">Operator</th>
               </tr>
             </thead>
@@ -545,17 +718,23 @@ export default function LaporanPenjualanPage() {
                   </td>
                   <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
                   <td className="border px-2 py-1">
-                    {trx.pembeli?.nama || "-"}
+                    {isPenjualan
+                      ? trx.pembeli?.nama || "-"
+                      : trx.supplier?.nama || "-"}
                   </td>
-                  <td className="border px-2 py-1 text-right">
-                    {formatRupiah(getTransactionModal(trx))}
-                  </td>
+                  {isPenjualan && (
+                    <td className="border px-2 py-1 text-right">
+                      {formatRupiah(getTransactionModal(trx))}
+                    </td>
+                  )}
                   <td className="border px-2 py-1 text-right">
                     {formatRupiah(trx.total_harga)}
                   </td>
-                  <td className="border px-2 py-1 text-right">
-                    {formatRupiah(getTransactionLaba(trx))}
-                  </td>
+                  {isPenjualan && (
+                    <td className="border px-2 py-1 text-right">
+                      {formatRupiah(getTransactionLaba(trx))}
+                    </td>
+                  )}
                   <td className="border px-2 py-1">
                     {typeof trx.kasir === "object" && trx.kasir
                       ? trx.kasir.name
@@ -567,7 +746,8 @@ export default function LaporanPenjualanPage() {
           </table>
         </div>
       </div>
-      {/* Export dan Print tombol ditempatkan di bawah tabel (hanya untuk screen) */}
+
+      {/* Tombol Export & Print */}
       <div className="mt-4 flex gap-2 print:hidden">
         <button
           onClick={handleExportToExcel}

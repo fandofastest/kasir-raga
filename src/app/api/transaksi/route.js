@@ -271,6 +271,36 @@ export const GET = withAuth(async (req) => {
       filter.$or = [{ no_transaksi: { $regex: searchValue, $options: "i" } }];
     }
 
+    // --- Tambahan filter berdasarkan produk dan kategori ---
+    // Gunakan operator $and untuk menggabungkan kondisi pada produk
+    const andConditions = [];
+    if (searchParams.has("produk")) {
+      const produkName = searchParams.get("produk");
+      const productDoc = await Product.findOne({
+        nama_produk: { $regex: produkName, $options: "i" },
+      });
+      andConditions.push({
+        "produk.productId": productDoc ? productDoc._id : null,
+      });
+    }
+    if (searchParams.has("kategori")) {
+      const kategoriValue = searchParams.get("kategori");
+      // Asumsikan kategori dikirim sebagai ID kategori
+      const productsInCategory = await Product.find({
+        kategori: kategoriValue,
+      }).select("_id");
+      const productIdsInCategory = productsInCategory.map((p) => p._id);
+      andConditions.push({
+        "produk.productId": { $in: productIdsInCategory },
+      });
+    }
+    if (andConditions.length > 0) {
+      filter.$and = filter.$and
+        ? filter.$and.concat(andConditions)
+        : andConditions;
+    }
+    // --- End tambahan filter produk & kategori ---
+
     // Sorting: parameter sortBy dan sortOrder (asc atau desc)
     let sort = {};
     if (searchParams.has("sortBy")) {

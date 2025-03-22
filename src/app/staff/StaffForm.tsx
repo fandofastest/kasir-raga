@@ -3,8 +3,9 @@
 import { XCircleIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { Staff } from "@/models/modeltsx/staffTypes"; // Sesuaikan path sesuai struktur proyek Anda
+import { Staff } from "@/models/modeltsx/staffTypes";
 import { fetchStaff, deleteStaff } from "@/lib/dataService";
+import ReactDOM from "react-dom";
 
 interface StaffFormModalProps {
   isOpen: boolean;
@@ -109,14 +110,14 @@ export default function StaffFormModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-      onClick={onClose}
+      onClick={onClose} // Klik di backdrop akan menutup modal
     >
       <div
         className="relative w-full max-w-md rounded-lg bg-white shadow-lg dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()} // Mencegah klik di dalam konten merembet ke backdrop
       >
         <div className="flex items-center justify-between border-b px-4 py-3 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
@@ -198,4 +199,6 @@ export default function StaffFormModal({
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 }

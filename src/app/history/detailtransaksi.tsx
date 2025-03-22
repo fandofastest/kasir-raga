@@ -133,6 +133,14 @@ const TransactionDetailDialog = ({
               </div>
               <div>
                 <p className="font-medium text-gray-700 dark:text-gray-300">
+                  Down Payment:
+                </p>
+                <p className="text-gray-900 dark:text-gray-100">
+                  Rp {transaction.dp?.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-700 dark:text-gray-300">
                   Tipe Transaksi:
                 </p>
                 <p className="text-gray-900 dark:text-gray-100">
@@ -299,7 +307,7 @@ const TransactionDetailDialog = ({
                 onClick={onClose}
                 className="mb-2 rounded bg-gray-300 px-4 py-2 text-sm text-gray-800 hover:bg-gray-400 sm:mb-0"
               >
-                Batal
+                Tutup
               </button>
               <button
                 type="submit"
