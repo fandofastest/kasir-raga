@@ -125,7 +125,20 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
         : "FAKTUR";
 
   return (
-    <div className="mx-auto w-full max-w-[8.3in] bg-white p-8 text-sm text-black shadow dark:bg-gray-900 dark:text-white print:!bg-white print:!text-black print:shadow-none">
+    <div className="relative mx-auto w-full max-w-[8.3in] bg-white p-8 text-sm text-black shadow dark:bg-gray-900 dark:text-white print:!bg-white print:!text-black print:shadow-none">
+      {/* Logo/Stempel Lunas: tampilkan jika properti transaksi.lunas true */}
+      {transaksi.status_transaksi === "lunas" && (
+        <div className="absolute bottom-4 left-4 rotate-12 transform">
+          <Image
+            src="/images/lunas.png"
+            alt="Lunas"
+            width={200}
+            height={200}
+            className="opacity-75"
+          />
+        </div>
+      )}
+
       {/* Header Invoice */}
       <div className="flex border-b pb-4">
         {/* Kiri: Info Perusahaan */}
@@ -134,7 +147,7 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
             <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
               <Image
                 src={`/api/image-proxy?url=${encodeURIComponent(companyLogo)}`}
-                alt="Product"
+                alt="Company Logo"
                 fill
                 className="rounded-md object-cover"
               />
@@ -233,7 +246,7 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
                     Rp{printMode === "armada" ? "****" : "0"}
                   </td>
                   <td className="py-2 text-right">
-                    Rp
+                    Rp{" "}
                     {printMode === "armada"
                       ? "****"
                       : rowTotal.toLocaleString("id-ID")}

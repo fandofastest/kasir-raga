@@ -146,7 +146,20 @@ const InvoicePaymentHistoryPage: React.FC<InvoiceProps> = ({ transaksi }) => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[8.3in] bg-white p-8 text-sm text-black shadow dark:bg-gray-900 dark:text-white print:!bg-white print:!text-black print:shadow-none">
+    <div className="relative mx-auto w-full max-w-[8.3in] bg-white p-8 text-sm text-black shadow dark:bg-gray-900 dark:text-white print:!bg-white print:!text-black print:shadow-none">
+      {/* Stempel Lunas: tampilkan jika outstanding kurang dari atau sama dengan 0 */}
+      {outstanding <= 0 && (
+        <div className="absolute bottom-40 right-4 rotate-12 transform">
+          <Image
+            src={`/images/lunas.png`}
+            alt="Lunas"
+            width={200}
+            height={200}
+            className="h-60 w-60 opacity-75"
+          />
+        </div>
+      )}
+
       {/* Header Invoice */}
       <div className="flex border-b pb-4">
         {/* Kiri: Info Perusahaan */}
@@ -317,7 +330,7 @@ const InvoicePaymentHistoryPage: React.FC<InvoiceProps> = ({ transaksi }) => {
           <h2 className="mb-4 text-lg font-bold">Riwayat Pembayaran</h2>
 
           {/* Summary Riwayat Pembayaran */}
-          <div className="mb-4 rounded  ">
+          <div className="mb-4 rounded">
             <p className="text-sm text-gray-800 dark:text-gray-100">
               Total Hutang:{" "}
               {totalHutang.toLocaleString("id-ID", {
