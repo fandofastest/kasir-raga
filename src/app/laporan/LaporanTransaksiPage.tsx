@@ -510,7 +510,7 @@ export default function LaporanTransaksiPage({
         <div className="mb-4 flex flex-col items-center border-b pb-2 dark:border-gray-700 sm:flex-row sm:justify-between sm:space-y-0 print:bg-white print:text-black">
           <div className="flex items-center space-x-4">
             <Image
-              src={logo}
+              src={`/api/image-proxy?url=${encodeURIComponent(logo)}`}
               alt="Logo Toko"
               width={100}
               height={100}

@@ -338,7 +338,7 @@ export default function LaporanBiayaLainnyaPage() {
           <div className="flex items-center space-x-4">
             {logo && (
               <Image
-                src={logo}
+                src={`/api/image-proxy?url=${encodeURIComponent(logo)}`}
                 alt="Logo Toko"
                 width={100}
                 height={100}
