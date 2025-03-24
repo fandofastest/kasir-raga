@@ -229,12 +229,18 @@ export default function ProductFormModal({
     };
 
     let res;
-    if (product && product._id) {
-      res = await updateProduct(product._id, productData);
-    } else {
-      res = await createProduct(productData);
+    try {
+      if (product && product._id) {
+        res = await updateProduct(product._id, productData);
+      } else {
+        res = await createProduct(productData);
+      }
+    } catch (error) {
+      console.log(error);
+      console.log("====================================");
+      console.log(res);
+      console.log("====================================");
     }
-
     setLoading(false);
 
     if (res.status === 200 || res.status === 201) {

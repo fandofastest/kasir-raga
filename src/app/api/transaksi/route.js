@@ -219,17 +219,29 @@ export const GET = withAuth(async (req) => {
     }
     // Filter berdasarkan rentang tanggal jika startDate/endDate diberikan
     if (searchParams.has("startDate") || searchParams.has("endDate")) {
-      filter.createdAt = {};
+      filter.tanggal_transaksi = {};
       if (searchParams.has("startDate")) {
-        filter.createdAt.$gte = new Date(searchParams.get("startDate"));
+        filter.tanggal_transaksi.$gte = new Date(searchParams.get("startDate"));
       }
       if (searchParams.has("endDate")) {
         const end = new Date(searchParams.get("endDate"));
         // Set ke akhir hari: 23:59:59.999
         end.setHours(23, 59, 59, 999);
-        filter.createdAt.$lte = end;
+        filter.tanggal_transaksi.$lte = end;
       }
+    } else if (
+      !searchParams.has("startDate") &&
+      !searchParams.has("endDate") &&
+      !searchParams.has("period")
+    ) {
+      // Jika tanggal tidak diset, ambil data dalam bulan ini saja
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+      filter.tanggal_transaksi = { $gte: startOfMonth, $lte: endOfMonth };
     }
+
     // Filter relatif berdasarkan periode: day, week, month, atau year
     if (searchParams.has("period")) {
       const period = searchParams.get("period");
@@ -261,9 +273,9 @@ export const GET = withAuth(async (req) => {
           break;
       }
       if (start && end) {
-        filter.createdAt = filter.createdAt || {};
-        filter.createdAt.$gte = start;
-        filter.createdAt.$lt = end;
+        filter.tanggal_transaksi = filter.tanggal_transaksi || {};
+        filter.tanggal_transaksi.$gte = start;
+        filter.tanggal_transaksi.$lt = end;
       }
     }
     if (searchParams.has("search")) {
@@ -309,7 +321,7 @@ export const GET = withAuth(async (req) => {
       sort[sortBy] = sortOrder;
     } else {
       // Default sort berdasarkan createdAt descending
-      sort = { createdAt: -1 };
+      sort = { tanggal_transaksi: -1 };
     }
 
     // Query transaksi dengan filter dan sort

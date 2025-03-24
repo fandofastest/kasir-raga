@@ -165,7 +165,7 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
         <div className="flex-1 text-right">
           <p>
             <strong>Tanggal:</strong>{" "}
-            {new Date(transaksi.createdAt).toLocaleDateString("id-ID")}
+            {new Date(transaksi.tanggal_transaksi).toLocaleDateString("id-ID")}
           </p>
           <p>
             <strong>Faktur:</strong> {transaksi.no_transaksi}

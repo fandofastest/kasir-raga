@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 
 import { useState, useEffect, FormEvent } from "react";
 import Select from "react-select";
@@ -12,19 +13,23 @@ import {
 } from "@/lib/dataService";
 import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
-import TransactionDetailDialog from "./detailtransaksi";
+import TransactionDetailDialog from "../detailtransaksi";
 
-export default function TransactionHistoryPage() {
+interface TransactionHistoryPageProps {
+  tipeTransaksi?: string;
+}
+
+export default function TransactionHistoryPage({
+  tipeTransaksi,
+}: TransactionHistoryPageProps) {
   const [transactions, setTransactions] = useState<Transaksi[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
   // Filter state
-  const [searchTerm, setSearchTerm] = useState<string>(""); // nomor transaksi
+  const [searchTerm, setSearchTerm] = useState<string>(""); // Nomor Transaksi
   const [metodePembayaran, setMetodePembayaran] = useState<string>("");
-  // Ubah state statusTransaksi menjadi array string
   const [statusTransaksi, setStatusTransaksi] = useState<string[]>([]);
-  const [tipeTransaksi, setTipeTransaksi] = useState<string>("");
 
   // Filter berdasarkan relasi (select)
   const [supplier, setSupplier] = useState<string>("");
@@ -36,7 +41,7 @@ export default function TransactionHistoryPage() {
   const [minTotal, setMinTotal] = useState<string>("");
   const [maxTotal, setMaxTotal] = useState<string>("");
 
-  // Tambahan filter tanggal
+  // Filter tanggal
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
@@ -60,7 +65,7 @@ export default function TransactionHistoryPage() {
     (staff) => staff.role === "staffBongkar",
   );
 
-  // State untuk mengelola baris yang di-expand pada tampilan mobile
+  // Untuk tampilan mobile (accordion)
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
   // Opsi untuk react‑select pada status transaksi
@@ -73,7 +78,6 @@ export default function TransactionHistoryPage() {
     { value: "cicilan", label: "Cicilan" },
   ];
 
-  // Fungsi membuka dialog detail transaksi (digunakan pada kedua tampilan)
   const openDetailDialog = (trx: Transaksi) => {
     setSelectedTransaction(trx);
   };
@@ -97,19 +101,16 @@ export default function TransactionHistoryPage() {
     }
   };
 
-  // Load opsi saat pertama kali render
   useEffect(() => {
     loadOptions();
   }, []);
 
-  // Fungsi untuk memuat data transaksi
   const loadData = async (
     overrideSortColumn?: string,
     overrideSortDirection?: string,
   ) => {
     setLoading(true);
     try {
-      // Kumpulkan parameter selain status_transaksi
       const params: { [key: string]: string } = {};
       if (searchTerm) params.search = searchTerm;
       if (metodePembayaran) params.metode_pembayaran = metodePembayaran;
@@ -130,15 +131,11 @@ export default function TransactionHistoryPage() {
         params.sortBy = sortCol;
         params.sortOrder = sortDir;
       }
-
-      // Gunakan URLSearchParams untuk mendukung multi nilai
       if (statusTransaksi.length > 0) {
         params.status_transaksi = statusTransaksi.join(",");
       }
-
       const data = await fetchTransaction(params);
       console.log(data);
-
       setTransactions(data.data.transactions);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat memuat data");
@@ -147,17 +144,30 @@ export default function TransactionHistoryPage() {
       setLoading(false);
     }
   };
-
+  const searchParams = useSearchParams();
+  // Pertama, ambil URL parameter dan update state jika ada
   useEffect(() => {
-    loadData();
-  }, []);
+    const noTransaksi = searchParams.get("no_transaksi");
+    if (noTransaksi) {
+      setSearchTerm(noTransaksi);
+    } else {
+      // Jika tidak ada parameter, loadData langsung dipanggil
+      loadData();
+    }
+  }, [searchParams]);
+
+  // Kedua, panggil loadData setiap kali searchTerm berubah (misal karena parameter baru diterima)
+  useEffect(() => {
+    if (searchTerm) {
+      loadData();
+    }
+  }, [searchTerm]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     loadData();
   };
 
-  // Sorting saat header diklik
   const handleSort = (column: string) => {
     let newSortDirection = "asc";
     if (sortColumn === column) {
@@ -175,24 +185,50 @@ export default function TransactionHistoryPage() {
     return "";
   };
 
-  // Menghitung total keseluruhan harga dari semua transaksi
-  const totalPemasukan = transactions
-    .filter(
-      (trx) =>
-        trx.tipe_transaksi === "pemasukan" ||
-        trx.tipe_transaksi === "penjualan",
-    )
+  // Perhitungan ringkasan:
+  const totalTransaksi = transactions.length;
+  const pembelianTransactions = transactions.filter(
+    (trx) => trx.tipe_transaksi === "pembelian",
+  );
+  const penjualanTransactions = transactions.filter(
+    (trx) => trx.tipe_transaksi === "penjualan",
+  );
+  const pengeluaranTransactions = transactions.filter(
+    (trx) => trx.tipe_transaksi === "pengeluaran",
+  );
+
+  const countPembelian = pembelianTransactions.length;
+  const countPenjualan = penjualanTransactions.length;
+  const countPengeluaranLainnya = pengeluaranTransactions.length;
+
+  const totalPembelian = pembelianTransactions.reduce(
+    (sum, trx) => sum + trx.total_harga,
+    0,
+  );
+  const totalPenjualan = penjualanTransactions.reduce(
+    (sum, trx) => sum + trx.total_harga,
+    0,
+  );
+  const totalPengeluaranLainnya = pengeluaranTransactions.reduce(
+    (sum, trx) => sum + trx.total_harga,
+    0,
+  );
+
+  // Menggunakan metode "cicilan" untuk piutang dan hutang
+  const totalPiutang = penjualanTransactions
+    .filter((trx) => trx.metode_pembayaran === "cicilan")
+    .reduce((sum, trx) => sum + trx.total_harga, 0);
+  const totalHutang = pembelianTransactions
+    .filter((trx) => trx.metode_pembayaran === "cicilan")
     .reduce((sum, trx) => sum + trx.total_harga, 0);
 
-  const totalPengeluaran = transactions
-    .filter(
-      (trx) =>
-        trx.tipe_transaksi === "pengeluaran" ||
-        trx.tipe_transaksi === "pembelian",
-    )
-    .reduce((sum, trx) => sum + trx.total_harga, 0);
+  // Summary saldo: (penjualan - piutang) - (pembelian - hutang) - pengeluaran lainnya
+  const summarySaldo =
+    totalPenjualan -
+    totalPiutang -
+    (totalPembelian - totalHutang) -
+    totalPengeluaranLainnya;
 
-  const labaRugi = totalPemasukan - totalPengeluaran;
   const customStyles = {
     control: (provided: any) => ({
       ...provided,
@@ -216,6 +252,7 @@ export default function TransactionHistoryPage() {
       color: "var(--rs-text)",
     }),
   };
+
   const toggleRow = (id: string) => {
     if (expandedRows.includes(id)) {
       setExpandedRows(expandedRows.filter((rowId) => rowId !== id));
@@ -235,9 +272,9 @@ export default function TransactionHistoryPage() {
           --rs-option-hover: #e2e8f0;
         }
         .dark {
-          --rs-bg: #1f2937; /* Tailwind: bg-gray-800 */
+          --rs-bg: #1f2937;
           --rs-text: white;
-          --rs-border: #374151; /* Tailwind: border-gray-700 */
+          --rs-border: #374151;
           --rs-option-bg: #1f2937;
           --rs-option-hover: #374151;
         }
@@ -246,13 +283,28 @@ export default function TransactionHistoryPage() {
         <h1 className="mb-4 text-2xl font-bold text-gray-800 dark:text-gray-100">
           Riwayat Transaksi
         </h1>
-
-        {/* Filter Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          <div>
+        {/* Ringkasan dengan tampilan lebih ringkas menggunakan grid */}
+        <div className="mb-4">
+          <div className="grid grid-cols-2 gap-4 text-lg font-bold sm:grid-cols-3">
+            <div className="rounded bg-gray-100 p-2 dark:bg-gray-800">
+              <p className="text-sm font-medium">Total Transaksi Pembelian</p>
+              <p className="text-lg">{totalTransaksi}</p>
+            </div>
+            <div className="rounded bg-gray-100 p-2 dark:bg-gray-800">
+              <p className="text-sm font-medium">Nominal Transaksi Pembelian</p>
+              <p className="text-lg">
+                {totalPembelian.toLocaleString("id-ID", {
+                  style: "currency",
+                  currency: "IDR",
+                  minimumFractionDigits: 0,
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* Baris Atas: Input Nomor Transaksi di kiri, Saldo di kanan */}
+        <div className="mb-4 flex flex-col items-end justify-between gap-4 sm:flex-row">
+          <div className="flex-1">
             <label className="block text-sm font-medium">Nomor Transaksi</label>
             <input
               type="text"
@@ -262,6 +314,13 @@ export default function TransactionHistoryPage() {
               placeholder="Cari nomor transaksi"
             />
           </div>
+        </div>
+
+        {/* Grid Filter Lainnya */}
+        <form
+          onSubmit={handleSubmit}
+          className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
           <div>
             <label className="block text-sm font-medium">
               Metode Pembayaran
@@ -276,7 +335,6 @@ export default function TransactionHistoryPage() {
               <option value="edc">EDC</option>
               <option value="bank_transfer">Bank Transfer</option>
               <option value="cicilan">Cicilan</option>
-              <option value="hutang">Hutang</option>
             </select>
           </div>
           <div>
@@ -302,20 +360,6 @@ export default function TransactionHistoryPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Tipe Transaksi</label>
-            <select
-              value={tipeTransaksi}
-              onChange={(e) => setTipeTransaksi(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Semua</option>
-              <option value="pembelian">Pembelian</option>
-              <option value="penjualan">Penjualan</option>
-              <option value="pengeluaran">Pengeluaran</option>
-              <option value="pemasukan">Pemasukan</option>
-            </select>
-          </div>
-          <div>
             <label className="block text-sm font-medium">Pelanggan</label>
             <Select
               styles={customStyles}
@@ -338,7 +382,6 @@ export default function TransactionHistoryPage() {
               className="mt-1"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium">Supplier</label>
             <select
@@ -400,24 +443,6 @@ export default function TransactionHistoryPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium">Min Total</label>
-            <input
-              type="number"
-              value={minTotal}
-              onChange={(e) => setMinTotal(e.target.value)}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Max Total</label>
-            <input
-              type="number"
-              value={maxTotal}
-              onChange={(e) => setMaxTotal(e.target.value)}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium">Tanggal Mulai</label>
             <input
               type="date"
@@ -442,33 +467,6 @@ export default function TransactionHistoryPage() {
             Terapkan Filter
           </button>
         </form>
-
-        {/* Ringkasan Data Transaksi */}
-        <div className="mb-4 rounded-md bg-gray-100 p-4 dark:bg-gray-700">
-          <p className="text-sm">
-            Total Transaksi: {transactions.length} <br />
-            Total Pemasukan:{" "}
-            {totalPemasukan.toLocaleString("id-ID", {
-              style: "currency",
-              currency: "IDR",
-              minimumFractionDigits: 0,
-            })}{" "}
-            <br />
-            Total Pengeluaran:{" "}
-            {totalPengeluaran.toLocaleString("id-ID", {
-              style: "currency",
-              currency: "IDR",
-              minimumFractionDigits: 0,
-            })}{" "}
-            <br />
-            Laba Rugi:{" "}
-            {labaRugi.toLocaleString("id-ID", {
-              style: "currency",
-              currency: "IDR",
-              minimumFractionDigits: 0,
-            })}{" "}
-          </p>
-        </div>
 
         {/* Tampilan Desktop (Table) */}
         <div className="hidden md:block">
@@ -504,10 +502,10 @@ export default function TransactionHistoryPage() {
                       Total
                     </th>
                     <th
-                      className="cursor-pointer border px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-200"
-                      onClick={() => handleSort("createdAt")}
+                      className="cursor-pointer border px-4 py-2 font-medium text-gray-600 dark:text-gray-200"
+                      onClick={() => handleSort("tanggal_transaksi")}
                     >
-                      Tanggal{renderSortIndicator("createdAt")}
+                      Tanggal{renderSortIndicator("tanggal_transaksi")}
                     </th>
                     <th
                       className="cursor-pointer border px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-200"
@@ -572,12 +570,15 @@ export default function TransactionHistoryPage() {
                         })}
                       </td>
                       <td className="border px-4 py-2">
-                        {new Date(trx.createdAt).toLocaleDateString("id-ID", {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}
+                        {new Date(trx.tanggal_transaksi).toLocaleDateString(
+                          "id-ID",
+                          {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          },
+                        )}
                       </td>
                       <td className="border px-4 py-2 text-left text-sm text-gray-700 dark:text-white">
                         {trx.metode_pembayaran}

@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { signOut } from "next-auth/react";
-
-// Komponen UI (shadcn atau sejenisnya)
+import React, { useEffect, useState } from "react";
+import { XCircleIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Ikon dari lucide-react
-import { SearchIcon, XIcon } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 interface ItemData {
   _id: string;
@@ -26,35 +22,33 @@ export default function SelectWithDialog({
   onChange,
   unit,
 }: SelectWithDialogProps) {
-  // ===== STATE UTAMA =====
-  // Item terpilih untuk <select>
+  // State utama: item terpilih
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(value);
+
+  // Jika props.value berubah (misalnya saat edit), perbarui state lokal
+  useEffect(() => {
+    setSelectedItem(value);
+  }, [value]);
 
   // Daftar item dari server
   const [items, setItems] = useState<ItemData[]>([]);
-  // Loading fetch
   const [loading, setLoading] = useState(false);
 
-  // ===== STATE UNTUK MODAL PENCARIAN =====
+  // State untuk modal pencarian
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  // Input pencarian / nama item baru
   const [query, setQuery] = useState("");
 
-  // ===== STATE UNTUK MODAL EDIT =====
+  // State untuk modal edit
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  // Menyimpan data item yang sedang di-edit
   const [editItem, setEditItem] = useState<ItemData>({ _id: "", nama: "" });
 
-  // Ambil token (kalau di Next, perhatikan environment client)
   const token =
     typeof window !== "undefined" ? localStorage.getItem("mytoken") : null;
 
-  // URL Endpoint
   const apiUrl = process.env.NEXT_PUBLIC_API_URL
     ? `${process.env.NEXT_PUBLIC_API_URL}/${unit}`
     : `/${unit}`;
 
-  // ===== FETCH DATA =====
   useEffect(() => {
     fetchData();
   }, []);
@@ -74,9 +68,6 @@ export default function SelectWithDialog({
       if (Array.isArray(data)) {
         setItems(data);
       }
-      console.log("====================================");
-      console.log(apiUrl);
-      console.log("====================================");
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -84,7 +75,6 @@ export default function SelectWithDialog({
     }
   };
 
-  // ===== HANDLE SELECT DI <select> =====
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
     const found = items.find((item) => item._id === selectedId);
@@ -97,20 +87,16 @@ export default function SelectWithDialog({
     }
   };
 
-  // ===== MODAL PENCARIAN =====
-  // Filter item
   const filteredItems = items.filter((i) =>
     i.nama.toLowerCase().includes(query.toLowerCase()),
   );
 
-  // Pilih item -> update <select>, tutup modal
   const handleSelectItem = (item: ItemData) => {
     setSelectedItem(item);
     onChange(item);
     setIsSearchModalOpen(false);
   };
 
-  // Tambah item baru
   const addNewItem = async () => {
     if (!query.trim()) return;
     const newItem = { nama: query };
@@ -128,10 +114,8 @@ export default function SelectWithDialog({
       const created = json?.data;
       if (created) {
         setItems((prev) => [...prev, created]);
-        // Langsung pilih item yang baru
         setSelectedItem(created);
         onChange(created);
-        // Tutup modal
         setQuery("");
         setIsSearchModalOpen(false);
       }
@@ -139,8 +123,6 @@ export default function SelectWithDialog({
       console.error("Error adding item:", error);
     }
   };
-
-  // Hapus item
 
   const deleteItem = async (nama: string) => {
     try {
@@ -153,17 +135,12 @@ export default function SelectWithDialog({
         body: JSON.stringify({ nama }),
       });
       setItems(items.filter((item) => item.nama !== nama));
-      const data = await res.json();
-
-      console.log("====================================");
-      console.log(data);
-      console.log("====================================");
+      await res.json();
     } catch (error) {
       console.error("Error deleting item:", error);
     }
   };
 
-  // Update item (PUT request)
   const updateItem = async (id: string, updateData: ItemData) => {
     try {
       const res = await fetch(apiUrl, {
@@ -174,11 +151,8 @@ export default function SelectWithDialog({
         },
         body: JSON.stringify({ id: id, nama: updateData.nama }),
       });
-
       const updated = await res.json();
-
       if (updated.data) {
-        // Perbarui state items
         setItems((prev) =>
           prev.map((item) =>
             item._id === id ? { ...item, nama: updateData.nama } : item,
@@ -192,26 +166,20 @@ export default function SelectWithDialog({
     }
   };
 
-  // Buka modal Edit
   const openEditModal = (item: ItemData) => {
     setEditItem(item);
     setIsEditModalOpen(true);
   };
 
-  // ===== MODAL EDIT =====
-  // Simpan perubahan
   const handleEditSave = async () => {
-    // if (!editItem._id) return;
     await updateItem(editItem._id, editItem);
     setIsEditModalOpen(false);
   };
 
   return (
     <div className="relative inline-block">
-      {/* SELECT BIASA */}
       <select
-        className="rounded border border-gray-300 bg-white px-2 py-1 text-black 
-                   dark:border-gray-700 dark:bg-black dark:text-white"
+        className="rounded border border-gray-300 bg-white px-2 py-1 text-black dark:border-gray-700 dark:bg-black dark:text-white"
         value={selectedItem?._id || ""}
         onChange={handleSelectChange}
       >
@@ -223,7 +191,6 @@ export default function SelectWithDialog({
         ))}
       </select>
 
-      {/* TOMBOL SEARCH -> BUKA MODAL PENCARIAN */}
       <Button
         type="button"
         className="ml-2"
@@ -232,27 +199,19 @@ export default function SelectWithDialog({
         <SearchIcon size={16} />
       </Button>
 
-      {/* ========== MODAL PENCARIAN ========== */}
       {isSearchModalOpen && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center 
-                     bg-black bg-opacity-50 p-4"
-        >
-          <div
-            className="w-full max-w-md rounded bg-white p-4 text-black shadow-lg 
-                       dark:border-gray-700 dark:bg-black dark:text-white"
-          >
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="w-full max-w-md rounded bg-white p-4 text-black shadow-lg dark:border-gray-700 dark:bg-black dark:text-white">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Pilih / Kelola {unit}</h2>
               <button
                 onClick={() => setIsSearchModalOpen(false)}
                 className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
               >
-                <XIcon size={20} />
+                <XCircleIcon size={20} />
               </button>
             </div>
 
-            {/* Input Pencarian */}
             <Input
               className="mt-3 dark:bg-gray-800 dark:text-white"
               placeholder={`Cari atau tambah ${unit}...`}
@@ -266,16 +225,13 @@ export default function SelectWithDialog({
               </div>
             )}
 
-            {/* Daftar Item */}
             {!loading && (
               <div className="mt-2 max-h-72 overflow-auto border-t pt-2 dark:border-gray-700">
                 {filteredItems.map((item) => (
                   <div
                     key={item._id}
-                    className="mb-2 flex items-center justify-between p-2 
-                               hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="mb-2 flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
-                    {/* Klik untuk pilih item */}
                     <div
                       onClick={() => handleSelectItem(item)}
                       className="cursor-pointer"
@@ -283,22 +239,19 @@ export default function SelectWithDialog({
                       {item.nama}
                     </div>
                     <div className="flex gap-2">
-                      {/* Edit */}
                       <Button type="button" onClick={() => openEditModal(item)}>
                         Edit
                       </Button>
-                      {/* Delete */}
                       <Button
                         type="button"
                         onClick={() => deleteItem(item.nama)}
                       >
-                        <XIcon size={16} />
+                        <XCircleIcon size={16} />
                       </Button>
                     </div>
                   </div>
                 ))}
 
-                {/* Tombol tambah jika nama belum ada */}
                 {query &&
                   !filteredItems.some(
                     (x) => x.nama.toLowerCase() === query.toLowerCase(),
@@ -317,16 +270,9 @@ export default function SelectWithDialog({
         </div>
       )}
 
-      {/* ========== MODAL EDIT ========== */}
       {isEditModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center 
-                     bg-black bg-opacity-50 p-4"
-        >
-          <div
-            className="w-full max-w-sm rounded bg-white p-4 text-black shadow-lg 
-                       dark:border-gray-700 dark:bg-black dark:text-white"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="w-full max-w-sm rounded bg-white p-4 text-black shadow-lg dark:border-gray-700 dark:bg-black dark:text-white">
             <h2 className="mb-4 text-xl font-bold">Edit {unit}</h2>
             <Input
               value={editItem.nama}

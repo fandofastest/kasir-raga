@@ -5,14 +5,14 @@ import { toast } from "react-hot-toast";
 import {
   fetchTransaction,
   payInstallment,
-  fetchPelanggan,
+  fetchSupplier,
 } from "@/lib/dataService";
 import Transaksi from "@/models/modeltsx/Transaksi";
-import PaymentHistoryDialog from "./PaymentHistoryDialog";
-import ActionDropdown from "./ActionDropdown";
+import PaymentHistoryDialog from "../piutang/PaymentHistoryDialog";
+import ActionDropdown from "@/app/keuangan/piutang/ActionDropdown";
 
-// Interface untuk transaksi piutang
-export interface PiutangTransaction extends Transaksi {
+// Interface untuk transaksi hutang
+export interface HutangTransaction extends Transaksi {
   dp: number;
   durasiPelunasan: number;
   unitPelunasan: "hari" | "bulan";
@@ -25,28 +25,20 @@ export interface PiutangTransaction extends Transaksi {
   }[];
 }
 
-// Interface pelanggan (Customer)
-interface Customer {
-  _id: string;
-  nama: string;
-  nohp: string;
-  alamat: string;
-}
-
-export default function PiutangPage() {
-  const [transactions, setTransactions] = useState<PiutangTransaction[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+export default function HutangPage() {
+  const [transactions, setTransactions] = useState<HutangTransaction[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // Filter state
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  // Filter state (supplier, tanggal)
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
   // Modal state
   const [selectedTransaction, setSelectedTransaction] =
-    useState<PiutangTransaction | null>(null);
+    useState<HutangTransaction | null>(null);
   const [modalType, setModalType] = useState<
     "installment" | "settle" | "partial" | null
   >(null);
@@ -56,7 +48,7 @@ export default function PiutangPage() {
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] =
     useState<boolean>(false);
   const [historyTransaction, setHistoryTransaction] =
-    useState<PiutangTransaction | null>(null);
+    useState<HutangTransaction | null>(null);
 
   // State untuk tampilan mobile
   const [expandedTransactions, setExpandedTransactions] = useState<string[]>(
@@ -66,6 +58,7 @@ export default function PiutangPage() {
   // State untuk sorting
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  // Tambahan: State untuk tanggal, default ke hari ini
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split("T")[0];
@@ -83,9 +76,9 @@ export default function PiutangPage() {
     try {
       const params: { [key: string]: string } = {
         metode_pembayaran: "cicilan",
-        tipe_transaksi: "penjualan",
+        tipe_transaksi: "pembelian",
       };
-      if (selectedCustomerId) params.pelanggan = selectedCustomerId;
+      if (selectedSupplierId) params.supplier = selectedSupplierId;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       const res = await fetchTransaction(params);
@@ -97,37 +90,37 @@ export default function PiutangPage() {
     }
   };
 
-  // Fungsi untuk memuat data pelanggan
-  const loadCustomers = async () => {
+  // Fungsi untuk memuat data supplier
+  const loadSuppliers = async () => {
     try {
-      const res = await fetchPelanggan();
-      setCustomers(res.data);
+      const res = await fetchSupplier();
+      setSuppliers(res.data);
     } catch (err: any) {
-      console.error("Gagal memuat pelanggan:", err);
+      console.error("Gagal memuat supplier:", err);
     }
   };
 
   useEffect(() => {
     loadData();
-    loadCustomers();
+    loadSuppliers();
   }, []);
 
   // Fungsi untuk menghitung total pembayaran yang sudah dilakukan
-  const sumPaidInstallments = (trx: PiutangTransaction) => {
+  const sumPaidInstallments = (trx: HutangTransaction) => {
     return trx.jadwalPembayaran
       .filter((inst) => inst.paid)
       .reduce((sum, inst) => sum + inst.installment, 0);
   };
 
-  // Fungsi untuk menghitung sisa utang
-  const computeSisaUtang = (trx: PiutangTransaction) => {
+  // Fungsi untuk menghitung sisa hutang
+  const computeSisaHutang = (trx: HutangTransaction) => {
     const paidSum = sumPaidInstallments(trx);
     const sisa = trx.total_harga - trx.dp - paidSum;
     return sisa > 0 ? sisa : 0;
   };
 
-  // Mengambil jatuh tempo berikutnya sebagai `Date` asli (untuk keperluan sorting)
-  const getNextDueDateAsDate = (trx: PiutangTransaction): Date => {
+  // Mengambil jatuh tempo berikutnya sebagai Date (untuk keperluan sorting)
+  const getNextDueDateAsDate = (trx: HutangTransaction): Date => {
     const nextInst = trx.jadwalPembayaran.find((inst) => !inst.paid);
     return nextInst
       ? new Date(nextInst.dueDate)
@@ -135,7 +128,7 @@ export default function PiutangPage() {
   };
 
   // Format tampilan jatuh tempo
-  const nextDueDate = (trx: PiutangTransaction) => {
+  const nextDueDate = (trx: HutangTransaction) => {
     const dateObj = getNextDueDateAsDate(trx);
     return dateObj.toLocaleDateString("id-ID", {
       weekday: "long",
@@ -146,21 +139,21 @@ export default function PiutangPage() {
   };
 
   // Modal: Buka untuk bayar cicilan
-  const openInstallmentModal = (trx: PiutangTransaction) => {
+  const openInstallmentModal = (trx: HutangTransaction) => {
     setSelectedTransaction(trx);
     setModalType("installment");
     setPaymentAmount("0");
   };
 
   // Modal: Buka untuk pelunasan
-  const openSettleModal = (trx: PiutangTransaction) => {
+  const openSettleModal = (trx: HutangTransaction) => {
     setSelectedTransaction(trx);
     setModalType("settle");
-    setPaymentAmount(computeSisaUtang(trx).toString());
+    setPaymentAmount(computeSisaHutang(trx).toString());
   };
 
   // Modal: Buka riwayat pembayaran
-  const openHistoryModal = (trx: PiutangTransaction) => {
+  const openHistoryModal = (trx: HutangTransaction) => {
     setHistoryTransaction(trx);
     setIsHistoryDialogOpen(true);
   };
@@ -168,14 +161,14 @@ export default function PiutangPage() {
   // Fungsi submit modal pembayaran
   const handlePaymentSubmit = async () => {
     if (!selectedTransaction) return;
-    const sisaUtang = computeSisaUtang(selectedTransaction);
+    const sisaHutang = computeSisaHutang(selectedTransaction);
 
     if (modalType === "installment" && Number(paymentAmount) <= 0) {
       toast.error("Jumlah pembayaran minimal harus lebih dari 0");
       return;
     }
-    if (modalType === "settle" && Number(paymentAmount) < sisaUtang) {
-      toast.error("Jumlah pembayaran kurang dari sisa utang.");
+    if (modalType === "settle" && Number(paymentAmount) < sisaHutang) {
+      toast.error("Jumlah pembayaran kurang dari sisa hutang.");
       return;
     }
     try {
@@ -184,6 +177,7 @@ export default function PiutangPage() {
         paymentAmount,
         getTimestampWithCurrentTime(selectedDate),
       );
+
       if (res.data.status === 200) {
         toast.success("Pembayaran berhasil");
         setModalType(null);
@@ -203,8 +197,8 @@ export default function PiutangPage() {
     loadData();
   };
 
-  // Summary: Total Utang, Sudah Dibayar, dan Sisa Utang
-  const totalUtang = transactions.reduce(
+  // Summary: Total Hutang, Sudah Dibayar, dan Sisa Hutang
+  const totalHutang = transactions.reduce(
     (sum, trx) => sum + trx.total_harga,
     0,
   );
@@ -212,11 +206,10 @@ export default function PiutangPage() {
     (sum, trx) => sum + (trx.dp + sumPaidInstallments(trx)),
     0,
   );
-  const totalSisaUtang = transactions.reduce(
-    (sum, trx) => sum + computeSisaUtang(trx),
+  const totalSisaHutang = transactions.reduce(
+    (sum, trx) => sum + computeSisaHutang(trx),
     0,
   );
-
   const totalDp = transactions.reduce((sum, trx) => sum + trx.dp, 0);
 
   // Handler untuk toggle tampilan detail transaksi (mobile)
@@ -231,10 +224,8 @@ export default function PiutangPage() {
   // Handler klik header untuk sorting
   const handleSort = (field: string) => {
     if (sortField === field) {
-      // Toggle direction
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // Ganti field dan reset ke asc
       setSortField(field);
       setSortDirection("asc");
     }
@@ -242,12 +233,11 @@ export default function PiutangPage() {
 
   // Gunakan useMemo untuk menghindari re-sorting di setiap render
   const sortedTransactions = useMemo(() => {
-    // Copy data agar tidak mutate state asli
+    // Copy data agar tidak mengubah state asli
     const sorted = [...transactions];
     sorted.sort((a, b) => {
       let aVal: any;
       let bVal: any;
-
       switch (sortField) {
         case "no_transaksi":
           aVal = a.no_transaksi || "";
@@ -257,17 +247,10 @@ export default function PiutangPage() {
           aVal = new Date(a.createdAt).getTime();
           bVal = new Date(b.createdAt).getTime();
           return aVal - bVal;
-        case "pelanggan": {
-          const aName =
-            a.tipe_transaksi === "penjualan"
-              ? a.pembeli?.nama || ""
-              : a.supplier?.nama || "";
-          const bName =
-            b.tipe_transaksi === "penjualan"
-              ? b.pembeli?.nama || ""
-              : b.supplier?.nama || "";
-          return aName.localeCompare(bName);
-        }
+        case "supplier":
+          aVal = a.supplier?.nama || "";
+          bVal = b.supplier?.nama || "";
+          return aVal.localeCompare(bVal);
         case "total_harga":
           aVal = a.total_harga;
           bVal = b.total_harga;
@@ -276,9 +259,9 @@ export default function PiutangPage() {
           aVal = a.dp;
           bVal = b.dp;
           return aVal - bVal;
-        case "sisa_utang":
-          aVal = computeSisaUtang(a);
-          bVal = computeSisaUtang(b);
+        case "sisa_hutang":
+          aVal = computeSisaHutang(a);
+          bVal = computeSisaHutang(b);
           return aVal - bVal;
         case "jatuh_tempo":
           aVal = getNextDueDateAsDate(a).getTime();
@@ -288,22 +271,19 @@ export default function PiutangPage() {
           return 0;
       }
     });
-    // Jika descending, reverse hasil
-    if (sortDirection === "desc") {
-      sorted.reverse();
-    }
+    if (sortDirection === "desc") sorted.reverse();
     return sorted;
   }, [transactions, sortField, sortDirection]);
 
   return (
-    <div className="p-4 dark:bg-gray-900 dark:text-gray-100">
-      <h1 className="mb-4 text-2xl font-bold">Daftar Piutang Cicilan</h1>
+    <div className="p-4 dark:bg-boxdark dark:text-gray-100">
+      <h1 className="mb-4 text-2xl font-bold">Daftar Hutang Cicilan</h1>
 
       {/* Summary Hutang */}
       <div className="mb-4 rounded-md bg-gray-100 p-4 dark:bg-gray-800">
         <p className="text-sm">
-          Total Utang:{" "}
-          {totalUtang.toLocaleString("id-ID", {
+          Total Hutang:{" "}
+          {totalHutang.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
@@ -326,8 +306,8 @@ export default function PiutangPage() {
           })}
         </p>
         <p className="text-sm">
-          Sisa Utang:{" "}
-          {totalSisaUtang.toLocaleString("id-ID", {
+          Sisa Hutang:{" "}
+          {totalSisaHutang.toLocaleString("id-ID", {
             style: "currency",
             currency: "IDR",
             minimumFractionDigits: 0,
@@ -341,16 +321,16 @@ export default function PiutangPage() {
         className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
       >
         <div>
-          <label className="block text-sm font-medium">Pelanggan</label>
+          <label className="block text-sm font-medium">Supplier</label>
           <select
-            value={selectedCustomerId}
-            onChange={(e) => setSelectedCustomerId(e.target.value)}
+            value={selectedSupplierId}
+            onChange={(e) => setSelectedSupplierId(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800"
           >
-            <option value="">Semua Pelanggan</option>
-            {customers.map((customer) => (
-              <option key={customer._id} value={customer._id}>
-                {customer.nama}
+            <option value="">Semua Supplier</option>
+            {suppliers.map((supplier) => (
+              <option key={supplier._id} value={supplier._id}>
+                {supplier.nama}
               </option>
             ))}
           </select>
@@ -419,10 +399,10 @@ export default function PiutangPage() {
 
               <th
                 className="cursor-pointer border px-4 py-2"
-                onClick={() => handleSort("pelanggan")}
+                onClick={() => handleSort("supplier")}
               >
-                Pelanggan{" "}
-                {sortField === "pelanggan"
+                Supplier{" "}
+                {sortField === "supplier"
                   ? sortDirection === "asc"
                     ? "▲"
                     : "▼"
@@ -455,10 +435,10 @@ export default function PiutangPage() {
 
               <th
                 className="cursor-pointer border px-4 py-2"
-                onClick={() => handleSort("sisa_utang")}
+                onClick={() => handleSort("sisa_hutang")}
               >
-                Sisa Utang{" "}
-                {sortField === "sisa_utang"
+                Sisa Hutang{" "}
+                {sortField === "sisa_hutang"
                   ? sortDirection === "asc"
                     ? "▲"
                     : "▼"
@@ -482,7 +462,7 @@ export default function PiutangPage() {
           </thead>
           <tbody>
             {sortedTransactions.map((trx, idx) => {
-              const sisaUtang = computeSisaUtang(trx);
+              const sisaHutang = computeSisaHutang(trx);
               return (
                 <tr key={trx._id} className="text-center">
                   <td className="border px-4 py-2">{idx + 1}</td>
@@ -495,9 +475,7 @@ export default function PiutangPage() {
                     })}
                   </td>
                   <td className="border px-4 py-2">
-                    {trx.tipe_transaksi === "penjualan"
-                      ? trx.pembeli?.nama || "N/A"
-                      : trx.supplier?.nama || "N/A"}
+                    {trx.supplier?.nama || "N/A"}
                   </td>
                   <td className="border px-4 py-2">
                     {trx.total_harga.toLocaleString("id-ID", {
@@ -515,7 +493,7 @@ export default function PiutangPage() {
                       })}
                   </td>
                   <td className="border px-4 py-2">
-                    {sisaUtang.toLocaleString("id-ID", {
+                    {sisaHutang.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
                       minimumFractionDigits: 0,
@@ -527,7 +505,7 @@ export default function PiutangPage() {
                       <div className="flex-1">
                         <ActionDropdown
                           trx={trx}
-                          outstanding={sisaUtang}
+                          outstanding={sisaHutang}
                           openInstallmentModal={openInstallmentModal as any}
                           openSettleModal={openSettleModal as any}
                           openHistoryModal={openHistoryModal as any}
@@ -559,7 +537,7 @@ export default function PiutangPage() {
       <div className="block md:hidden">
         {sortedTransactions.length > 0 ? (
           sortedTransactions.map((trx) => {
-            const sisaUtang = computeSisaUtang(trx);
+            const sisaHutang = computeSisaHutang(trx);
             return (
               <div
                 key={trx._id}
@@ -586,10 +564,8 @@ export default function PiutangPage() {
                 {expandedTransactions.includes(trx._id) && (
                   <div className="mt-2 space-y-2">
                     <p className="text-sm">
-                      <span className="font-medium">Pelanggan: </span>
-                      {trx.tipe_transaksi === "penjualan"
-                        ? trx.pembeli?.nama || "N/A"
-                        : trx.supplier?.nama || "N/A"}
+                      <span className="font-medium">Supplier: </span>
+                      {trx.supplier?.nama || "N/A"}
                     </p>
                     <p className="text-sm">
                       <span className="font-medium">Total Harga: </span>
@@ -608,8 +584,8 @@ export default function PiutangPage() {
                       })}
                     </p>
                     <p className="text-sm">
-                      <span className="font-medium">Sisa Utang: </span>
-                      {sisaUtang.toLocaleString("id-ID", {
+                      <span className="font-medium">Sisa Hutang: </span>
+                      {sisaHutang.toLocaleString("id-ID", {
                         style: "currency",
                         currency: "IDR",
                         minimumFractionDigits: 0,
@@ -660,6 +636,8 @@ export default function PiutangPage() {
                 ? "Bayar Cicilan"
                 : "Lunasi Transaksi"}
             </h2>
+
+            {/* Field tambahan untuk tanggal transaksi */}
             <div className="mb-2 mt-4 flex items-center space-x-2">
               <label className=" font-medium text-gray-700 dark:text-gray-200">
                 Tanggal Transaksi
@@ -671,12 +649,13 @@ export default function PiutangPage() {
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
             </div>
+
             <p className="mb-2">
               No. Transaksi: {selectedTransaction.no_transaksi}
             </p>
             <p className="mb-2">
-              Sisa Utang:{" "}
-              {computeSisaUtang(selectedTransaction).toLocaleString("id-ID", {
+              Sisa Hutang:{" "}
+              {computeSisaHutang(selectedTransaction).toLocaleString("id-ID", {
                 style: "currency",
                 currency: "IDR",
                 minimumFractionDigits: 0,
@@ -701,7 +680,7 @@ export default function PiutangPage() {
                 <input
                   onFocus={(e) => e.target.select()}
                   type="number"
-                  min={computeSisaUtang(selectedTransaction)}
+                  min={computeSisaHutang(selectedTransaction)}
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full rounded border px-3 py-2 dark:bg-gray-700 dark:text-white"

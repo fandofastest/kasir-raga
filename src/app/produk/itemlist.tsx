@@ -5,6 +5,7 @@ import DropdownAction from "./dropwdownaction";
 import ProductFormModal from "@/components/ProductForm";
 import { fetchProducts } from "@/lib/dataService";
 import { Product } from "@/models/modeltsx/productTypes";
+import { formatRupiah } from "@/components/tools";
 
 const ProductList = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -114,8 +115,12 @@ const ProductList = () => {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
                     <Image
-                      src={`/api/image-proxy?url=${encodeURIComponent(product.image)}`}
-                      alt="Product"
+                      src={
+                        product.image && product.image !== ""
+                          ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
+                          : "images/product/default.png"
+                      }
+                      alt={"Logo Preview" as string}
                       fill
                       className="rounded-md object-cover"
                     />
@@ -132,12 +137,7 @@ const ProductList = () => {
               </div>
               <div className="col-span-1 flex items-center">
                 <p className="text-sm text-black dark:text-white">
-                  {product.harga_modal
-                    ? product.harga_modal.toLocaleString("id-ID", {
-                        style: "currency",
-                        currency: "IDR",
-                      })
-                    : "N/A"}
+                  {formatRupiah(product.harga_modal ?? 0)}
                 </p>
               </div>
               <div className="col-span-1 flex items-center">
@@ -180,9 +180,14 @@ const ProductList = () => {
                 <div className="flex items-center gap-4">
                   <div className="relative h-16 w-16 rounded-md border border-gray-300">
                     <Image
-                      src={`/api/image-proxy?url=${encodeURIComponent(product.image)}`}
-                      alt="Product"
-                      fill
+                      src={
+                        product.image && product.image !== ""
+                          ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
+                          : "images/product/default.png"
+                      }
+                      alt={"Logo Preview" as string}
+                      height={100}
+                      width={100}
                       className="rounded-md object-cover"
                     />
                   </div>

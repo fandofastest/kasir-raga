@@ -1,7 +1,7 @@
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import { Metadata } from "next";
-import LaporanTransaksiPage from "../main";
+import LaporanTransaksiPage from "../LaporanTransaksiPage";
 
 export const metadata: Metadata = {
   title: "Sistem Kasir | Penjualan",

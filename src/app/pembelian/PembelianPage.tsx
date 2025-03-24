@@ -42,7 +42,7 @@ export default function PembelianPage() {
   };
 
   return (
-    <div className="mx-auto h-screen max-w-screen-2xl ">
+    <div className="mx-auto h-full max-w-screen-2xl ">
       <div className="mb-4 flex items-center justify-between px-4">
         <h1 className="text-xl font-bold">Pembelian</h1>
         <button

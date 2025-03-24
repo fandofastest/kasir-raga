@@ -2,20 +2,21 @@ import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import { Metadata } from "next";
 import LaporanTransaksiPage from "../LaporanTransaksiPage";
+import LaporanPiutangHutangPage from "../LaporanPiutangHutangPage";
 
 export const metadata: Metadata = {
-  title: "Sistem Kasir | Pembelian",
+  title: "Sistem Kasir | Hutang",
   description:
-    "This is Sistem Kasir Pembelian page for TailAdmin - Next.js Tailwind CSS Admin Dashboard Template",
+    "This is Sistem Kasir Hutang page for TailAdmin - Next.js Tailwind CSS Admin Dashboard Template",
 };
 
 const ProductsPage = () => {
   return (
     <DefaultLayout>
       <div className="max-w-600  mx-auto ">
-        <Breadcrumb pageName="Laporan Pembelian" />
+        <Breadcrumb pageName="Laporan Hutang" />
 
-        <LaporanTransaksiPage transactionType="pembelian" />
+        <LaporanPiutangHutangPage reportType="hutang" />
       </div>
     </DefaultLayout>
   );

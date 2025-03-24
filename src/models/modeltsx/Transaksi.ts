@@ -15,6 +15,7 @@ interface Transaksi {
   keterangan: string;
   pengantar: Staff | string;
   diskon: number;
+  tanggal_transaksi: string;
   produk: {
     productId: Product;
     quantity: number;

@@ -7,8 +7,7 @@ import { Product } from "@/models/modeltsx/productTypes";
 import CartItem from "@/models/modeltsx/CartItem";
 import { fetchProducts } from "@/lib/dataService";
 import { GridIcon, ListIcon, XCircleIcon } from "lucide-react";
-// (Gunakan ikon sesuai preferensi,
-//  misal dari heroicons, lucide, dsb.)
+import LazyLoad from "react-lazyload";
 
 interface ProductsListProps {
   addToCart: (item: CartItem, quantity: number) => void;
@@ -28,6 +27,7 @@ export default function ProductsList({
   const [selectedSatuanId, setSelectedSatuanId] = useState("");
   const [quantity, setQuantity] = useState<number>(1);
   const [unitPrice, setUnitPrice] = useState<number>(0);
+
   async function loadProducts() {
     try {
       const data = await fetchProducts();
@@ -37,18 +37,16 @@ export default function ProductsList({
       console.error(error);
     }
   }
+
   useEffect(() => {
     loadProducts();
   }, []);
 
   useEffect(() => {
     loadProducts();
-    console.log("====================================");
-    console.log("refreshKey:", refreshKey);
-    console.log("====================================");
   }, [refreshKey]);
 
-  // Filter berdasarkan searchTerm
+  // Filter produk berdasarkan searchTerm
   const filteredProducts = products.filter((p) =>
     p.nama_produk.toLowerCase().includes(searchTerm.toLowerCase()),
   );
@@ -80,9 +78,6 @@ export default function ProductsList({
       );
       if (found) {
         setUnitPrice(found.harga);
-        console.log("====================================");
-        console.log(found.harga);
-        console.log("====================================");
       }
     }
   };
@@ -171,67 +166,67 @@ export default function ProductsList({
                 : 0;
 
             return (
-              <div
-                key={product._id}
-                className={`
-                  rounded-md border border-stroke p-3 shadow-sm 
+              <LazyLoad key={product._id} height={150} offset={100} once>
+                <div
+                  className={`rounded-md border border-stroke p-3 shadow-sm 
                   transition-shadow hover:shadow-lg dark:border-strokedark dark:bg-boxdark
                   ${
                     viewMode === "grid"
                       ? "flex flex-col items-center space-y-2 text-center"
                       : "flex w-full flex-row items-center justify-between space-x-4"
                   }`}
-              >
-                {/* Gambar Produk */}
-                <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
-                  <Image
-                    src={
-                      product.image
-                        ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
-                        : "/images/product/product-01.png"
-                    }
-                    alt="Product"
-                    fill
-                    className="rounded-md object-cover"
-                  />
-                </div>
-                {/* Info Produk */}
-                <div className="flex-1">
-                  <p className="font-medium text-black dark:text-white">
-                    {product.nama_produk}
-                  </p>
-                  {product.satuans && product.satuans.length > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      Rp{firstPrice.toLocaleString()}
+                >
+                  {/* Gambar Produk */}
+                  <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
+                    <Image
+                      src={
+                        product.image
+                          ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
+                          : "/images/product/product-01.png"
+                      }
+                      alt="Product"
+                      fill
+                      className="rounded-md object-cover"
+                    />
+                  </div>
+                  {/* Info Produk */}
+                  <div className="flex-1">
+                    <p className="font-medium text-black dark:text-white">
+                      {product.nama_produk}
                     </p>
-                  ) : (
-                    <p className="text-sm text-gray-500">No Price</p>
-                  )}
-                </div>
+                    {product.satuans && product.satuans.length > 0 ? (
+                      <p className="text-sm text-gray-500">
+                        Rp{firstPrice.toLocaleString()}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-500">No Price</p>
+                    )}
+                  </div>
 
-                {/* Stok */}
-                <div>
-                  <p className="text-sm text-gray-500">
-                    Stok: {product.jumlah}
-                  </p>
-                </div>
+                  {/* Stok */}
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Stok: {product.jumlah}
+                    </p>
+                  </div>
 
-                {/* Tombol Tambah */}
-                <button
-                  className={`ml-auto rounded-md px-3 py-1 text-sm font-semibold text-white ${
-                    viewMode === "grid" ? "w-full" : ""
-                  }
+                  {/* Tombol Tambah */}
+                  <button
+                    className={`ml-auto rounded-md px-3 py-1 text-sm font-semibold text-white ${
+                      viewMode === "grid" ? "w-full" : ""
+                    }
                     ${
                       product.jumlah === 0
                         ? "cursor-not-allowed bg-gray-400"
                         : "bg-blue-500 hover:bg-blue-600"
                     }`}
-                  onClick={() => handleTambahClick(product)}
-                  disabled={product.jumlah === 0}
-                >
-                  {product.jumlah === 0 ? "Habis" : "Tambah"}
-                </button>
-              </div>
+                    onClick={() => handleTambahClick(product)}
+                    disabled={product.jumlah === 0}
+                  >
+                    {product.jumlah === 0 ? "Habis" : "Tambah"}
+                  </button>
+                </div>
+              </LazyLoad>
             );
           })
         ) : (
@@ -246,17 +241,14 @@ export default function ProductsList({
         <div
           className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-black
                      bg-opacity-50 transition-opacity"
-          // Silakan definisikan animasi "animate-fadeIn" di tailwind.config atau css kustom
           onClick={handleCloseModal}
         >
           <div
             className="animate-modalSlideIn relative max-h-[80vh] w-full max-w-md overflow-y-auto rounded-lg 
-                       bg-white p-6 shadow-lg
-                       transition-transform dark:bg-gray-900"
-            // Definisikan animasi "animate-modalSlideIn" sesuai preferensi
+                       bg-white p-6 shadow-lg transition-transform dark:bg-gray-900"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Icon Close di sudut kanan atas */}
+            {/* Icon Close */}
             <button
               onClick={handleCloseModal}
               className="absolute right-3 top-3 text-gray-500 hover:text-gray-700 
@@ -272,7 +264,6 @@ export default function ProductsList({
               {activeProduct.nama_produk}
             </p>
 
-            {/* Form di-grid agar rapi */}
             <div className="grid gap-4">
               {/* Pilih Satuan */}
               {activeProduct.satuans && activeProduct.satuans.length > 0 ? (
@@ -312,7 +303,7 @@ export default function ProductsList({
                 />
               </div>
 
-              {/* Harga satuan */}
+              {/* Harga Satuan */}
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Harga Satuan
@@ -320,9 +311,8 @@ export default function ProductsList({
                 <input
                   type="text"
                   className="w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-                  value={`Rp ${unitPrice.toLocaleString()}`} // Menampilkan “Rp …”
+                  value={`Rp ${unitPrice.toLocaleString()}`}
                   onChange={(e) => {
-                    // Ambil isi input, buang semua karakter non-digit
                     const val = e.target.value.replace(/\D/g, "");
                     const numericVal = parseInt(val, 10) || 0;
                     setUnitPrice(numericVal);

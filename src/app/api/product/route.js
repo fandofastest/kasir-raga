@@ -23,9 +23,9 @@ export const POST = withAuth(async (req) => {
     }
 
     // (Opsional) validasi image
-    if (!data.image) {
-      return NextResponse.json({ error: "Image is required" }, { status: 400 });
-    }
+    // if (!data.image) {
+    //   return NextResponse.json({ error: "Image is required" }, { status: 400 });
+    // }
 
     // Validasi Kategori & Brand by _id
     const kategoriDoc = data.kategori?._id

@@ -4,6 +4,7 @@
 import React from "react";
 import { XCircleIcon } from "lucide-react";
 import Transaksi from "@/models/modeltsx/Transaksi";
+import { useRouter } from "next/navigation"; // jika menggunakan App Router (Next.js 13+)
 
 interface TransactionSuccessDialogProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ const TransactionSuccessDialog: React.FC<TransactionSuccessDialogProps> = ({
   transactionData,
   onClose,
 }) => {
+  const router = useRouter();
+
   if (!isOpen || !transactionData) return null;
 
   // Fungsi untuk mencetak invoice
@@ -118,16 +121,15 @@ const TransactionSuccessDialog: React.FC<TransactionSuccessDialogProps> = ({
                   Tanggal
                 </p>
                 <p className="text-gray-800 dark:text-white">
-                  {new Date(transactionData.createdAt).toLocaleDateString(
-                    "id-ID",
-                    {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
-                  )}
+                  {new Date(
+                    transactionData.tanggal_transaksi,
+                  ).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
             </div>
@@ -200,14 +202,39 @@ const TransactionSuccessDialog: React.FC<TransactionSuccessDialogProps> = ({
                 <span className="font-semibold">Diskon:</span> Rp
                 {diskon.toLocaleString()}
               </p>
+
               <p className="text-lg font-bold text-gray-800 dark:text-white">
                 Total Harga: Rp{finalTotal.toLocaleString()}
               </p>
+
+              {transactionData.metode_pembayaran === "cicilan" && (
+                <p className="text-base text-gray-800 dark:text-white">
+                  <span className="font-semibold">DP:</span> Rp
+                  {transactionData.dp?.toLocaleString()}
+                </p>
+              )}
+
+              {transactionData.metode_pembayaran === "cicilan" && (
+                <p className="text-base text-gray-800 dark:text-white">
+                  <span className="font-bold">Sisa Hutang:</span> Rp
+                  {(finalTotal - (transactionData.dp ?? 0)).toLocaleString()}
+                </p>
+              )}
             </div>
           </div>
 
           {/* Footer (tidak tercetak) */}
           <div className="no-print flex items-center justify-end bg-blue-600 px-6 py-4">
+            <button
+              onClick={() =>
+                router.push(
+                  `/keuangan/${transactionData.tipe_transaksi}?no_transaksi=${transactionData.no_transaksi}`,
+                )
+              }
+              className="mr-4 rounded bg-blue-400 px-4 py-2 text-sm text-white hover:bg-blue-500"
+            >
+              Detail
+            </button>
             <button
               onClick={onClose}
               className="mr-4 rounded bg-blue-400 px-4 py-2 text-sm text-white hover:bg-blue-500"

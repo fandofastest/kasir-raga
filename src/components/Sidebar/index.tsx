@@ -65,11 +65,7 @@ const menuGroups: MenuGroup[] = [
             route: "/pengeluaran",
             requiredPermission: "pengeluaran:view",
           },
-          {
-            label: "History",
-            route: "/history",
-            requiredPermission: "history:view",
-          },
+
           {
             label: "Draft",
             route: "/draft",
@@ -110,17 +106,38 @@ const menuGroups: MenuGroup[] = [
         icon: <DollarSignIcon />,
         label: "Keuangan",
         route: "#",
-        requiredPermission: "keuangan:view",
+        requiredPermission: "cashflow:view",
         children: [
           {
+            label: "Cashflow",
+            route: "/keuangan/cashflow",
+            requiredPermission: "cashflow:view",
+          },
+          {
+            label: "Pembelian",
+            route: "/keuangan/pembelian",
+            requiredPermission: "pembelian:view",
+          },
+          {
+            label: "Penjualan",
+            route: "/keuangan/penjualan",
+            requiredPermission: "penjualan:view",
+          },
+
+          {
             label: "Piutang",
-            route: "/piutang",
+            route: "/keuangan/piutang",
             requiredPermission: "piutang:view",
           },
           {
             label: "Hutang",
-            route: "/hutang",
+            route: "/keuangan/hutang",
             requiredPermission: "hutang:view",
+          },
+          {
+            label: "Biaya Lain",
+            route: "/keuangan/biaya",
+            requiredPermission: "pengeluaran:view",
           },
         ],
       },
@@ -140,11 +157,21 @@ const menuGroups: MenuGroup[] = [
             route: "/laporan/pembelian",
             requiredPermission: "laporan:pembelian:view",
           },
-          // {
-          //   label: "Keuangan",
-          //   route: "/laporan/keuangan",
-          //   requiredPermission: "laporan:keuangan:view",
-          // },
+          {
+            label: "Piutang",
+            route: "/laporan/piutang",
+            requiredPermission: "laporan:piutang:view",
+          },
+          {
+            label: "Hutang",
+            route: "/laporan/hutang",
+            requiredPermission: "laporan:hutang:view",
+          },
+          {
+            label: "Biaya Lain",
+            route: "/laporan/biaya",
+            requiredPermission: "laporan:biaya:view",
+          },
         ],
       },
       {
