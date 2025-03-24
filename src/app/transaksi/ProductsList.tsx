@@ -182,7 +182,7 @@ export default function ProductsList({
                       src={
                         product.image
                           ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
-                          : "/images/product/product-01.png"
+                          : "/images/product/default.png"
                       }
                       alt="Product"
                       fill
