@@ -18,6 +18,7 @@ import {
 } from "@/lib/dataService";
 import StaffFormModal from "@/app/staff/StaffForm";
 import SupplierFormModal from "@/app/supplier/SupplierForm";
+import { AddSatuanModal, RemoveSatuanModal } from "./SatuanForm";
 
 interface Supplier {
   _id?: string;
@@ -183,7 +184,30 @@ export default function ProductFormModal({
   const removeSatuanRow = (id: string) => {
     setSatuans((prev) => prev.filter((item) => item._id !== id));
   };
+  const calculateProfit = (item: SatuanPembelian) => {
+    const modal = parseFloat(hargaModal) || 0;
+    const cost = modal * item.konversi;
+    if (cost > 0) {
+      return (((item.harga - cost) / cost) * 100).toFixed(2);
+    }
+    return "0.00";
+  };
 
+  const updateSatuanProfit = (index: number, newProfit: number) => {
+    if (newProfit < 0) {
+      toast.error(`% Keuntungan tidak boleh negatif.`);
+      newProfit = 0;
+    }
+    setSatuans((prev) => {
+      const newArr = [...prev];
+      const currentRow = newArr[index];
+      const modal = parseFloat(hargaModal) || 0;
+      const cost = modal * currentRow.konversi;
+      const newHarga = cost * (1 + newProfit / 100);
+      newArr[index] = { ...currentRow, harga: Number(newHarga.toFixed(2)) };
+      return newArr;
+    });
+  };
   const updateSatuan = (
     index: number,
     field: keyof SatuanPembelian,
@@ -191,7 +215,33 @@ export default function ProductFormModal({
   ) => {
     setSatuans((prev) => {
       const newArr = [...prev];
-      newArr[index] = { ...newArr[index], [field]: value };
+      const currentRow = newArr[index];
+      const modal = parseFloat(hargaModal) || 0; // pastikan hargaModal adalah angka
+
+      if (field === "konversi") {
+        const newKonversi = Number(value);
+        // Hitung harga jual otomatis dengan margin 5%
+        const calculatedHarga = modal * newKonversi * 1.05;
+        newArr[index] = {
+          ...currentRow,
+          konversi: newKonversi,
+          harga: Number(calculatedHarga.toFixed(2)),
+        };
+      } else if (field === "harga") {
+        const newHarga = Number(value);
+        // Harga minimal adalah harga modal dikali konversi
+        const minHarga = modal * currentRow.konversi;
+        if (newHarga < minHarga) {
+          toast.error(
+            `Harga jual tidak boleh dibawah harga modal satuan (${minHarga.toFixed(2)})`,
+          );
+          newArr[index] = { ...currentRow, harga: minHarga };
+        } else {
+          newArr[index] = { ...currentRow, harga: newHarga };
+        }
+      } else {
+        newArr[index] = { ...currentRow, [field]: value };
+      }
       return newArr;
     });
   };
@@ -516,6 +566,22 @@ export default function ProductFormModal({
                       />
                     </div>
 
+                    {/* Field % Keuntungan */}
+                    <div className="flex flex-col">
+                      <label className="mb-1 text-sm text-gray-600 dark:text-gray-300">
+                        % Keuntungan
+                      </label>
+                      <input
+                        type="number"
+                        className="w-20 rounded border p-1 dark:bg-gray-800"
+                        placeholder="0"
+                        value={calculateProfit(item)}
+                        onChange={(e) =>
+                          updateSatuanProfit(idx, Number(e.target.value))
+                        }
+                      />
+                    </div>
+
                     {satuans.length > 1 && (
                       <div className="flex items-end">
                         <button
@@ -557,6 +623,18 @@ export default function ProductFormModal({
       </div>
 
       {/* Di sini panggil modal Tambah/Hapus Satuan (jika Anda punya) */}
+      <AddSatuanModal
+        isOpen={showAddSatuan}
+        onClose={() => setShowAddSatuan(false)}
+        onCreatedSatuan={handleCreatedSatuan}
+      />
+
+      <RemoveSatuanModal
+        isOpen={showRemoveSatuan}
+        onClose={() => setShowRemoveSatuan(false)}
+        satuanOptions={satuanOptions}
+        onDeleteSatuan={handleDeleteSatuan}
+      />
       {/* Modal Staff untuk Supplier (atau menyesuaikan) */}
       <SupplierFormModal
         isOpen={showStaffModal}

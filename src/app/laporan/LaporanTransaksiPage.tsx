@@ -178,8 +178,13 @@ export default function LaporanTransaksiPage({
   // Helper: hitung modal transaksi
   const getTransactionModal = (trx: Transaksi): number => {
     return trx.produk.reduce((acc, pd) => {
-      const hargaModal = pd.productId?.harga_modal || 0;
-      return acc + hargaModal * (pd.quantity || 0);
+      // Ambil harga modal per unit dasar dari produk
+      const baseHargaModal = pd.productId?.harga_modal || 0;
+      // Jika ada detail satuan, gunakan faktor konversi untuk menghitung jumlah unit dasar
+      const conversionFactor =
+        pd.satuans && pd.satuans.length > 0 ? pd.satuans[0].konversi || 1 : 1;
+      // Total modal untuk detail ini: harga modal * jumlah * faktor konversi
+      return acc + baseHargaModal * pd.quantity * conversionFactor;
     }, 0);
   };
 

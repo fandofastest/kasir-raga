@@ -7,6 +7,7 @@ import { Product, SatuanPembelian } from "@/models/modeltsx/productTypes";
 import CartItem from "@/models/modeltsx/CartItem";
 import { fetchProducts, fetchSatuan, addSatuan } from "@/lib/dataService";
 import { GridIcon, ListIcon, XCircleIcon } from "lucide-react";
+import { AddSatuanModal, RemoveSatuanModal } from "@/components/SatuanForm";
 
 // Fungsi helper untuk generate UUID
 function generateUUID() {
@@ -15,76 +16,6 @@ function generateUUID() {
       v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
-}
-
-// -------------------------------------------------------------------
-// Modal: AddSatuanModal
-// -------------------------------------------------------------------
-function AddSatuanModal({
-  isOpen,
-  onClose,
-  onCreatedSatuan,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onCreatedSatuan: (newSat: { _id: string; nama: string }) => void;
-}) {
-  const [satName, setSatName] = useState("");
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!satName.trim()) return;
-    try {
-      const res = await addSatuan(satName);
-      const data = res.data; // { _id, nama }
-      onCreatedSatuan(data);
-      onClose();
-    } catch (error) {
-      toast.error("Terjadi kesalahan saat menambah satuan.");
-      console.error(error);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-black bg-opacity-50"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-sm rounded-lg bg-white p-4 shadow dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b pb-2 dark:border-gray-700">
-          <h2 className="text-lg font-semibold dark:text-white">
-            Tambah Satuan
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <XCircleIcon className="h-5 w-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <input
-            type="text"
-            placeholder="Nama Satuan"
-            value={satName}
-            onChange={(e) => setSatName(e.target.value)}
-            className="w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-          />
-          <button
-            type="submit"
-            className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-          >
-            Simpan
-          </button>
-        </form>
-      </div>
-    </div>
-  );
 }
 
 // -------------------------------------------------------------------
@@ -118,6 +49,7 @@ export default function ProductsList({
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showRemoveSatuan, setShowRemoveSatuan] = useState(false);
 
   // Modal states
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
@@ -134,6 +66,9 @@ export default function ProductsList({
   const [satuanOptions, setSatuanOptions] = useState<
     { _id: string; nama: string }[]
   >([]);
+  const handleDeleteSatuan = (id: string) => {
+    setSatuanOptions((prev) => prev.filter((item) => item._id !== id));
+  };
 
   // -------------------------------------------------------------------
   // Fetch data produk
@@ -155,6 +90,54 @@ export default function ProductsList({
     loadProducts();
     console.log("refreshKey:", refreshKey);
   }, [refreshKey]);
+
+  // -------------------------------------------------------------------
+  // Fungsi untuk mengupdate konversi dan menghitung harga jual otomatis
+  // -------------------------------------------------------------------
+  const handleKonversiChange = (index: number, newKonversi: number) => {
+    setEditSatuans((prev) => {
+      const newArr = [...prev];
+      const modalPrice = Number(purchasePrice) || 0;
+      if (modalPrice === 0) {
+        toast.error("Harga modal tidak valid");
+        return prev;
+      }
+      // Hitung harga jual: modalPrice * newKonversi * 1.05 (margin 5%)
+      const newHargaJual = modalPrice * newKonversi * 1.05;
+      newArr[index] = {
+        ...newArr[index],
+        konversi: newKonversi,
+        hargaJual: Number(newHargaJual.toFixed(2)),
+        profitPercent: 5, // secara default margin 5%
+      };
+      return newArr;
+    });
+  };
+
+  // -------------------------------------------------------------------
+  // Fungsi untuk menangani perubahan manual pada harga jual dengan warning
+  // -------------------------------------------------------------------
+  const handleHargaJualChange = (index: number, newHJ: number) => {
+    setEditSatuans((prev) => {
+      const clone = [...prev];
+      const old = clone[index];
+      const costSatuan = Number(purchasePrice) * old.konversi;
+      if (newHJ < costSatuan) {
+        toast.error("Harga jual tidak boleh dibawah harga modal satuan");
+        newHJ = costSatuan; // koreksi harga jual ke minimal
+      }
+      let profit = 0;
+      if (costSatuan > 0) {
+        profit = ((newHJ - costSatuan) / costSatuan) * 100;
+      }
+      clone[index] = {
+        ...old,
+        hargaJual: newHJ,
+        profitPercent: +profit.toFixed(2),
+      };
+      return clone;
+    });
+  };
 
   // -------------------------------------------------------------------
   // Fetch data satuan
@@ -186,23 +169,35 @@ export default function ProductsList({
     setPurchasePrice((product.harga_modal || 0).toString());
     setQuantity("1");
 
-    // Buat array editSatuans dari product.satuans
-    const newEditSatuans: EditSatuan[] = (product.satuans || []).map((s) => {
-      const costSatuan = (product.harga_modal || 0) * s.konversi;
-      const defaultHJ = s.harga;
-      let profitPercent = 0;
-      if (costSatuan > 0) {
-        profitPercent = ((defaultHJ - costSatuan) / costSatuan) * 100;
-      }
-      return {
-        _id: s._id,
-        satuanId: s.satuan._id,
-        konversi: s.konversi,
-        hargaJual: defaultHJ,
-        profitPercent: +profitPercent.toFixed(2),
-      };
-    });
-    setEditSatuans(newEditSatuans);
+    if (product.satuans && product.satuans.length > 0) {
+      const newEditSatuans: EditSatuan[] = product.satuans.map((s) => {
+        const costSatuan = (product.harga_modal || 0) * s.konversi;
+        const defaultHJ = s.harga;
+        let profitPercent = 0;
+        if (costSatuan > 0) {
+          profitPercent = ((defaultHJ - costSatuan) / costSatuan) * 100;
+        }
+        return {
+          _id: s._id,
+          satuanId: s.satuan._id,
+          konversi: s.konversi,
+          hargaJual: defaultHJ,
+          profitPercent: +profitPercent.toFixed(2),
+        };
+      });
+      setEditSatuans(newEditSatuans);
+    } else {
+      // Jika produk tidak memiliki data satuan, inisialisasi dengan satu baris default
+      setEditSatuans([
+        {
+          _id: generateUUID(),
+          satuanId: "",
+          konversi: 1,
+          hargaJual: Number(product.harga_modal),
+          profitPercent: 0,
+        },
+      ]);
+    }
   };
 
   // -------------------------------------------------------------------
@@ -223,7 +218,7 @@ export default function ProductsList({
   };
 
   // -------------------------------------------------------------------
-  // Edit field di baris satuan
+  // Edit field di baris satuan (tetap untuk field selain konversi)
   // -------------------------------------------------------------------
   const handleEditSatuanChange = (
     index: number,
@@ -282,28 +277,12 @@ export default function ProductsList({
   };
 
   // -------------------------------------------------------------------
-  // User edit harga jual => update profit
+  // User edit harga jual => update profit (gunakan fungsi handleHargaJualChange yang sudah diupdate)
   // -------------------------------------------------------------------
-  const handleHargaJualChange = (index: number, newHJ: number) => {
-    setEditSatuans((prev) => {
-      const clone = [...prev];
-      const old = clone[index];
-      const costSatuan = Number(purchasePrice) * old.konversi;
-      let profit = 0;
-      if (costSatuan > 0) {
-        profit = ((newHJ - costSatuan) / costSatuan) * 100;
-      }
-      clone[index] = {
-        ...old,
-        hargaJual: newHJ,
-        profitPercent: +profit.toFixed(2),
-      };
-      return clone;
-    });
-  };
+  // (Fungsi ini sudah ada, cukup update warnanya seperti di handleHargaJualChange di atas)
 
   // -------------------------------------------------------------------
-  // User edit profit => update harga jual
+  // User edit profit => update harga jual (tetap)
   // -------------------------------------------------------------------
   const handleProfitPercentChange = (index: number, newProfit: number) => {
     setEditSatuans((prev) => {
@@ -328,8 +307,6 @@ export default function ProductsList({
   // -------------------------------------------------------------------
   // Konfirmasi: tambah ke cart
   // -------------------------------------------------------------------
-  // Konfirmasi: tambah ke cart
-  // Konfirmasi: tambah ke cart
   const handleConfirmAdd = () => {
     if (!activeProduct) return;
 
@@ -398,7 +375,7 @@ export default function ProductsList({
     : "";
 
   // -------------------------------------------------------------------
-  // Render
+  // Render (layout tidak diubah)
   // -------------------------------------------------------------------
   return (
     <div className="p-4">
@@ -597,17 +574,26 @@ export default function ProductsList({
 
               {/* DAFTAR SATUAN */}
               <div className="border-t pt-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    Set Harga Jual & Profit
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddSatuan(true)}
-                    className="mt-2 rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600 sm:mt-0"
-                  >
-                    + Tambah Jenis Satuan
-                  </button>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Daftar Satuan
+                  </label>
+                  <div className="space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSatuan(true)}
+                      className="rounded bg-green-500 px-2 py-1 text-sm text-white hover:bg-green-600"
+                    >
+                      + Tambah Satuan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowRemoveSatuan(true)}
+                      className="rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-red-600"
+                    >
+                      - Hapus Satuan
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-4 space-y-3">
                   {editSatuans.map((ed, idx) => (
@@ -651,11 +637,7 @@ export default function ProductsList({
                           className="w-20 rounded border p-2 text-sm dark:bg-gray-800 dark:text-white"
                           value={ed.konversi}
                           onChange={(e) =>
-                            handleEditSatuanChange(
-                              idx,
-                              "konversi",
-                              Number(e.target.value),
-                            )
+                            handleKonversiChange(idx, Number(e.target.value))
                           }
                         />
                       </div>
@@ -752,6 +734,14 @@ export default function ProductsList({
         isOpen={showAddSatuan}
         onClose={() => setShowAddSatuan(false)}
         onCreatedSatuan={handleCreatedSatuan}
+      />
+      {/* Di sini panggil modal Tambah/Hapus Satuan (jika Anda punya) */}
+
+      <RemoveSatuanModal
+        isOpen={showRemoveSatuan}
+        onClose={() => setShowRemoveSatuan(false)}
+        satuanOptions={satuanOptions}
+        onDeleteSatuan={handleDeleteSatuan}
       />
     </div>
   );
