@@ -12,11 +12,11 @@ export const metadata: Metadata = {
 const ProductsPage = () => {
   return (
     <DefaultLayout>
-      <div className="max-w-600 mx-auto  h-screen">
+      <div className="mx-auto min-h-screen px-4">
         <Breadcrumb pageName="Pengeluaran" />
 
-        <div className="colo grid h-full w-screen grid-cols-5 gap-8 ">
-          <div className="bg col-span-5 xl:col-span-8">
+        <div className="grid h-full w-full grid-cols-1 gap-8 md:grid-cols-5">
+          <div className="col-span-full">
             <div className="w-full rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
               <TransaksiLainLainPage />
             </div>
