@@ -53,23 +53,22 @@ const menuGroups: MenuGroup[] = [
           {
             label: "Penjualan",
             route: "/transaksi",
-            requiredPermission: "penjualan:view",
+            requiredPermission: "transaksi:penjualan:view",
           },
           {
             label: "Pembelian",
             route: "/pembelian",
-            requiredPermission: "pembelian:view",
+            requiredPermission: "transaksi:pembelian:view",
           },
           {
             label: "Pengeluaran",
             route: "/pengeluaran",
-            requiredPermission: "pengeluaran:view",
+            requiredPermission: "transaksi:pengeluaran:view",
           },
-
           {
             label: "Draft",
             route: "/draft",
-            requiredPermission: "draft:view",
+            requiredPermission: "transaksi:draft:view",
           },
         ],
       },
@@ -83,7 +82,7 @@ const menuGroups: MenuGroup[] = [
         icon: <UsersIcon />,
         label: "Data User",
         route: "#",
-        requiredPermission: "user:view",
+        requiredPermission: "datauser:view",
         children: [
           {
             label: "Konsumen",
@@ -106,38 +105,37 @@ const menuGroups: MenuGroup[] = [
         icon: <DollarSignIcon />,
         label: "Keuangan",
         route: "#",
-        requiredPermission: "cashflow:view",
+        requiredPermission: "keuangan:view",
         children: [
           {
             label: "Cashflow",
             route: "/keuangan/cashflow",
-            requiredPermission: "cashflow:view",
+            requiredPermission: "keuangan:cashflow:view",
           },
           {
             label: "Pembelian",
             route: "/keuangan/pembelian",
-            requiredPermission: "pembelian:view",
+            requiredPermission: "keuangan:pembelian:view",
           },
           {
             label: "Penjualan",
             route: "/keuangan/penjualan",
-            requiredPermission: "penjualan:view",
+            requiredPermission: "keuangan:penjualan:view",
           },
-
           {
             label: "Piutang",
             route: "/keuangan/piutang",
-            requiredPermission: "piutang:view",
+            requiredPermission: "keuangan:piutang:view",
           },
           {
             label: "Hutang",
             route: "/keuangan/hutang",
-            requiredPermission: "hutang:view",
+            requiredPermission: "keuangan:hutang:view",
           },
           {
             label: "Biaya Lain",
             route: "/keuangan/biaya",
-            requiredPermission: "pengeluaran:view",
+            requiredPermission: "keuangan:pengeluaran:view",
           },
         ],
       },
@@ -166,6 +164,11 @@ const menuGroups: MenuGroup[] = [
             label: "Hutang",
             route: "/laporan/hutang",
             requiredPermission: "laporan:hutang:view",
+          },
+          {
+            label: "Produk",
+            route: "/laporan/produk",
+            requiredPermission: "laporan:produk:view", // diperbaiki
           },
           {
             label: "Biaya Lain",
@@ -255,7 +258,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   return (
     <ClickOutside onClick={() => setSidebarOpen(false)}>
       <aside
-        className={`fixed left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-white duration-300 ease-linear dark:bg-boxdark lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-tosca duration-300 ease-linear dark:bg-boxdark lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -270,7 +273,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 alt="Logo"
                 priority
               />
-              <span className=" font-bold text-black dark:text-white">
+              <span className=" text-w font-bold dark:text-white">
                 {storeName}
               </span>
             </div>

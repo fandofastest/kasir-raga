@@ -81,7 +81,7 @@ export default function TransaksiLainLainPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          className="hover:bg-toscadark bg-tosca w-full rounded px-4 py-2 text-white"
         >
           {loading ? "Sedang diproses..." : "Buat Transaksi"}
         </button>

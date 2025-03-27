@@ -18,22 +18,29 @@ interface PermissionFormModalProps {
 const permissionOptions = [
   "dashboard:view",
   "transaksi:view",
-  "penjualan:view",
-  "pembelian:view",
-  "pengeluaran:view",
-  "history:view",
+  "transaksi:penjualan:view",
+  "transaksi:pembelian:view",
+  "transaksi:pengeluaran:view",
+  "transaksi:draft:view",
   "produk:view",
-  "user:view",
+  "datauser:view",
   "konsumen:view",
   "staff:view",
   "supplier:view",
   "keuangan:view",
-  "piutang:view",
-  "hutang:view",
+  "keuangan:cashflow:view",
+  "keuangan:pembelian:view",
+  "keuangan:penjualan:view",
+  "keuangan:piutang:view",
+  "keuangan:hutang:view",
+  "keuangan:pengeluaran:view",
   "laporan:view",
   "laporan:penjualan:view",
   "laporan:pembelian:view",
-  "laporan:keuangan:view",
+  "laporan:piutang:view",
+  "laporan:hutang:view",
+  "laporan:produk:view",
+  "laporan:biaya:view",
   "settings:view",
 ];
 
@@ -108,7 +115,7 @@ export default function PermissionFormModal({
           </div>
           <button
             type="submit"
-            className="w-full rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+            className="w-full rounded bg-tosca px-4 py-2 text-white hover:bg-toscadark"
           >
             Save Permissions
           </button>

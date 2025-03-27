@@ -447,7 +447,7 @@ export default function CartSummary({
                       setStaffModalRole("staffAntar");
                       setShowAddStaffModal(true);
                     }}
-                    className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadark-600 ml-2 rounded px-3 py-1 text-white"
                   >
                     +
                   </button>
@@ -479,7 +479,7 @@ export default function CartSummary({
                       setStaffModalRole("staffBongkar");
                       setShowAddStaffModal(true);
                     }}
-                    className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadark-600 ml-2 rounded px-3 py-1 text-white"
                   >
                     +
                   </button>
@@ -517,7 +517,7 @@ export default function CartSummary({
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600"
+                        className="hover:bg-toscadark bg-tosca h-6 w-6 rounded text-white"
                         onClick={() => {
                           if (item.quantity <= 1) {
                             setItemToRemove(item);
@@ -544,7 +544,7 @@ export default function CartSummary({
                         {item.quantity}
                       </span>
                       <button
-                        className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600"
+                        className="hover:bg-toscadark bg-tosca h-6 w-6 rounded text-white"
                         onClick={() =>
                           updateCart(
                             cartItems.map((ci) =>
@@ -663,7 +663,7 @@ export default function CartSummary({
 
             <div className="mt-4 flex space-x-2">
               <button
-                className="flex-1 rounded-md bg-blue-500 py-2 text-white hover:bg-blue-600"
+                className="hover:bg-toscadark bg-tosca flex-1 rounded-md py-2 text-white"
                 disabled={!selectedSupplier || cartItems.length === 0}
                 onClick={handleCheckout}
               >
@@ -687,7 +687,7 @@ export default function CartSummary({
       {isMobile && (
         <div className="fixed bottom-4 left-4 right-4">
           <button
-            className="w-full rounded-md bg-blue-500 py-2 text-white hover:bg-blue-600"
+            className="hover:bg-toscadark bg-tosca w-full rounded-md py-2 text-white"
             onClick={() => setShowMobileDialog(true)}
           >
             Checkout - Rp{totalPrice.toLocaleString()}
@@ -749,7 +749,7 @@ export default function CartSummary({
                       setStaffModalRole("staffAntar");
                       setShowAddStaffModal(true);
                     }}
-                    className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadark-600 ml-2 rounded px-3 py-1 text-white"
                   >
                     +
                   </button>
@@ -784,7 +784,7 @@ export default function CartSummary({
                       setStaffModalRole("staffBongkar");
                       setShowAddStaffModal(true);
                     }}
-                    className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadark-600 ml-2 rounded px-3 py-1 text-white"
                   >
                     +
                   </button>
@@ -913,7 +913,7 @@ export default function CartSummary({
 
           {/* Tombol Checkout Mobile */}
           <button
-            className="mt-4 w-full rounded bg-blue-500 py-2 text-white hover:bg-blue-600"
+            className="hover:bg-toscadark bg-tosca mt-4 w-full rounded py-2 text-white"
             disabled={!selectedSupplier || cartItems.length === 0}
             onClick={() => {
               handleCheckout();
@@ -1006,7 +1006,7 @@ export default function CartSummary({
               </button>
               <button
                 onClick={handleUpdateItemQty}
-                className="rounded bg-blue-600 px-3 py-1 text-sm font-semibold text-white hover:bg-blue-700"
+                className="bg-tosca hover:bg-toscadark rounded px-3 py-1 text-sm font-semibold text-white"
               >
                 Simpan
               </button>
@@ -1025,7 +1025,7 @@ export default function CartSummary({
       {/* Floating Cart Icon (Mobile) */}
       {cartItems.length > 0 && isMobile && (
         <div
-          className={`fixed bottom-24 right-4 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-blue-500 text-white ${
+          className={`bg-tosca fixed bottom-24 right-4 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full text-white ${
             animateCart ? "animate-bounce" : ""
           }`}
           onClick={() => {

@@ -73,7 +73,7 @@ const ItemSupplier = () => {
         />
         <button
           onClick={() => handleOpenModal()}
-          className="rounded-md bg-blue-500 px-4 py-2 text-white"
+          className="bg-tosca rounded-md px-4 py-2 text-white"
         >
           Tambah Supplier
         </button>
@@ -166,7 +166,7 @@ const ItemSupplier = () => {
                   <div className="mt-2 flex space-x-2">
                     <button
                       onClick={() => handleOpenModal(supplier)}
-                      className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+                      className="hover:bg-toscadark bg-tosca rounded px-4 py-2 text-sm text-white"
                     >
                       Edit
                     </button>

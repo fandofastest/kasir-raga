@@ -428,7 +428,7 @@ export default function LaporanHutangPiutangPage({
             <div className="flex items-end">
               <button
                 type="submit"
-                className="w-full rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                className="hover:bg-toscadark bg-tosca w-full rounded px-4 py-2 text-white"
               >
                 Terapkan Filter
               </button>
@@ -634,7 +634,7 @@ export default function LaporanHutangPiutangPage({
           </button>
           <button
             onClick={handlePrint}
-            className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+            className="bg-tosca hover:bg-toscadark-600 rounded px-4 py-2 text-white"
           >
             Print Laporan
           </button>

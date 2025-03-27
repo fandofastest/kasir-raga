@@ -6,6 +6,7 @@ import ProductFormModal from "@/components/ProductForm";
 import { fetchProducts } from "@/lib/dataService";
 import { Product } from "@/models/modeltsx/productTypes";
 import { formatRupiah } from "@/components/tools";
+import ProductImage from "@/components/ImageView";
 
 const ProductList = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -76,7 +77,7 @@ const ProductList = () => {
         />
         <button
           onClick={() => handleOpenModal()}
-          className="rounded-md bg-blue-500 px-4 py-2 text-white"
+          className="bg-tosca hover:bg-toscadark rounded-md px-4 py-2 text-white"
         >
           Tambah Produk
         </button>
@@ -114,16 +115,7 @@ const ProductList = () => {
               <div className="col-span-3 flex items-center">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
-                    <Image
-                      src={
-                        product.image && product.image !== ""
-                          ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
-                          : "images/product/default.png"
-                      }
-                      alt={"Logo Preview" as string}
-                      fill
-                      className="rounded-md object-cover"
-                    />
+                    <ProductImage product={product} />
                   </div>
                   <p className="text-sm text-black dark:text-white">
                     {product.nama_produk ?? "N/A"}
@@ -229,7 +221,7 @@ const ProductList = () => {
                   <div className="mt-2 flex space-x-2">
                     <button
                       onClick={() => handleOpenModal(product)}
-                      className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+                      className="hover:bg-toscadark bg-tosca rounded px-4 py-2 text-sm text-white"
                     >
                       Edit
                     </button>

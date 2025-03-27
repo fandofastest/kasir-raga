@@ -82,7 +82,7 @@ const ItemStaff = () => {
         />
         <button
           onClick={() => handleOpenModal()}
-          className="rounded-md bg-blue-500 px-4 py-2 text-white"
+          className="bg-tosca rounded-md px-4 py-2 text-white"
         >
           Tambah Staff
         </button>
@@ -189,13 +189,13 @@ const ItemStaff = () => {
                   <div className="mt-2 flex space-x-2">
                     <button
                       onClick={() => handleOpenModal(s)}
-                      className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+                      className="hover:bg-toscadark bg-tosca rounded px-4 py-2 text-sm text-white"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleOpenPermissionModal(s)}
-                      className="rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
+                      className="bg-tosca hover:bg-toscadark-600 rounded px-4 py-2 text-sm text-white"
                     >
                       Permission
                     </button>

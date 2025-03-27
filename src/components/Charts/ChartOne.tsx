@@ -171,7 +171,7 @@ const ChartOne: React.FC = () => {
               {/* Summary Pemasukan */}
               <div className="flex min-w-47.5">
                 <span className="mr-2 mt-1 flex h-4 w-full max-w-4 items-center justify-center rounded-full border border-green-500">
-                  <span className="block h-2.5 w-full max-w-2.5 rounded-full bg-green-500"></span>
+                  <span className="block h-2.5 w-full max-w-2.5 rounded-full bg-tosca"></span>
                 </span>
                 <div className="w-full">
                   <p className="font-semibold text-green-500">Pemasukan</p>

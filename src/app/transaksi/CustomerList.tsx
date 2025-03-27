@@ -95,7 +95,7 @@ function CustomersList({
         }
       `}</style>
       <div>
-        <h3 className="mb-2 text-lg font-semibold text-black dark:text-white">
+        <h3 className="mb-2 mt-2 text-sm  font-semibold text-black dark:text-white">
           Pilih Pelanggan
         </h3>
         <div className="flex items-center">
@@ -118,7 +118,7 @@ function CustomersList({
           <button
             type="button"
             onClick={() => setShowPelangganModal(true)}
-            className="ml-2 rounded bg-green-500 px-3 py-2 text-sm text-white hover:bg-green-600"
+            className="hover:bg-toscadark bg-tosca ml-2 rounded px-3 py-2 text-sm text-white"
           >
             +
           </button>

@@ -489,7 +489,7 @@ function CartSummary({
                 setShowAddStaffModal(true);
                 setStaffModalRole("staffAntar");
               }}
-              className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+              className="bg-tosca ml-2 rounded px-3 py-1 text-white hover:bg-green-600"
             >
               +
             </button>
@@ -522,7 +522,7 @@ function CartSummary({
                 setShowAddStaffModal(true);
                 setStaffModalRole("staffBongkar");
               }}
-              className="ml-2 rounded bg-green-500 px-3 py-1 text-white hover:bg-green-600"
+              className="bg-tosca ml-2 rounded px-3 py-1 text-white hover:bg-green-600"
             >
               +
             </button>
@@ -659,7 +659,7 @@ function CartSummary({
         )}
 
         <button
-          className="mt-3 w-full rounded-md bg-blue-500 py-2 text-white hover:bg-blue-600"
+          className="bg-tosca hover:bg-toscadarkdark mt-3 w-full rounded-md py-2 text-white"
           disabled={!selectedCustomer || cartItems.length === 0}
           onClick={() => {
             handleCheckout();
@@ -733,7 +733,7 @@ function CartSummary({
                   <button
                     type="button"
                     onClick={() => handleAddStaff("staffAntar")}
-                    className="ml-2 rounded bg-green-500 px-3 py-2 text-sm text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadarkdark ml-2 rounded px-3 py-2 text-sm text-white"
                   >
                     +
                   </button>
@@ -762,7 +762,7 @@ function CartSummary({
                   <button
                     type="button"
                     onClick={() => handleAddStaff("staffBongkar")}
-                    className="ml-2 rounded bg-green-500 px-3 py-2 text-sm text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadarkdark ml-2 rounded px-3 py-2 text-sm text-white"
                   >
                     +
                   </button>
@@ -801,7 +801,7 @@ function CartSummary({
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600"
+                        className="hover:bg-toscadark bg-tosca h-6 w-6 rounded text-white"
                         onClick={() => handleDecrement(item)}
                       >
                         -
@@ -814,7 +814,7 @@ function CartSummary({
                         {item.quantity}
                       </span>
                       <button
-                        className="h-6 w-6 rounded bg-blue-500 text-white hover:bg-blue-600"
+                        className="hover:bg-toscadark bg-tosca h-6 w-6 rounded text-white"
                         onClick={() => {
                           // Jika sudah mencapai stok, tampilkan error
                           if (item.quantity >= item.jumlah) {
@@ -966,7 +966,7 @@ function CartSummary({
             )}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
-                className="w-full rounded-md bg-blue-500 py-2 text-white hover:bg-blue-600"
+                className="hover:bg-toscadark bg-tosca w-full rounded-md py-2 text-white"
                 disabled={!selectedCustomer || cartItems.length === 0}
                 onClick={handleCheckout}
               >
@@ -990,7 +990,7 @@ function CartSummary({
       {isMobile && (
         <div className="fixed bottom-4 left-4 right-4">
           <button
-            className="w-full rounded-md bg-blue-500 py-2 text-white hover:bg-blue-600"
+            className="hover:bg-toscadark bg-tosca w-full rounded-md py-2 text-white"
             onClick={() => setShowMobileDialog(true)}
           >
             Checkout - Rp {totalHarga.toLocaleString()}
@@ -1007,7 +1007,7 @@ function CartSummary({
       {/* FLOATING CART ICON (MOBILE) */}
       {cartItems.length > 0 && isMobile && (
         <div
-          className={`fixed bottom-24 right-4 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-blue-500 text-white ${
+          className={`bg-tosca fixed bottom-24 right-4 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full text-white ${
             animateCart ? "animate-bounce" : ""
           }`}
           onClick={() => {
@@ -1089,7 +1089,7 @@ function CartSummary({
               </button>
               <button
                 onClick={confirmUpdateQuantity}
-                className="rounded bg-blue-600 px-3 py-1 text-sm font-semibold text-white hover:bg-blue-700"
+                className="bg-tosca hover:bg-toscadarkdark rounded px-3 py-1 text-sm font-semibold text-white"
               >
                 Simpan
               </button>

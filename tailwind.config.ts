@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
+import plugin from "tailwindcss/plugin";
+
 const colors = require("tailwindcss/colors");
 
 const config: Config = {
@@ -23,6 +25,8 @@ const config: Config = {
       colors: {
         current: "currentColor",
         transparent: "transparent",
+        tosca: "#06c69f",
+        toscadark: "#19b394",
         white: "#FFFFFF",
         black: {
           // ...colors.black,
@@ -37,8 +41,8 @@ const config: Config = {
         bodydark: "#AEB7C0",
         bodydark1: "#DEE4EE",
         bodydark2: "#8A99AF",
-        primary: "#3C50E0",
-        secondary: "#80CAEE",
+        primary: "#06c69f",
+        secondary: "#06c69f",
         stroke: "#E2E8F0",
         gray: {
           ...colors.gray,

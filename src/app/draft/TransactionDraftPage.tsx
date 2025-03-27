@@ -252,7 +252,7 @@ export default function TransactionDraftPage() {
         {/* Filter lainnya dapat ditambahkan sesuai kebutuhan */}
         <button
           type="submit"
-          className="col-span-1 rounded bg-blue-500 px-4 py-2 text-white sm:col-span-3"
+          className="bg-tosca col-span-1 rounded px-4 py-2 text-white sm:col-span-3"
         >
           Terapkan Filter
         </button>
@@ -377,7 +377,7 @@ export default function TransactionDraftPage() {
                       </button>
                       <button
                         onClick={() => handleContinueDraft(trx)}
-                        className="ml-3 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                        className="hover:bg-toscadark bg-tosca ml-3 rounded px-2 py-1 text-white"
                       >
                         Lanjutkan
                       </button>
@@ -474,7 +474,7 @@ export default function TransactionDraftPage() {
                       </button>
                       <button
                         onClick={() => handleContinueDraft(trx)}
-                        className="flex-1 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                        className="hover:bg-toscadark bg-tosca flex-1 rounded px-2 py-1 text-white"
                       >
                         Lanjutkan
                       </button>

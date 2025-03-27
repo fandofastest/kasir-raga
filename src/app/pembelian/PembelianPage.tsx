@@ -46,7 +46,7 @@ export default function PembelianPage() {
       <div className="mb-4 flex items-center justify-between px-4">
         <h1 className="text-xl font-bold">Pembelian</h1>
         <button
-          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          className="hover:bg-toscadark bg-tosca rounded px-4 py-2 text-white"
           onClick={() => setIsDialogOpen(true)}
         >
           + Add Product

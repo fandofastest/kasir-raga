@@ -187,7 +187,7 @@ export default function StaffFormModal({
           />
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="bg-tosca hover:bg-toscadark w-full rounded-lg px-4 py-2 text-white"
           >
             {loading
               ? "Menyimpan..."

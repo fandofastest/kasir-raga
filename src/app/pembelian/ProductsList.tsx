@@ -8,6 +8,7 @@ import CartItem from "@/models/modeltsx/CartItem";
 import { fetchProducts, fetchSatuan, addSatuan } from "@/lib/dataService";
 import { GridIcon, ListIcon, XCircleIcon } from "lucide-react";
 import { AddSatuanModal, RemoveSatuanModal } from "@/components/SatuanForm";
+import ProductImage from "@/components/ImageView";
 
 // Fungsi helper untuk generate UUID
 function generateUUID() {
@@ -20,6 +21,7 @@ function generateUUID() {
 
 // -------------------------------------------------------------------
 // Interface untuk EditSatuan (di modal pembelian)
+// Tambahkan properti error untuk validasi
 // -------------------------------------------------------------------
 interface EditSatuan {
   _id: string; // ID unik baris
@@ -27,6 +29,7 @@ interface EditSatuan {
   konversi: number;
   hargaJual: number;
   profitPercent: number;
+  error?: string; // properti tambahan untuk error validasi
 }
 
 // -------------------------------------------------------------------
@@ -109,22 +112,24 @@ export default function ProductsList({
         konversi: newKonversi,
         hargaJual: Number(newHargaJual.toFixed(2)),
         profitPercent: 5, // secara default margin 5%
+        error: "", // reset error karena kalkulasi otomatis selalu valid
       };
       return newArr;
     });
   };
 
   // -------------------------------------------------------------------
-  // Fungsi untuk menangani perubahan manual pada harga jual dengan warning
+  // Fungsi untuk menangani perubahan manual pada harga jual
+  // Tanpa langsung menampilkan toast, tetapi menandai input dengan error
   // -------------------------------------------------------------------
   const handleHargaJualChange = (index: number, newHJ: number) => {
     setEditSatuans((prev) => {
       const clone = [...prev];
       const old = clone[index];
       const costSatuan = Number(purchasePrice) * old.konversi;
+      let error = "";
       if (newHJ < costSatuan) {
-        toast.error("Harga jual tidak boleh dibawah harga modal satuan");
-        newHJ = costSatuan; // koreksi harga jual ke minimal
+        error = "Harga jual tidak boleh dibawah harga modal satuan";
       }
       let profit = 0;
       if (costSatuan > 0) {
@@ -134,6 +139,30 @@ export default function ProductsList({
         ...old,
         hargaJual: newHJ,
         profitPercent: +profit.toFixed(2),
+        error,
+      };
+      return clone;
+    });
+  };
+
+  // -------------------------------------------------------------------
+  // Fungsi untuk menangani perubahan profit (update harga jual) dengan validasi
+  // -------------------------------------------------------------------
+  const handleProfitPercentChange = (index: number, newProfit: number) => {
+    setEditSatuans((prev) => {
+      const clone = [...prev];
+      const old = clone[index];
+      const costSatuan = Number(purchasePrice) * old.konversi;
+      const newHJ = costSatuan * (1 + newProfit / 100);
+      let error = "";
+      if (newHJ < costSatuan) {
+        error = "Harga jual tidak boleh dibawah harga modal satuan";
+      }
+      clone[index] = {
+        ...old,
+        profitPercent: newProfit,
+        hargaJual: +newHJ.toFixed(2),
+        error,
       };
       return clone;
     });
@@ -183,6 +212,7 @@ export default function ProductsList({
           konversi: s.konversi,
           hargaJual: defaultHJ,
           profitPercent: +profitPercent.toFixed(2),
+          error: "", // inisialisasi error kosong
         };
       });
       setEditSatuans(newEditSatuans);
@@ -195,6 +225,7 @@ export default function ProductsList({
           konversi: 1,
           hargaJual: Number(product.harga_modal),
           profitPercent: 0,
+          error: "",
         },
       ]);
     }
@@ -247,6 +278,7 @@ export default function ProductsList({
           konversi: 1,
           hargaJual: Number(purchasePrice),
           profitPercent: 0,
+          error: "",
         },
       ]);
     }
@@ -277,38 +309,21 @@ export default function ProductsList({
   };
 
   // -------------------------------------------------------------------
-  // User edit harga jual => update profit (gunakan fungsi handleHargaJualChange yang sudah diupdate)
-  // -------------------------------------------------------------------
-  // (Fungsi ini sudah ada, cukup update warnanya seperti di handleHargaJualChange di atas)
-
-  // -------------------------------------------------------------------
-  // User edit profit => update harga jual (tetap)
-  // -------------------------------------------------------------------
-  const handleProfitPercentChange = (index: number, newProfit: number) => {
-    setEditSatuans((prev) => {
-      const clone = [...prev];
-      const old = clone[index];
-      const costSatuan = Number(purchasePrice) * old.konversi;
-      const newHJ = costSatuan * (1 + newProfit / 100);
-      clone[index] = {
-        ...old,
-        profitPercent: newProfit,
-        hargaJual: +newHJ.toFixed(2),
-      };
-      return clone;
-    });
-  };
-
-  // -------------------------------------------------------------------
-  // Hitung total beli
-  // -------------------------------------------------------------------
-  const totalBeli = Number(purchasePrice) * Number(quantity);
-
-  // -------------------------------------------------------------------
   // Konfirmasi: tambah ke cart
+  // Sebelum menambah, cek apakah ada satuan yang invalid (harga jual di bawah harga modal)
   // -------------------------------------------------------------------
   const handleConfirmAdd = () => {
     if (!activeProduct) return;
+
+    const invalidSatuan = editSatuans.some(
+      (ed) => ed.hargaJual < Number(purchasePrice) * ed.konversi,
+    );
+    if (invalidSatuan) {
+      toast.error(
+        "Terdapat satuan dengan harga jual di bawah harga modal satuan",
+      );
+      return;
+    }
 
     // Buat array satuan untuk cart dari data editSatuans
     const newSatuans: SatuanPembelian[] = editSatuans.map((ed) => {
@@ -323,6 +338,12 @@ export default function ProductsList({
         harga: ed.hargaJual,
       };
     });
+
+    const hargaModalBaru =
+      activeProduct &&
+      (Number(activeProduct.harga_modal) * Number(activeProduct.jumlah) +
+        Number(purchasePrice) * Number(quantity)) /
+        (Number(activeProduct.jumlah) + Number(quantity));
 
     const cartItem: CartItem = {
       ...activeProduct,
@@ -361,18 +382,19 @@ export default function ProductsList({
         konversi: 1,
         hargaJual: Number(purchasePrice),
         profitPercent: 0,
+        error: "",
       },
     ]);
     setSatuanOptions((prev) => [...prev, newSat]);
   };
 
-  const hargaModalBaru = activeProduct
-    ? (
-        (Number(activeProduct.harga_modal) * Number(activeProduct.jumlah) +
-          Number(purchasePrice) * Number(quantity)) /
-        (Number(activeProduct.jumlah) + Number(quantity))
-      ).toFixed(2)
-    : "";
+  const hargaModalBaru =
+    activeProduct &&
+    (
+      (Number(activeProduct.harga_modal) * Number(activeProduct.jumlah) +
+        Number(purchasePrice) * Number(quantity)) /
+      (Number(activeProduct.jumlah) + Number(quantity))
+    ).toFixed(2);
 
   // -------------------------------------------------------------------
   // Render (layout tidak diubah)
@@ -434,16 +456,7 @@ export default function ProductsList({
               >
                 {/* Gambar Produk */}
                 <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
-                  <Image
-                    src={
-                      product.image
-                        ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
-                        : "/images/product/default.png"
-                    }
-                    alt="Product"
-                    fill
-                    className="rounded-md object-cover"
-                  />
+                  <ProductImage product={product} />
                 </div>
                 {/* Info Produk */}
                 <div className="flex-1">
@@ -473,8 +486,8 @@ export default function ProductsList({
                 </div>
                 {/* Tombol Tambah */}
                 <button
-                  className={`ml-auto rounded-md bg-blue-500 px-3 py-1 text-sm font-semibold text-white 
-                             hover:bg-blue-600 ${viewMode === "grid" ? "w-full" : ""}`}
+                  className={`hover:bg-toscadark bg-tosca ml-auto rounded-md px-3 py-1 text-sm font-semibold 
+                             text-white ${viewMode === "grid" ? "w-full" : ""}`}
                   onClick={() => handleTambahClick(product)}
                 >
                   Tambah
@@ -541,7 +554,7 @@ export default function ProductsList({
                           type="number"
                           readOnly
                           className="mt-1 w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-                          value={hargaModalBaru}
+                          value={hargaModalBaru || activeProduct.harga_modal}
                         />
                       </div>
                     )}
@@ -567,7 +580,9 @@ export default function ProductsList({
                     type="text"
                     readOnly
                     className="mt-1 w-full rounded border p-2 dark:bg-gray-800 dark:text-white"
-                    value={`Rp ${totalBeli.toLocaleString()}`}
+                    value={`Rp ${(
+                      Number(purchasePrice) * Number(quantity)
+                    ).toLocaleString()}`}
                   />
                 </div>
               </div>
@@ -582,7 +597,7 @@ export default function ProductsList({
                     <button
                       type="button"
                       onClick={() => setShowAddSatuan(true)}
-                      className="rounded bg-green-500 px-2 py-1 text-sm text-white hover:bg-green-600"
+                      className="bg-tosca hover:bg-toscadark-600 rounded px-2 py-1 text-sm text-white"
                     >
                       + Tambah Satuan
                     </button>
@@ -652,7 +667,10 @@ export default function ProductsList({
                         <input
                           type="number"
                           placeholder="Harga"
-                          className="w-24 rounded border p-2 text-sm dark:bg-gray-800 dark:text-white"
+                          // Jika ada error, tambahkan kelas border merah
+                          className={`w-24 rounded border p-2 text-sm dark:bg-gray-800 dark:text-gray-100 ${
+                            ed.error ? "border-red-500" : ""
+                          }`}
                           value={ed.hargaJual}
                           onChange={(e) =>
                             handleHargaJualChange(idx, Number(e.target.value))
@@ -720,7 +738,7 @@ export default function ProductsList({
               </button>
               <button
                 onClick={handleConfirmAdd}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                className="bg-tosca hover:bg-toscadark rounded px-4 py-2 text-sm font-semibold text-white"
               >
                 Konfirmasi
               </button>

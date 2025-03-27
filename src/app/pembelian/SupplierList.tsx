@@ -131,7 +131,7 @@ export default function SupplierList({
           <button
             type="button"
             onClick={() => setShowSupplierModal(true)}
-            className="ml-2 rounded bg-green-500 px-3 py-2 text-sm text-white hover:bg-green-600"
+            className="bg-tosca hover:bg-toscadark-600 ml-2 rounded px-3 py-2 text-sm text-white"
           >
             +
           </button>

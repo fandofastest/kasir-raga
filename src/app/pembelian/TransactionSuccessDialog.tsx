@@ -79,7 +79,7 @@ const TransactionSuccessDialog: React.FC<TransactionSuccessDialogProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between bg-blue-600 px-6 py-4">
+          <div className="bg-tosca flex items-center justify-between px-6 py-4">
             <div>
               <h1 className="text-2xl font-bold text-white">Invoice</h1>
               <p className="text-sm text-blue-200">Transaksi Berhasil</p>
@@ -224,20 +224,20 @@ const TransactionSuccessDialog: React.FC<TransactionSuccessDialogProps> = ({
           </div>
 
           {/* Footer (tidak tercetak) */}
-          <div className="no-print flex items-center justify-end bg-blue-600 px-6 py-4">
+          <div className="no-print bg-tosca flex items-center justify-end px-6 py-4">
             <button
               onClick={() =>
                 router.push(
                   `/keuangan/${transactionData.tipe_transaksi}?no_transaksi=${transactionData.no_transaksi}`,
                 )
               }
-              className="mr-4 rounded bg-blue-400 px-4 py-2 text-sm text-white hover:bg-blue-500"
+              className="hover:bg-toscadark mr-4 rounded bg-blue-400 px-4 py-2 text-sm text-white"
             >
               Detail
             </button>
             <button
               onClick={onClose}
-              className="mr-4 rounded bg-blue-400 px-4 py-2 text-sm text-white hover:bg-blue-500"
+              className="hover:bg-toscadark mr-4 rounded bg-blue-400 px-4 py-2 text-sm text-white"
             >
               OK
             </button>

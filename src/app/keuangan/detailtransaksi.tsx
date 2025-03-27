@@ -311,7 +311,7 @@ const TransactionDetailDialog = ({
               </button>
               <button
                 type="submit"
-                className="mb-2 rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 sm:mb-0"
+                className="hover:bg-toscadark bg-tosca mb-2 rounded px-4 py-2 text-sm text-white sm:mb-0"
               >
                 Perbarui
               </button>
@@ -319,7 +319,7 @@ const TransactionDetailDialog = ({
                 onClick={() =>
                   window.open(`/invoice/${transaction.no_transaksi}`, "_blank")
                 }
-                className="rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
+                className="bg-tosca hover:bg-toscadark-600 rounded px-4 py-2 text-sm text-white"
               >
                 Invoice
               </button>

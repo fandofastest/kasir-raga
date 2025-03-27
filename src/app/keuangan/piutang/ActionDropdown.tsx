@@ -43,7 +43,7 @@ const ActionModal: React.FC<ActionModalProps> = ({
     <div>
       <button
         onClick={openModal}
-        className="rounded-md bg-blue-600 px-4 py-2 text-white shadow transition-colors duration-200 hover:bg-blue-700"
+        className="bg-tosca hover:bg-toscadark rounded-md px-4 py-2 text-white shadow transition-colors duration-200"
       >
         Aksi
       </button>
@@ -59,7 +59,7 @@ const ActionModal: React.FC<ActionModalProps> = ({
             {outstanding > 0 && (
               <button
                 onClick={() => handleOptionClick("installment")}
-                className="block w-full rounded bg-green-500 px-4 py-2 text-left text-sm text-white hover:bg-green-600"
+                className="bg-tosca hover:bg-toscadark-600 block w-full rounded px-4 py-2 text-left text-sm text-white"
                 disabled={outstanding <= 0}
               >
                 Bayar Cicilan

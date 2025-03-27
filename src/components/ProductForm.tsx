@@ -20,24 +20,26 @@ import StaffFormModal from "@/app/staff/StaffForm";
 import SupplierFormModal from "@/app/supplier/SupplierForm";
 import { AddSatuanModal, RemoveSatuanModal } from "./SatuanForm";
 
-interface Supplier {
-  _id?: string;
-  nama: string;
-  alamat: string;
-  kontak: string;
-}
-
+// Tambahkan properti optional "error" untuk validasi di tiap baris satuan
 interface SatuanPembelian {
   _id: string;
   satuanId: string;
   konversi: number;
   harga: number;
+  error?: string;
 }
 
 interface SatuanData {
   _id: string;
   nama: string;
   deskripsi?: string;
+}
+
+interface Supplier {
+  _id?: string;
+  nama: string;
+  alamat: string;
+  kontak: string;
 }
 
 interface ProductFormModalProps {
@@ -82,7 +84,7 @@ export default function ProductFormModal({
   const [showAddSatuan, setShowAddSatuan] = useState(false);
   const [showRemoveSatuan, setShowRemoveSatuan] = useState(false);
 
-  // ---- (1) Tambah state modal untuk Staff ----
+  // Modal untuk tambah supplier/staff
   const [showStaffModal, setShowStaffModal] = useState(false);
 
   // Token
@@ -122,7 +124,6 @@ export default function ProductFormModal({
       setHargaModal(product.harga_modal.toString());
       setJumlah(product.jumlah.toString());
 
-      // Pastikan product.supplier adalah object { _id, nama, dll }
       if (product.supplier && typeof product.supplier === "object") {
         setSupplier(product.supplier as Supplier);
       } else {
@@ -140,15 +141,22 @@ export default function ProductFormModal({
             satuanId: s.satuan?._id || "",
             konversi: s.konversi,
             harga: s.harga,
+            error: "",
           })),
         );
       } else {
         setSatuans([
-          { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
+          {
+            _id: generateUUID(),
+            satuanId: "",
+            konversi: 0,
+            harga: 0,
+            error: "",
+          },
         ]);
       }
     } else {
-      // Reset form
+      // Reset form jika tidak ada produk (tambah baru)
       setNamaProduk("");
       setHargaModal("");
       setJumlah("");
@@ -157,7 +165,7 @@ export default function ProductFormModal({
       setKategori(null);
       setImageUrl("");
       setSatuans([
-        { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
+        { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0, error: "" },
       ]);
     }
   }, [product]);
@@ -177,13 +185,14 @@ export default function ProductFormModal({
   const addSatuanRow = () => {
     setSatuans((prev) => [
       ...prev,
-      { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
+      { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0, error: "" },
     ]);
   };
 
   const removeSatuanRow = (id: string) => {
     setSatuans((prev) => prev.filter((item) => item._id !== id));
   };
+
   const calculateProfit = (item: SatuanPembelian) => {
     const modal = parseFloat(hargaModal) || 0;
     const cost = modal * item.konversi;
@@ -194,20 +203,28 @@ export default function ProductFormModal({
   };
 
   const updateSatuanProfit = (index: number, newProfit: number) => {
-    if (newProfit < 0) {
-      toast.error(`% Keuntungan tidak boleh negatif.`);
-      newProfit = 0;
-    }
     setSatuans((prev) => {
       const newArr = [...prev];
       const currentRow = newArr[index];
       const modal = parseFloat(hargaModal) || 0;
       const cost = modal * currentRow.konversi;
-      const newHarga = cost * (1 + newProfit / 100);
-      newArr[index] = { ...currentRow, harga: Number(newHarga.toFixed(2)) };
+      if (newProfit < 0) {
+        newArr[index] = {
+          ...currentRow,
+          error: `% Keuntungan tidak boleh negatif.`,
+        };
+      } else {
+        const newHarga = cost * (1 + newProfit / 100);
+        newArr[index] = {
+          ...currentRow,
+          harga: Number(newHarga.toFixed(2)),
+          error: "",
+        };
+      }
       return newArr;
     });
   };
+
   const updateSatuan = (
     index: number,
     field: keyof SatuanPembelian,
@@ -216,7 +233,7 @@ export default function ProductFormModal({
     setSatuans((prev) => {
       const newArr = [...prev];
       const currentRow = newArr[index];
-      const modal = parseFloat(hargaModal) || 0; // pastikan hargaModal adalah angka
+      const modal = parseFloat(hargaModal) || 0;
 
       if (field === "konversi") {
         const newKonversi = Number(value);
@@ -226,18 +243,19 @@ export default function ProductFormModal({
           ...currentRow,
           konversi: newKonversi,
           harga: Number(calculatedHarga.toFixed(2)),
+          error: "",
         };
       } else if (field === "harga") {
         const newHarga = Number(value);
-        // Harga minimal adalah harga modal dikali konversi
         const minHarga = modal * currentRow.konversi;
         if (newHarga < minHarga) {
-          toast.error(
-            `Harga jual tidak boleh dibawah harga modal satuan (${minHarga.toFixed(2)})`,
-          );
-          newArr[index] = { ...currentRow, harga: minHarga };
+          newArr[index] = {
+            ...currentRow,
+            harga: newHarga,
+            error: `Harga jual tidak boleh dibawah harga modal satuan (${minHarga.toFixed(2)})`,
+          };
         } else {
-          newArr[index] = { ...currentRow, harga: newHarga };
+          newArr[index] = { ...currentRow, harga: newHarga, error: "" };
         }
       } else {
         newArr[index] = { ...currentRow, [field]: value };
@@ -256,6 +274,17 @@ export default function ProductFormModal({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!token) return;
+
+    // Cari baris satuan yang memiliki error validasi
+    const errorRows = satuans.filter((s) => s.error && s.error.length > 0);
+    if (errorRows.length > 0) {
+      // Menampilkan error dari baris satuan pertama (atau Anda bisa menampilkan semua jika diinginkan)
+      toast.error(
+        errorRows[0].error || "Terjadi kesalahan saat menambahkan produk.",
+      );
+      return;
+    }
+
     setLoading(true);
 
     const filteredSatuans = satuans
@@ -266,7 +295,6 @@ export default function ProductFormModal({
         harga: s.harga,
       }));
 
-    // Supplier kita kirim minimal { _id } atau object penuh jika di-backend butuh
     const productData = {
       nama_produk: namaProduk,
       harga_modal: parseFloat(hargaModal),
@@ -297,6 +325,7 @@ export default function ProductFormModal({
       toast.success(
         product ? "Produk berhasil diupdate!" : "Produk berhasil ditambahkan!",
       );
+      // Reset form
       setNamaProduk("");
       setHargaModal("");
       setJumlah("");
@@ -305,7 +334,7 @@ export default function ProductFormModal({
       setKategori(null);
       setImageUrl("");
       setSatuans([
-        { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0 },
+        { _id: generateUUID(), satuanId: "", konversi: 0, harga: 0, error: "" },
       ]);
       onSubmit();
       onClose();
@@ -315,10 +344,10 @@ export default function ProductFormModal({
     }
   };
 
-  // Modal tambah/hapus satuan
   const handleCreatedSatuan = (newSat: { _id: string; nama: string }) => {
     setSatuanOptions((prev) => [...prev, newSat]);
   };
+
   const handleDeleteSatuan = (id: string) => {
     setSatuanOptions((prev) => prev.filter((item) => item._id !== id));
   };
@@ -388,7 +417,6 @@ export default function ProductFormModal({
                 />
               </div>
 
-              {/*  (2) Ubah jadi SELECT + tombol + */}
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Supplier
@@ -412,11 +440,10 @@ export default function ProductFormModal({
                       </option>
                     ))}
                   </select>
-                  {/* Tombol + untuk buka modal Staff (atau Supplier) */}
                   <button
                     type="button"
                     onClick={() => setShowStaffModal(true)}
-                    className="rounded bg-green-500 px-2 py-1 text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadark-600 rounded px-2 py-1 text-white"
                   >
                     +
                   </button>
@@ -478,7 +505,7 @@ export default function ProductFormModal({
                   <button
                     type="button"
                     onClick={() => setShowAddSatuan(true)}
-                    className="rounded bg-green-500 px-2 py-1 text-sm text-white hover:bg-green-600"
+                    className="bg-tosca hover:bg-toscadark rounded px-2 py-1 text-sm text-white"
                   >
                     + Tambah Satuan
                   </button>
@@ -521,7 +548,6 @@ export default function ProductFormModal({
                         onChange={(e) => {
                           const newVal = e.target.value;
                           updateSatuan(idx, "satuanId", newVal);
-                          // Menambahkan row baru otomatis jika user memilih satuan di baris terakhir
                           if (idx === satuans.length - 1 && newVal) {
                             addSatuanRow();
                           }
@@ -557,7 +583,7 @@ export default function ProductFormModal({
                       </label>
                       <input
                         type="number"
-                        className="w-28 rounded border p-1 dark:bg-gray-800"
+                        className={`w-28 rounded border p-1 dark:bg-gray-800 ${item.error ? "border-red-500" : ""}`}
                         placeholder="0"
                         value={item.harga}
                         onChange={(e) =>
@@ -566,7 +592,6 @@ export default function ProductFormModal({
                       />
                     </div>
 
-                    {/* Field % Keuntungan */}
                     <div className="flex flex-col">
                       <label className="mb-1 text-sm text-gray-600 dark:text-gray-300">
                         % Keuntungan
@@ -601,7 +626,7 @@ export default function ProductFormModal({
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:bg-gray-400"
+              className="bg-tosca hover:bg-toscadark w-full rounded-lg px-4 py-2 text-white disabled:bg-gray-400"
             >
               {loading
                 ? "Menyimpan..."
@@ -622,7 +647,6 @@ export default function ProductFormModal({
         </div>
       </div>
 
-      {/* Di sini panggil modal Tambah/Hapus Satuan (jika Anda punya) */}
       <AddSatuanModal
         isOpen={showAddSatuan}
         onClose={() => setShowAddSatuan(false)}
@@ -635,13 +659,10 @@ export default function ProductFormModal({
         satuanOptions={satuanOptions}
         onDeleteSatuan={handleDeleteSatuan}
       />
-      {/* Modal Staff untuk Supplier (atau menyesuaikan) */}
       <SupplierFormModal
         isOpen={showStaffModal}
         onClose={() => setShowStaffModal(false)}
         onSubmit={() => {
-          // Setelah sukses tambah staff/supplier (tergantung),
-          // Anda bisa reload data supplier agar langsung tampil di select
           loadDataAwal();
           setShowStaffModal(false);
         }}

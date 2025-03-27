@@ -308,13 +308,13 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
         <div className="mt-6 flex justify-end space-x-2 print:hidden">
           <button
             onClick={() => setPrintMode("pelanggan")}
-            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+            className="hover:bg-toscadark dark:bg-tosca dark:hover:bg-toscadark bg-tosca rounded px-4 py-2 text-white"
           >
             Cetak untuk Pelanggan
           </button>
           <button
             onClick={() => setPrintMode("armada")}
-            className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
+            className="bg-tosca hover:bg-toscadark-600 dark:hover:bg-toscadark-700 rounded px-4 py-2 text-white dark:bg-green-600"
           >
             Cetak untuk Armada
           </button>

@@ -151,14 +151,14 @@ const PaymentHistoryDialog: React.FC<PaymentHistoryDialogProps> = ({
         <div className="mt-4 flex justify-end">
           <button
             onClick={onClose}
-            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="bg-tosca hover:bg-toscadark rounded px-4 py-2 text-white"
           >
             Tutup
           </button>
           <div className="px-2"></div>
           <button
             onClick={() => handleInvoiceClick(transaction)}
-            className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+            className="hover:bg-toscadark-700 rounded bg-green-600 px-4 py-2 text-white"
           >
             Invoice
           </button>

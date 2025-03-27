@@ -519,10 +519,7 @@ export const PUT = withAuth(async (req) => {
     if (updateData.status_transaksi === "batal") {
       // Cek apakah status sebelumnya sudah "lunas" atau "batal"
       // misal: jika sudah lunas, mungkin tidak boleh dibatalkan
-      if (
-        transaction.status_transaksi === "lunas" ||
-        transaction.status_transaksi === "batal"
-      ) {
+      if (transaction.status_transaksi === "batal") {
         return NextResponse.json(
           {
             error: `Transaksi sudah ${transaction.status_transaksi}, tidak bisa dibatalkan`,

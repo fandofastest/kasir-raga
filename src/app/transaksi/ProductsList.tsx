@@ -8,6 +8,7 @@ import CartItem from "@/models/modeltsx/CartItem";
 import { fetchProducts } from "@/lib/dataService";
 import { GridIcon, ListIcon, XCircleIcon } from "lucide-react";
 import LazyLoad from "react-lazyload";
+import ProductImage from "@/components/ImageView";
 
 interface ProductsListProps {
   addToCart: (item: CartItem, quantity: number) => void;
@@ -178,16 +179,7 @@ export default function ProductsList({
                 >
                   {/* Gambar Produk */}
                   <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
-                    <Image
-                      src={
-                        product.image
-                          ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
-                          : "/images/product/default.png"
-                      }
-                      alt="Product"
-                      fill
-                      className="rounded-md object-cover"
-                    />
+                    <ProductImage product={product} />
                   </div>
                   {/* Info Produk */}
                   <div className="flex-1">
@@ -218,7 +210,7 @@ export default function ProductsList({
                     ${
                       product.jumlah === 0
                         ? "cursor-not-allowed bg-gray-400"
-                        : "bg-blue-500 hover:bg-blue-600"
+                        : "bg-tosca hover:bg-toscadark"
                     }`}
                     onClick={() => handleTambahClick(product)}
                     disabled={product.jumlah === 0}
@@ -344,8 +336,8 @@ export default function ProductsList({
               </button>
               <button
                 onClick={handleConfirmAdd}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white 
-                           hover:bg-blue-700"
+                className="bg-tosca hover:bg-toscadark rounded px-4 py-2 text-sm font-semibold 
+                           text-white"
                 disabled={!selectedSatuanId}
               >
                 Konfirmasi

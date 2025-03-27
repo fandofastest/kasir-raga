@@ -66,7 +66,7 @@ export const AddSatuanModal: React.FC<AddSatuanModalProps> = ({
           />
           <button
             type="submit"
-            className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="bg-tosca hover:bg-toscadark w-full rounded px-4 py-2 text-white"
           >
             Simpan
           </button>
