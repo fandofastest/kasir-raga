@@ -411,7 +411,7 @@ export default function LaporanTransaksiPage({
             {/* Supplier / Konsumen */}
             <div>
               <label className="block text-sm font-medium text-gray-700  dark:text-gray-300">
-                {isPenjualan ? "Konsumen" : "Supplier"}
+                {isPenjualan ? "Pelanggan" : "Supplier"}
               </label>
               <Select
                 styles={customStyles}
@@ -422,7 +422,7 @@ export default function LaporanTransaksiPage({
                         label: opt.nama,
                       }))
                     : supplierOptions.map((opt) => ({
-                        value: opt.nama,
+                        value: opt._id,
                         label: opt.nama,
                       }))
                 }
@@ -497,7 +497,7 @@ export default function LaporanTransaksiPage({
             <div className="flex items-end">
               <button
                 type="submit"
-                className="hover:bg-toscadark bg-tosca w-full rounded px-4 py-2 text-white"
+                className="w-full rounded bg-tosca px-4 py-2 text-white hover:bg-toscadark"
               >
                 Terapkan Filter
               </button>
@@ -829,7 +829,7 @@ export default function LaporanTransaksiPage({
           </button>
           <button
             onClick={handlePrint}
-            className="bg-tosca hover:bg-toscadark-600 rounded px-4 py-2 text-white"
+            className="hover:bg-toscadark-600 rounded bg-tosca px-4 py-2 text-white"
           >
             Print Laporan
           </button>

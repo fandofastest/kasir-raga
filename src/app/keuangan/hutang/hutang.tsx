@@ -355,7 +355,7 @@ export default function HutangPage() {
         </div>
         <button
           type="submit"
-          className="bg-tosca col-span-1 rounded px-4 py-2 text-white sm:col-span-3"
+          className="col-span-1 rounded bg-tosca px-4 py-2 text-white sm:col-span-3"
         >
           Terapkan Filter
         </button>
@@ -519,7 +519,7 @@ export default function HutangPage() {
                               "_blank",
                             )
                           }
-                          className="bg-tosca hover:bg-toscadark-600 w-full rounded px-4 py-2 text-sm text-white"
+                          className="hover:bg-toscadark-600 w-full rounded bg-tosca px-4 py-2 text-sm text-white"
                         >
                           Invoice
                         </button>
@@ -598,13 +598,13 @@ export default function HutangPage() {
                     <div className="mt-2 flex flex-col space-y-2">
                       <button
                         onClick={() => openInstallmentModal(trx)}
-                        className="hover:bg-toscadark bg-tosca rounded px-4 py-2 text-sm text-white"
+                        className="rounded bg-tosca px-4 py-2 text-sm text-white hover:bg-toscadark"
                       >
                         Bayar Cicilan
                       </button>
                       <button
                         onClick={() => openSettleModal(trx)}
-                        className="bg-tosca hover:bg-toscadark-600 rounded px-4 py-2 text-sm text-white"
+                        className="hover:bg-toscadark-600 rounded bg-tosca px-4 py-2 text-sm text-white"
                       >
                         Lunasi
                       </button>
@@ -699,7 +699,7 @@ export default function HutangPage() {
               </button>
               <button
                 onClick={handlePaymentSubmit}
-                className="bg-tosca rounded px-4 py-2 text-sm text-white"
+                className="rounded bg-tosca px-4 py-2 text-sm text-white"
               >
                 {modalType === "installment" ? "Bayar Cicilan" : "Lunasi"}
               </button>

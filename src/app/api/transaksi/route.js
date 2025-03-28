@@ -4,7 +4,7 @@ import User from "@/models/user";
 import Transaksi from "@/models/transaksi";
 import Supplier from "@/models/supplier";
 import Product from "@/models/product"; // Pastikan path dan nama model sesuai
-
+import Konsumen from "@/models/konsumen";
 import { connectToDatabase } from "@/lib/mongodb";
 import { updateDataTransaction } from "@/lib/dataService";
 
@@ -174,39 +174,24 @@ export const GET = withAuth(async (req) => {
       filter.tipe_transaksi = searchParams.get("tipe_transaksi");
     }
     if (searchParams.has("supplier")) {
-      const supplierName = searchParams.get("supplier");
-      const supplierDoc = await Supplier.findOne({
-        nama: { $regex: supplierName, $options: "i" },
-      });
       // Asumsikan field supplier menyimpan _id_ supplier
-      filter.supplier = supplierDoc ? supplierDoc._id : null;
+      filter.supplier = searchParams.get("supplier");
     }
 
+    if (searchParams.has("pembeli")) {
+      filter.pembeli = searchParams.get("pembeli");
+    }
     if (searchParams.has("pelanggan")) {
-      // Filter berdasarkan pelanggan, misalnya field 'pembeli'
-      // Pastikan bahwa nilai yang dikirim adalah ID pelanggan
       filter.pembeli = searchParams.get("pelanggan");
     }
     if (searchParams.has("pengantar")) {
-      const pengantarName = searchParams.get("pengantar");
-      const pengantarDoc = await User.findOne({
-        name: { $regex: pengantarName, $options: "i" },
-      });
-      filter.pengantar = pengantarDoc ? pengantarDoc._id : null;
+      filter.pengantar = searchParams.get("pengantar");
     }
     if (searchParams.has("staff_bongkar")) {
-      const staffBongkarName = searchParams.get("staff_bongkar");
-      const staffBongkarDoc = await User.findOne({
-        name: { $regex: staffBongkarName, $options: "i" },
-      });
-      filter.staff_bongkar = staffBongkarDoc ? staffBongkarDoc._id : null;
+      filter.staff_bongkar = searchParams.get("staff_bongkar");
     }
     if (searchParams.has("kasir")) {
-      const kasirName = searchParams.get("kasir");
-      const kasirDoc = await User.findOne({
-        name: { $regex: kasirName, $options: "i" },
-      });
-      filter.kasir = kasirDoc ? kasirDoc._id : null;
+      filter.kasir = searchParams.get("kasir");
     }
     if (searchParams.has("minTotal") || searchParams.has("maxTotal")) {
       filter.total_harga = {};

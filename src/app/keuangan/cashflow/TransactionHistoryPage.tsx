@@ -504,7 +504,7 @@ export default function TransactionHistoryPage({
           </div>
           <button
             type="submit"
-            className="bg-tosca col-span-1 rounded px-4 py-2 text-white sm:col-span-3"
+            className="col-span-1 rounded bg-tosca px-4 py-2 text-white sm:col-span-3"
           >
             Terapkan Filter
           </button>
@@ -648,7 +648,7 @@ export default function TransactionHistoryPage({
                       <td className="border px-4 py-2 text-center text-sm">
                         <button
                           onClick={() => openDetailDialog(trx)}
-                          className="hover:bg-toscadark bg-tosca rounded px-2 py-1 text-white"
+                          className="rounded bg-tosca px-2 py-1 text-white hover:bg-toscadark"
                         >
                           Detail
                         </button>
@@ -754,7 +754,7 @@ export default function TransactionHistoryPage({
                       </p>
                       <button
                         onClick={() => openDetailDialog(trx)}
-                        className="hover:bg-toscadark bg-tosca mt-2 block w-full rounded px-2 py-1 text-white"
+                        className="mt-2 block w-full rounded bg-tosca px-2 py-1 text-white hover:bg-toscadark"
                       >
                         Detail
                       </button>

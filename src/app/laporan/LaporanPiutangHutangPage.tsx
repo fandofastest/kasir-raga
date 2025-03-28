@@ -380,7 +380,7 @@ export default function LaporanHutangPiutangPage({
                 <Select
                   styles={customStyles}
                   options={supplierOptions.map((opt) => ({
-                    value: opt.nama,
+                    value: opt._id,
                     label: opt.nama,
                   }))}
                   onChange={(selected) =>
@@ -428,7 +428,7 @@ export default function LaporanHutangPiutangPage({
             <div className="flex items-end">
               <button
                 type="submit"
-                className="hover:bg-toscadark bg-tosca w-full rounded px-4 py-2 text-white"
+                className="w-full rounded bg-tosca px-4 py-2 text-white hover:bg-toscadark"
               >
                 Terapkan Filter
               </button>
@@ -634,7 +634,7 @@ export default function LaporanHutangPiutangPage({
           </button>
           <button
             onClick={handlePrint}
-            className="bg-tosca hover:bg-toscadark-600 rounded px-4 py-2 text-white"
+            className="hover:bg-toscadark-600 rounded bg-tosca px-4 py-2 text-white"
           >
             Print Laporan
           </button>
