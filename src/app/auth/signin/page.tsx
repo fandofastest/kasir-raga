@@ -23,6 +23,10 @@ const SignIn: React.FC = () => {
       redirect: false, // Hindari redirect otomatis
     });
 
+    // console.log("====================================");
+    // console.log(res);
+    // console.log("====================================");
+
     if (res?.error) {
       setError("Email atau password salah!");
     } else {
