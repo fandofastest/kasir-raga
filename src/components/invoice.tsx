@@ -123,15 +123,28 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
       : transaksi.tipe_transaksi === "pembelian"
         ? "FAKTUR PEMBELIAN"
         : "FAKTUR";
-
+  const path =
+    transaksi.status_transaksi === "lunas"
+      ? "/images/lunas.png"
+      : transaksi.status_transaksi === "belum_lunas"
+        ? "/images/belum_lunas.png"
+        : transaksi.status_transaksi === "lunas_cepat"
+          ? "/images/lunas.png"
+          : "/images/batal.png";
   return (
     <div className="relative mx-auto w-full max-w-[8.3in] bg-white p-8 text-sm text-black shadow dark:bg-gray-900 dark:text-white print:!bg-white print:!text-black print:shadow-none">
       {/* Logo/Stempel Lunas: tampilkan jika properti transaksi.lunas true */}
-      {transaksi.status_transaksi === "lunas" && (
+      {transaksi.status_transaksi && (
         <div className="absolute bottom-4 left-4 rotate-12 transform">
           <Image
-            src="/images/lunas.png"
-            alt="Lunas"
+            src={path}
+            alt={
+              transaksi.status_transaksi === "lunas"
+                ? "Transaksi Lunas"
+                : transaksi.status_transaksi === "belum_lunas"
+                  ? "Transaksi Belum Lunas"
+                  : "Transaksi Batal"
+            }
             width={200}
             height={200}
             className="opacity-75"
@@ -183,6 +196,10 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
               :
             </strong>{" "}
             {getNamaPS()}
+          </p>
+          <p>
+            <strong>Status Transaksi:</strong>{" "}
+            {transaksi.status_transaksi || "-"}
           </p>
           <p>
             <strong>Pembayaran:</strong> {transaksi.metode_pembayaran || "-"}
@@ -308,13 +325,13 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
         <div className="mt-6 flex justify-end space-x-2 print:hidden">
           <button
             onClick={() => setPrintMode("pelanggan")}
-            className="hover:bg-toscadark dark:bg-tosca dark:hover:bg-toscadark bg-tosca rounded px-4 py-2 text-white"
+            className="rounded bg-tosca px-4 py-2 text-white hover:bg-toscadark dark:bg-tosca dark:hover:bg-toscadark"
           >
             Cetak untuk Pelanggan
           </button>
           <button
             onClick={() => setPrintMode("armada")}
-            className="bg-tosca hover:bg-toscadark-600 dark:hover:bg-toscadark-700 rounded px-4 py-2 text-white dark:bg-green-600"
+            className="hover:bg-toscadark-600 dark:hover:bg-toscadark-700 rounded bg-tosca px-4 py-2 text-white dark:bg-green-600"
           >
             Cetak untuk Armada
           </button>

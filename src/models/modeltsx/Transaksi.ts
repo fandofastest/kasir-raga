@@ -10,7 +10,7 @@ interface Transaksi {
   total_harga: number;
   createdAt: string;
   metode_pembayaran: "tunai" | "edc" | "bank_transfer" | "cicilan" | "hutang";
-  status_transaksi: "lunas" | "belum_lunas" | "tunda" | "batal";
+  status_transaksi: "lunas" | "belum_lunas" | "tunda" | "batal" | "lunas_cepat";
   tipe_transaksi: "pembelian" | "penjualan" | "pengeluaran" | "pemasukan";
   keterangan: string;
   pengantar: Staff | string;

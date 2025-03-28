@@ -8,12 +8,17 @@ import { formatRupiah } from "@/components/tools";
 
 interface AggregatedProductData {
   productName: string;
+  satuan: string;
   transactionCount: number;
-  totalSales: number;
+  totalUnitsSold: number;
+  costPrice: number; // Harga modal per unit
+  sellingPrice: number; // Harga jual per unit
+  totalCost: number; // Total harga modal (costPrice * jumlah unit)
+  totalSales: number; // Total harga jual (sellingPrice * jumlah unit)
+  profit: number; // Laba = totalSales - totalCost
 }
 
 export default function LaporanProdukPage() {
-  // State untuk transaksi dan data aggregate produk
   const [transactions, setTransactions] = useState<any[]>([]);
   const [aggregatedData, setAggregatedData] = useState<AggregatedProductData[]>(
     [],
@@ -25,7 +30,7 @@ export default function LaporanProdukPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Informasi toko (header cetak)
+  // Informasi toko
   const [storeName, setStoreName] = useState<string>("Nama Minimarket");
   const [storeAddress, setStoreAddress] = useState<string>(
     "Jln. Alamat Surabaya",
@@ -39,7 +44,7 @@ export default function LaporanProdukPage() {
   const [sortColumn, setSortColumn] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // Cek ukuran layar (untuk responsivitas)
+  // Cek responsivitas layar
   const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
     const handleResize = () => {
@@ -50,7 +55,7 @@ export default function LaporanProdukPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Muat informasi toko dari localStorage
+  // Muat info toko dari localStorage
   useEffect(() => {
     const localCompanyName = localStorage.getItem("companyName");
     const localCompanyAddress = localStorage.getItem("companyAddress");
@@ -62,7 +67,7 @@ export default function LaporanProdukPage() {
     if (localCompanyLogo) setLogo(localCompanyLogo);
   }, []);
 
-  // Fungsi untuk memuat transaksi (misalnya transaksi penjualan)
+  // Fungsi untuk memuat transaksi
   const loadTransactions = async () => {
     setLoading(true);
     try {
@@ -80,36 +85,70 @@ export default function LaporanProdukPage() {
     }
   };
 
-  // Setiap kali data transaksi berubah, lakukan agregasi per produk
+  // Agregasi data tiap produk (dipisahkan per satuan)
   useEffect(() => {
     const aggregation: { [key: string]: AggregatedProductData } = {};
     transactions.forEach((trx) => {
       if (trx.produk && Array.isArray(trx.produk)) {
         trx.produk.forEach((pd: any) => {
-          // Dapatkan nama produk dari properti productId (jika ter-populate)
+          // Dapatkan nama produk
           const productName =
-            pd.productId?.nama_produk ||
-            pd.productId ||
-            "Produk Tidak Diketahui";
-          if (!aggregation[productName]) {
-            aggregation[productName] = {
+            pd.productId && pd.productId.nama_produk
+              ? pd.productId.nama_produk
+              : "Produk Tidak Diketahui";
+          // Ambil nama satuan dari array satuans di detail transaksi
+          const satuanName =
+            Array.isArray(pd.satuans) && pd.satuans.length > 0
+              ? pd.satuans[0]?.satuan?.nama || ""
+              : "";
+          // Kunci agregasi adalah kombinasi nama produk dan satuan
+          const key = productName + "_" + satuanName;
+          if (!aggregation[key]) {
+            aggregation[key] = {
               productName,
+              satuan: satuanName,
               transactionCount: 0,
+              totalUnitsSold: 0,
+              costPrice: 0,
+              sellingPrice: 0,
+              totalCost: 0,
               totalSales: 0,
+              profit: 0,
             };
           }
-          // Hitung jumlah transaksi (setiap kemunculan di detail transaksi dihitung)
-          aggregation[productName].transactionCount += 1;
-          // Total penjualan dihitung dari harga * jumlah
-          aggregation[productName].totalSales += pd.harga * pd.quantity;
+          aggregation[key].transactionCount += 1;
+          const qty = pd.quantity || 0;
+          aggregation[key].totalUnitsSold += qty;
+          // Harga jual per unit
+          const unitSelling = pd.harga || 0;
+          aggregation[key].totalSales += unitSelling * qty;
+          // Harga modal per unit: ambil dari productId.harga_modal (jika ada)
+          const unitCost =
+            pd.productId && pd.productId.harga_modal
+              ? pd.productId.harga_modal
+              : 0;
+          aggregation[key].totalCost += unitCost * qty;
+          if (!aggregation[key].sellingPrice && unitSelling) {
+            aggregation[key].sellingPrice = unitSelling;
+          }
+          if (!aggregation[key].costPrice && unitCost) {
+            aggregation[key].costPrice = unitCost;
+          }
         });
       }
     });
-    setAggregatedData(Object.values(aggregation));
-    setCurrentPage(1); // Reset pagination
+    // Hitung laba untuk setiap entri
+    const aggregatedList = Object.values(
+      aggregation,
+    ) as AggregatedProductData[];
+    aggregatedList.forEach((item) => {
+      item.profit = item.totalSales - item.totalCost;
+    });
+    setAggregatedData(aggregatedList);
+    setCurrentPage(1);
   }, [transactions]);
 
-  // Load transaksi saat pertama kali render (dan setelah filter diubah)
+  // Muat transaksi saat render pertama atau filter berubah
   useEffect(() => {
     loadTransactions();
   }, []);
@@ -119,7 +158,7 @@ export default function LaporanProdukPage() {
     loadTransactions();
   };
 
-  // Sorting untuk data aggregated
+  // Sorting data agregasi
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -133,8 +172,8 @@ export default function LaporanProdukPage() {
     const sorted = [...aggregatedData];
     if (sortColumn) {
       sorted.sort((a, b) => {
-        let valA = a[sortColumn as keyof AggregatedProductData];
-        let valB = b[sortColumn as keyof AggregatedProductData];
+        const valA = a[sortColumn as keyof AggregatedProductData];
+        const valB = b[sortColumn as keyof AggregatedProductData];
         if (typeof valA === "string" && typeof valB === "string") {
           return sortDirection === "asc"
             ? valA.localeCompare(valB)
@@ -156,29 +195,51 @@ export default function LaporanProdukPage() {
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 
   const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  // Export ke Excel
+  // Ekspor ke Excel
   const handleExportToExcel = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const dataToExport = sortedData.map((item, index) => ({
       No: index + 1,
       "Nama Produk": item.productName,
+      Satuan: item.satuan,
       "Jumlah Transaksi": item.transactionCount,
-      "Total Penjualan": item.totalSales,
+      "Unit Terjual": item.totalUnitsSold + " " + item.satuan,
+      "Harga Modal Satuan": item.costPrice,
+      "Total Harga Modal": item.totalCost,
+      "Harga Jual Satuan": item.sellingPrice,
+      "Total Harga Jual": item.totalSales,
+      Laba: item.profit,
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const summaryRows = [
       [],
       ["Jumlah Produk", sortedData.length],
       [
-        "Total Penjualan",
+        "Total Unit Terjual",
+        sortedData.reduce((sum, item) => sum + item.totalUnitsSold, 0),
+      ],
+      [
+        "Total Harga Modal",
+        "Rp " +
+          sortedData
+            .reduce((sum, item) => sum + item.totalCost, 0)
+            .toLocaleString("id-ID"),
+      ],
+      [
+        "Total Harga Jual",
         "Rp " +
           sortedData
             .reduce((sum, item) => sum + item.totalSales, 0)
+            .toLocaleString("id-ID"),
+      ],
+      [
+        "Total Laba",
+        "Rp " +
+          sortedData
+            .reduce((sum, item) => sum + item.profit, 0)
             .toLocaleString("id-ID"),
       ],
     ];
@@ -229,7 +290,7 @@ export default function LaporanProdukPage() {
         }
       `}</style>
       <div className="p-4 dark:bg-boxdark dark:text-gray-100 print:bg-white print:text-black">
-        {/* Form Filter (tidak tampil saat print) */}
+        {/* Form Filter */}
         <div className="print:hidden">
           <form
             onSubmit={handleSubmit}
@@ -272,7 +333,7 @@ export default function LaporanProdukPage() {
           <h1 className="text-xl font-bold">LAPORAN PENJUALAN PER PRODUK</h1>
         </div>
 
-        {/* HEADER untuk cetak */}
+        {/* Header Cetak */}
         <div className="mb-4 flex flex-col items-center border-b pb-2 dark:border-gray-700 sm:flex-row sm:justify-between sm:space-y-0 print:bg-white print:text-black">
           <div className="flex items-center space-x-4">
             <Image
@@ -299,44 +360,73 @@ export default function LaporanProdukPage() {
             </p>
             <p>Jumlah Produk: {sortedData.length}</p>
             <p>
-              Total Penjualan:{" "}
+              Total Unit Terjual:{" "}
+              {sortedData.reduce((sum, item) => sum + item.totalUnitsSold, 0)}
+            </p>
+            <p>
+              Total Harga Modal:{" "}
+              {formatRupiah(
+                sortedData.reduce((sum, item) => sum + item.totalCost, 0),
+              )}
+            </p>
+            <p>
+              Total Harga Jual:{" "}
               {formatRupiah(
                 sortedData.reduce((sum, item) => sum + item.totalSales, 0),
+              )}
+            </p>
+            <p>
+              Laba:{" "}
+              {formatRupiah(
+                sortedData.reduce((sum, item) => sum + item.profit, 0),
               )}
             </p>
           </div>
         </div>
 
-        {/* Tabel untuk desktop */}
+        {/* Tabel Desktop */}
         <div className={`${isMobile ? "hidden" : "block"}`}>
           <div className="overflow-x-auto text-black-2 dark:text-white print:bg-white">
             <table className="w-full border text-xs dark:border-gray-700">
               <thead className="bg-gray-100 text-left dark:bg-gray-800">
                 <tr>
                   <th
-                    className="cursor-pointer border px-2 py-1"
                     onClick={() => handleSort("productName")}
+                    className="cursor-pointer border px-2 py-1"
                   >
                     Nama Produk{" "}
                     {sortColumn === "productName" &&
                       (sortDirection === "asc" ? "▲" : "▼")}
                   </th>
+                  <th className="border px-2 py-1">Satuan</th>
                   <th
-                    className="cursor-pointer border px-2 py-1"
                     onClick={() => handleSort("transactionCount")}
+                    className="cursor-pointer border px-2 py-1"
                   >
-                    Jumlah Transaksi{" "}
+                    Transaksi{" "}
                     {sortColumn === "transactionCount" &&
                       (sortDirection === "asc" ? "▲" : "▼")}
                   </th>
                   <th
+                    onClick={() => handleSort("totalUnitsSold")}
                     className="cursor-pointer border px-2 py-1"
-                    onClick={() => handleSort("totalSales")}
                   >
-                    Total Penjualan{" "}
+                    Unit Terjual{" "}
+                    {sortColumn === "totalUnitsSold" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                  <th className="border px-2 py-1">Harga Modal Satuan</th>
+                  <th className="border px-2 py-1">Total Harga Modal</th>
+                  <th className="border px-2 py-1">Harga Jual Satuan</th>
+                  <th
+                    onClick={() => handleSort("totalSales")}
+                    className="cursor-pointer border px-2 py-1 text-right"
+                  >
+                    Total Harga Jual{" "}
                     {sortColumn === "totalSales" &&
                       (sortDirection === "asc" ? "▲" : "▼")}
                   </th>
+                  <th className="border px-2 py-1 text-right">Laba</th>
                 </tr>
               </thead>
               <tbody>
@@ -346,11 +436,27 @@ export default function LaporanProdukPage() {
                     className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <td className="border px-2 py-1">{item.productName}</td>
+                    <td className="border px-2 py-1">{item.satuan}</td>
                     <td className="border px-2 py-1">
                       {item.transactionCount}
                     </td>
+                    <td className="border px-2 py-1">
+                      {item.totalUnitsSold} {item.satuan}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {formatRupiah(item.costPrice)}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {formatRupiah(item.totalCost)}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {formatRupiah(item.sellingPrice)}
+                    </td>
                     <td className="border px-2 py-1 text-right">
                       {formatRupiah(item.totalSales)}
+                    </td>
+                    <td className="border px-2 py-1 text-right">
+                      {formatRupiah(item.profit)}
                     </td>
                   </tr>
                 ))}
@@ -378,7 +484,7 @@ export default function LaporanProdukPage() {
           </div>
         </div>
 
-        {/* Accordion untuk mobile */}
+        {/* Accordion untuk Mobile */}
         <div className={`${isMobile ? "block" : "hidden"} print:hidden`}>
           {paginatedData.map((item, index) => (
             <div key={index} className="mb-2 rounded border">
@@ -390,12 +496,35 @@ export default function LaporanProdukPage() {
               </div>
               <div className="border-t p-2">
                 <p>
-                  <span className="font-semibold">Jumlah Transaksi:</span>{" "}
+                  <span className="font-semibold">Satuan:</span> {item.satuan}
+                </p>
+                <p>
+                  <span className="font-semibold">Transaksi:</span>{" "}
                   {item.transactionCount}
                 </p>
                 <p>
-                  <span className="font-semibold">Total Penjualan:</span>{" "}
+                  <span className="font-semibold">Unit Terjual:</span>{" "}
+                  {item.totalUnitsSold} {item.satuan}
+                </p>
+                <p>
+                  <span className="font-semibold">Harga Modal Satuan:</span>{" "}
+                  {formatRupiah(item.costPrice)}
+                </p>
+                <p>
+                  <span className="font-semibold">Total Harga Modal:</span>{" "}
+                  {formatRupiah(item.totalCost)}
+                </p>
+                <p>
+                  <span className="font-semibold">Harga Jual Satuan:</span>{" "}
+                  {formatRupiah(item.sellingPrice)}
+                </p>
+                <p>
+                  <span className="font-semibold">Total Harga Jual:</span>{" "}
                   {formatRupiah(item.totalSales)}
+                </p>
+                <p>
+                  <span className="font-semibold">Laba:</span>{" "}
+                  {formatRupiah(item.profit)}
                 </p>
               </div>
             </div>
@@ -421,33 +550,55 @@ export default function LaporanProdukPage() {
           </div>
         </div>
 
-        {/* Tabel untuk tampilan print */}
-        <div className="hidden print:block">
+        {/* Tabel untuk Tampilan Print */}
+        {/* <div className="hidden print:block">
           <div className="overflow-x-auto">
             <table className="w-full border text-xs">
               <thead className="bg-gray-100 text-left">
                 <tr>
                   <th className="border px-2 py-1">Nama Produk</th>
-                  <th className="border px-2 py-1">Jumlah Transaksi</th>
-                  <th className="border px-2 py-1">Total Penjualan</th>
+                  <th className="border px-2 py-1">Satuan</th>
+                  <th className="border px-2 py-1">Transaksi</th>
+                  <th className="border px-2 py-1">Unit Terjual</th>
+                  <th className="border px-2 py-1">Harga Modal Satuan</th>
+                  <th className="border px-2 py-1">Total Harga Modal</th>
+                  <th className="border px-2 py-1">Harga Jual Satuan</th>
+                  <th className="border px-2 py-1">Total Harga Jual</th>
+                  <th className="border px-2 py-1">Laba</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedData.map((item, index) => (
                   <tr key={index}>
                     <td className="border px-2 py-1">{item.productName}</td>
+                    <td className="border px-2 py-1">{item.satuan}</td>
                     <td className="border px-2 py-1">
                       {item.transactionCount}
                     </td>
-                    <td className="border px-2 py-1 text-right">
+                    <td className="border px-2 py-1">
+                      {item.totalUnitsSold} {item.satuan}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {formatRupiah(item.costPrice)}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {formatRupiah(item.totalCost)}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {formatRupiah(item.sellingPrice)}
+                    </td>
+                    <td className="border px-2 py-1">
                       {formatRupiah(item.totalSales)}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {formatRupiah(item.profit)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </div> */}
 
         {/* Tombol Export & Print */}
         <div className="mt-4 flex gap-2 print:hidden">

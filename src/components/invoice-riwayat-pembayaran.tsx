@@ -148,11 +148,21 @@ const InvoicePaymentHistoryPage: React.FC<InvoiceProps> = ({ transaksi }) => {
   return (
     <div className="relative mx-auto w-full max-w-[8.3in] bg-white p-8 text-sm text-black shadow dark:bg-gray-900 dark:text-white print:!bg-white print:!text-black print:shadow-none">
       {/* Stempel Lunas: tampilkan jika outstanding kurang dari atau sama dengan 0 */}
-      {outstanding <= 0 && (
+      {outstanding <= 0 ? (
         <div className="absolute bottom-40 right-4 rotate-12 transform">
           <Image
             src={`/images/lunas.png`}
             alt="Lunas"
+            width={200}
+            height={200}
+            className="h-60 w-60 opacity-75"
+          />
+        </div>
+      ) : (
+        <div className="absolute bottom-40 right-4 rotate-12 transform">
+          <Image
+            src={`/images/belum_lunas.png`}
+            alt="Belum Lunas"
             width={200}
             height={200}
             className="h-60 w-60 opacity-75"
@@ -419,13 +429,13 @@ const InvoicePaymentHistoryPage: React.FC<InvoiceProps> = ({ transaksi }) => {
         <div className="mt-6 flex justify-end space-x-2 print:hidden">
           <button
             onClick={() => setPrintMode("pelanggan")}
-            className="hover:bg-toscadark dark:bg-tosca dark:hover:bg-toscadark bg-tosca rounded px-4 py-2 text-white"
+            className="rounded bg-tosca px-4 py-2 text-white hover:bg-toscadark dark:bg-tosca dark:hover:bg-toscadark"
           >
             Cetak untuk Pelanggan
           </button>
           <button
             onClick={() => setPrintMode("armada")}
-            className="bg-tosca hover:bg-toscadark-600 dark:hover:bg-toscadark-700 rounded px-4 py-2 text-white dark:bg-green-600"
+            className="hover:bg-toscadark-600 dark:hover:bg-toscadark-700 rounded bg-tosca px-4 py-2 text-white dark:bg-green-600"
           >
             Cetak untuk Armada
           </button>

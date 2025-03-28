@@ -313,7 +313,7 @@ export const GET = withAuth(async (req) => {
     const transactions = await Transaksi.find(filter)
       .populate("kasir supplier pembeli pengantar staff_bongkar")
       .populate("produk.productId")
-      .populate("produk.satuans")
+      .populate("produk.satuans.satuan")
 
       .sort(sort);
 
