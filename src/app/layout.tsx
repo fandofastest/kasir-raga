@@ -20,7 +20,7 @@ export default function RootLayout({
   // const pathname = usePathname();
 
   useEffect(() => {
-    setTimeout(() => setLoading(false), 1000);
+    setTimeout(() => setLoading(false), 1);
   }, []);
 
   return (

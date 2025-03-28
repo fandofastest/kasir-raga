@@ -82,12 +82,16 @@ export const deleteKonsumen = async (id) => {
 
 const fetchUser = async () => {
   try {
-    // const res = await fetch("/api/auth/session");
-    // const session = await res.json();
-    const session = localStorage.getItem("mytoken");
+    const token = localStorage.getItem("mytoken");
+    if (token == null) {
+      const res = await fetch("/api/auth/session");
+      const session = await res.json();
+      localStorage.setItem("mytoken", session.accessToken);
+      return session.accessToken;
+    }
 
     // log(session.accessToken);
-    return session;
+    return token;
   } catch (error) {
     console.error("Error fetching session:", error);
   }
