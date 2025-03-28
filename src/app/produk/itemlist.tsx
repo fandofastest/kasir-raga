@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import DropdownAction from "./dropwdownaction";
 import ProductFormModal from "@/components/ProductForm";
-import { fetchProducts } from "@/lib/dataService";
+import { fetchProducts, fetchKategori } from "@/lib/dataService";
 import { Product } from "@/models/modeltsx/productTypes";
 import { formatRupiah } from "@/components/tools";
 import ProductImage from "@/components/ImageView";
+import Select from "react-select";
 
 const ProductList = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -14,15 +15,16 @@ const ProductList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  // State untuk mengelola produk yang di-expand pada tampilan mobile
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [expandedProducts, setExpandedProducts] = useState<string[]>([]);
 
+  // Fetch data produk
   useEffect(() => {
     const getProducts = async () => {
       try {
         const res = await fetchProducts();
         console.log(res.data);
-
         setProducts(res.data);
         setFilteredProducts(res.data);
       } catch (error) {
@@ -32,14 +34,39 @@ const ProductList = () => {
     getProducts();
   }, []);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toLowerCase();
-    setSearchQuery(query);
+  // Fetch data kategori
+  useEffect(() => {
+    const getCategories = async () => {
+      try {
+        const res = await fetchKategori();
+        setCategories(res.data);
+      } catch (error) {
+        console.error("Gagal mengambil data kategori:", error);
+      }
+    };
+    getCategories();
+  }, []);
 
-    const filtered = products.filter((p) =>
-      p.nama_produk?.toLowerCase().includes(query),
-    );
+  // Siapkan opsi untuk react-select dari data kategori
+  const categoryOptions = categories.map((cat: any) => ({
+    value: cat._id,
+    label: cat.nama,
+  }));
+
+  // Update filteredProducts berdasarkan search query dan kategori yang terpilih
+  useEffect(() => {
+    const filtered = products.filter((p) => {
+      const matchesSearch = p.nama_produk?.toLowerCase().includes(searchQuery);
+      const matchesCategory =
+        selectedCategories.length === 0 ||
+        (p.kategori && selectedCategories.includes(p.kategori._id));
+      return matchesSearch && matchesCategory;
+    });
     setFilteredProducts(filtered);
+  }, [searchQuery, selectedCategories, products]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value.toLowerCase());
   };
 
   const handleOpenModal = (product: Product | null = null) => {
@@ -67,7 +94,7 @@ const ProductList = () => {
 
   return (
     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-      {/* Search & Button */}
+      {/* Search, Filter Kategori & Button */}
       <div className="flex flex-col items-center justify-between space-x-0 space-y-4 px-4 py-6 md:flex-row md:space-x-4 md:space-y-0 md:px-6 xl:px-7.5">
         <input
           onChange={handleSearch}
@@ -75,9 +102,28 @@ const ProductList = () => {
           placeholder="Cari Barang Disini..."
           className="w-full bg-transparent pl-9 pr-4 font-medium outline-1 focus:outline-slate-200 dark:focus:outline-slate-800 xl:w-125"
         />
+        <div className="w-full md:w-64">
+          <label className="block text-sm font-medium">Kategori</label>
+          <Select
+            classNamePrefix="react-select"
+            isMulti
+            options={categoryOptions}
+            value={categoryOptions.filter((option) =>
+              selectedCategories.includes(option.value),
+            )}
+            onChange={(selectedOptions) => {
+              setSelectedCategories(
+                selectedOptions
+                  ? selectedOptions.map((option: any) => option.value)
+                  : [],
+              );
+            }}
+            className="mt-1"
+          />
+        </div>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-tosca hover:bg-toscadark rounded-md px-4 py-2 text-white"
+          className="rounded-md bg-tosca px-4 py-2 text-white hover:bg-toscadark"
         >
           Tambah Produk
         </button>
@@ -171,17 +217,7 @@ const ProductList = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="relative h-16 w-16 rounded-md border border-gray-300">
-                    <Image
-                      src={
-                        product.image && product.image !== ""
-                          ? `/api/image-proxy?url=${encodeURIComponent(product.image)}`
-                          : "images/product/default.png"
-                      }
-                      alt={"Logo Preview" as string}
-                      height={100}
-                      width={100}
-                      className="rounded-md object-cover"
-                    />
+                    <ProductImage product={product} />
                   </div>
                   <p className="font-medium text-black dark:text-white">
                     {product.nama_produk ?? "N/A"}
@@ -217,11 +253,10 @@ const ProductList = () => {
                     <span className="font-medium">Supplier: </span>
                     {product.supplier ?? "N/A"}
                   </p>
-                  {/* Menu aksi tampil langsung tanpa dropdown */}
                   <div className="mt-2 flex space-x-2">
                     <button
                       onClick={() => handleOpenModal(product)}
-                      className="hover:bg-toscadark bg-tosca rounded px-4 py-2 text-sm text-white"
+                      className="rounded bg-tosca px-4 py-2 text-sm text-white hover:bg-toscadark"
                     >
                       Edit
                     </button>

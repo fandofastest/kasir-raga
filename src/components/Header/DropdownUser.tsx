@@ -32,10 +32,10 @@ const DropdownUser = () => {
         className="flex items-center gap-4"
       >
         <span className="hidden text-right lg:block">
-          <span className="block text-sm font-medium text-black dark:text-white">
+          <span className="block text-sm font-medium text-white ">
             {user ? user.name : "Guest"}
           </span>
-          <span className="block text-xs ">
+          <span className="block text-xs text-white dark:text-gray-400 ">
             {user ? user.role : "Unknown Email"}
           </span>
         </span>

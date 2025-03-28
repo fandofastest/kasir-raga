@@ -273,7 +273,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 alt="Logo"
                 priority
               />
-              <span className=" text-w font-bold dark:text-white">
+              <span className=" text-w font-bold text-white dark:text-white">
                 {storeName}
               </span>
             </div>
