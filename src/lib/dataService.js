@@ -443,14 +443,15 @@ export const getPreferences = async () => {
     },
   });
   const data = await res.json();
-  localStorage.setItem("darkMode", data.darkMode || "false");
-  localStorage.setItem("language", data.language);
-  localStorage.setItem("dateFormat", data.dateFormat);
-  localStorage.setItem("companyName", data.companyName);
-  localStorage.setItem("companyAddress", data.companyAddress);
-  localStorage.setItem("companyPhone", data.companyPhone);
-  localStorage.setItem("companyLogo", data.companyLogo);
-  localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
+  const data1 = data.data;
+  localStorage.setItem("darkMode", data1.darkMode || "false");
+  localStorage.setItem("language", data1.language);
+  localStorage.setItem("dateFormat", data1.dateFormat);
+  localStorage.setItem("companyName", data1.companyName);
+  localStorage.setItem("companyAddress", data1.companyAddress);
+  localStorage.setItem("companyPhone", data1.companyPhone);
+  localStorage.setItem("companyLogo", data1.companyLogo);
+  localStorage.setItem("maxPelunasanHari", data1.maxPelunasanHari);
   if (!res.ok) {
     throw new Error(data.error || "Failed to get preferences");
   }
