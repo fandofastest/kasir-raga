@@ -87,7 +87,6 @@ const fetchUser = async () => {
       const res = await fetch("/api/auth/session");
       const session = await res.json();
       localStorage.setItem("mytoken", session.accessToken);
-      getPreferences();
       return session.accessToken;
     }
 
@@ -315,10 +314,6 @@ export const fetchTransaction = async (params = {}) => {
   const res = await fetch(`${apiUrl}/transaksi?${queryParams.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
-  console.log("====================================");
-  console.log(`${apiUrl}/transaksi?${queryParams.toString()}`);
-  console.log("====================================");
 
   const data = await res.json();
 

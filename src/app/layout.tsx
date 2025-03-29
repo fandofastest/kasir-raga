@@ -7,7 +7,6 @@ import React, { useEffect, useState } from "react";
 import Loader from "@/components/common/Loader";
 import { Toaster } from "react-hot-toast";
 import { SessionProvider } from "next-auth/react";
-
 // import { ContextType } from "./contexts/userContext";
 export default function RootLayout({
   children,
