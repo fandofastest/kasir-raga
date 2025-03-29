@@ -5,8 +5,11 @@ import toast from "react-hot-toast";
 import { photoUpload } from "@/lib/dataService"; // Fungsi upload foto yang sudah diimplementasikan
 import { getPreferences, updatePreferences } from "@/lib/dataService";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { fetchData } from "next-auth/client/_utils";
 
 const PreferencesPage: React.FC = () => {
+  const router = useRouter();
   // Preferensi tampilan
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [language, setLanguage] = useState<string>("id");
@@ -20,29 +23,27 @@ const PreferencesPage: React.FC = () => {
 
   // Preference tambahan: maksimal hari pelunasan yang dianggap aman
   const [maxPelunasanHari, setMaxPelunasanHari] = useState<number>(30);
+  const fetchData = async () => {
+    try {
+      const { data } = await getPreferences();
 
+      // Update state dengan data dari server
+      setDarkMode(data.darkMode);
+      setLanguage(data.language);
+      setDateFormat(data.dateFormat);
+      setCompanyName(data.companyName);
+      setImageUrl(data.companyLogo);
+      setCompanyAddress(data.companyAddress);
+      setCompanyPhone(data.companyPhone);
+      setMaxPelunasanHari(data.maxPelunasanHari);
+
+      // Simpan ke localStorage untuk keperluan halaman lain
+    } catch (error: any) {
+      console.error("Error fetching preferences:", error);
+      toast.error("Gagal mengambil preferensi dari server");
+    }
+  };
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await getPreferences();
-
-        // Update state dengan data dari server
-        setDarkMode(data.darkMode);
-        setLanguage(data.language);
-        setDateFormat(data.dateFormat);
-        setCompanyName(data.companyName);
-        setImageUrl(data.companyLogo);
-        setCompanyAddress(data.companyAddress);
-        setCompanyPhone(data.companyPhone);
-        setMaxPelunasanHari(data.maxPelunasanHari);
-
-        // Simpan ke localStorage untuk keperluan halaman lain
-      } catch (error: any) {
-        console.error("Error fetching preferences:", error);
-        toast.error("Gagal mengambil preferensi dari server");
-      }
-    };
-
     fetchData();
   }, []);
 
@@ -73,25 +74,26 @@ const PreferencesPage: React.FC = () => {
       const { data } = await updatePreferences(preferences);
 
       // Perbarui state dan localStorage dengan data terbaru dari server
-      setDarkMode(data.darkMode);
-      setLanguage(data.language);
-      setDateFormat(data.dateFormat);
-      setCompanyName(data.companyName);
-      setImageUrl(data.companyLogo);
-      setCompanyAddress(data.companyAddress);
-      setCompanyPhone(data.companyPhone);
-      setMaxPelunasanHari(data.maxPelunasanHari);
+      // setDarkMode(data.darkMode);
+      // setLanguage(data.language);
+      // setDateFormat(data.dateFormat);
+      // setCompanyName(data.companyName);
+      // setImageUrl(data.companyLogo);
+      // setCompanyAddress(data.companyAddress);
+      // setCompanyPhone(data.companyPhone);
+      // setMaxPelunasanHari(data.maxPelunasanHari);
 
-      localStorage.setItem("darkMode", data.darkMode);
-      localStorage.setItem("language", data.language);
-      localStorage.setItem("dateFormat", data.dateFormat);
-      localStorage.setItem("companyName", data.companyName);
-      localStorage.setItem("companyAddress", data.companyAddress);
-      localStorage.setItem("companyPhone", data.companyPhone);
-      localStorage.setItem("companyLogo", data.companyLogo);
-      localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
+      // localStorage.setItem("darkMode", data.darkMode);
+      // localStorage.setItem("language", data.language);
+      // localStorage.setItem("dateFormat", data.dateFormat);
+      // localStorage.setItem("companyName", data.companyName);
+      // localStorage.setItem("companyAddress", data.companyAddress);
+      // localStorage.setItem("companyPhone", data.companyPhone);
+      // localStorage.setItem("companyLogo", data.companyLogo);
+      // localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
 
       toast.success("Preferensi berhasil disimpan");
+      fetchData();
     } catch (error: any) {
       console.error("Error updating preferences:", error);
       toast.error(error.message);
