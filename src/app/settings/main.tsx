@@ -37,14 +37,6 @@ const PreferencesPage: React.FC = () => {
         setMaxPelunasanHari(data.maxPelunasanHari);
 
         // Simpan ke localStorage untuk keperluan halaman lain
-        localStorage.setItem("darkMode", data.darkMode || "false");
-        localStorage.setItem("language", data.language);
-        localStorage.setItem("dateFormat", data.dateFormat);
-        localStorage.setItem("companyName", data.companyName);
-        localStorage.setItem("companyAddress", data.companyAddress);
-        localStorage.setItem("companyPhone", data.companyPhone);
-        localStorage.setItem("companyLogo", data.companyLogo);
-        localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
       } catch (error: any) {
         console.error("Error fetching preferences:", error);
         toast.error("Gagal mengambil preferensi dari server");

@@ -87,6 +87,7 @@ const fetchUser = async () => {
       const res = await fetch("/api/auth/session");
       const session = await res.json();
       localStorage.setItem("mytoken", session.accessToken);
+      getPreferences();
       return session.accessToken;
     }
 
@@ -442,6 +443,14 @@ export const getPreferences = async () => {
     },
   });
   const data = await res.json();
+  localStorage.setItem("darkMode", data.darkMode || "false");
+  localStorage.setItem("language", data.language);
+  localStorage.setItem("dateFormat", data.dateFormat);
+  localStorage.setItem("companyName", data.companyName);
+  localStorage.setItem("companyAddress", data.companyAddress);
+  localStorage.setItem("companyPhone", data.companyPhone);
+  localStorage.setItem("companyLogo", data.companyLogo);
+  localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
   if (!res.ok) {
     throw new Error(data.error || "Failed to get preferences");
   }
