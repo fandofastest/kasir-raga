@@ -41,7 +41,7 @@ jobs:
             echo "Pulling latest changes..."
             git pull origin main      # Tarik update dari branch utama
             echo "Installing dependencies..."
-            npm install  --legacy-peer-deps            # Pastikan dependensi terinstall
+            npm install --legacy-peer-deps            # Pastikan dependensi terinstall
             echo "Building application..."
             npm run build           # Build aplikasi Next.js
             echo "Restarting PM2 process..."
@@ -52,7 +52,7 @@ jobs:
             echo "Pulling latest changes..."
             git pull origin main      # Tarik update dari branch utama
             echo "Installing dependencies..."
-            npm install  --legacy-peer-deps            # Pastikan dependensi terinstall
+            npm install --legacy-peer-deps            # Pastikan dependensi terinstall
             echo "Building application..."
             npm run build           # Build aplikasi Next.js
             echo "Restarting PM2 process..."
