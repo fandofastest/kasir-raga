@@ -45,7 +45,7 @@ const PreferencesPage: React.FC = () => {
   };
   useEffect(() => {
     fetchData();
-  }, []); 
+  }, []);
 
   // Fungsi upload logo menggunakan file input dan fungsi photoUpload
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
