@@ -11,10 +11,10 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@radix-ui/react-dialog": "^1.1.6",
-    "apexcharts": "^3.45.2",
+    "apexcharts": "^4.5.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
-    "chart.js": "^3.9.1",
+    "chart.js": "^4.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "exceljs": "^4.4.0",
@@ -41,7 +41,6 @@
     "react-responsive": "^10.0.1",
     "react-select": "^5.10.1",
     "sharp": "^0.33.5",
-    "tailwind-scrollbar": "^4.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
