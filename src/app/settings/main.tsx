@@ -91,7 +91,7 @@ const PreferencesPage: React.FC = () => {
       // localStorage.setItem("companyPhone", data.companyPhone);
       // localStorage.setItem("companyLogo", data.companyLogo);
       // localStorage.setItem("maxPelunasanHari", data.maxPelunasanHari);
-
+      //testing
       toast.success("Preferensi berhasil disimpan");
       fetchData();
     } catch (error: any) {

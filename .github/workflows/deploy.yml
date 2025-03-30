@@ -1,0 +1,59 @@
+name: Deploy Next.js App
+
+on:
+  push:
+    branches:
+      - main # Ubah jika branch utama Anda berbeda
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20" # Sesuaikan dengan versi Node.js yang digunakan di server
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Application
+        run: npm run build
+
+      # Jika Anda punya test, bisa tambahkan langkah untuk menjalankan test
+      #- name: Run Tests
+      #  run: npm test
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            sudo su
+            cd /home/ubuntu/kasir-raga  # Ganti dengan path di server tempat project Anda berada
+            echo "Pulling latest changes..."
+            git pull origin main      # Tarik update dari branch utama
+            echo "Installing dependencies..."
+            npm install --legacy-peer-deps            # Pastikan dependensi terinstall
+            echo "Building application..."
+            npm run build           # Build aplikasi Next.js
+            echo "Restarting PM2 process..."
+            pm2 restart all   # Ganti "next-app" dengan nama aplikasi PM2 Anda
+
+
+            cd /home/ubuntu/kasir-raga2  # Ganti dengan path di server tempat project Anda berada
+            echo "Pulling latest changes..."
+            git pull origin main      # Tarik update dari branch utama
+            echo "Installing dependencies..."
+            npm install --legacy-peer-deps            # Pastikan dependensi terinstall
+            echo "Building application..."
+            npm run build           # Build aplikasi Next.js
+            echo "Restarting PM2 process..."
+            pm2 restart all   # Ganti "next-app" dengan nama aplikasi PM2 Anda
