@@ -11,16 +11,22 @@ export const POST = withAuth(async (req) => {
     await connectToDatabase();
     const data = await req.json();
 
-    const existingUser = await User.findOne({ email: data.email });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "Email must be unique" },
-        { status: 400 },
-      );
-    }
-
+    // console.log("====================================");
+    // console.log(data);
+    // console.log("====================================");
     let newUser = new User(data);
-    newUser.password = await bcrypt.hash(data.password, 10);
+
+    if (data.role === "kasir") {
+      newUser.password = await bcrypt.hash(data.password, 10);
+
+      const existingUser = await User.findOne({ email: data.email });
+      if (existingUser) {
+        return NextResponse.json(
+          { error: "Email must be unique" },
+          { status: 400 },
+        );
+      }
+    }
 
     await newUser.save();
     // console.log(data);
@@ -74,9 +80,7 @@ export const PUT = withAuth(async (req) => {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const data = await req.json();
-    console.log("====================================");
-    console.log(data.password);
-    console.log("====================================");
+
     // Jika ada password, hash password tersebut
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);
