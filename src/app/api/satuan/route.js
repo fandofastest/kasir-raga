@@ -22,6 +22,7 @@ export const POST = withAuth(async (req) => {
     return NextResponse.json({
       data: newSatuan,
       message: "Satuan added successfully",
+      status: 200,
     });
   } catch (error) {
     return NextResponse.json(

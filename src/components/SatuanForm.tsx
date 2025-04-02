@@ -27,8 +27,12 @@ export const AddSatuanModal: React.FC<AddSatuanModalProps> = ({
     if (!satName.trim()) return;
     try {
       const res = await addSatuan(satName);
-      const data = res.data; // { _id, nama } dari server
-      onCreatedSatuan(data);
+      const data1 = res.data; // { _id, nama } dari server
+
+      if (res.data.status == 200) {
+        onCreatedSatuan(data1.data);
+      }
+
       onClose();
     } catch (error) {
       toast.error("Terjadi kesalahan saat menambah satuan.");
@@ -66,7 +70,7 @@ export const AddSatuanModal: React.FC<AddSatuanModalProps> = ({
           />
           <button
             type="submit"
-            className="bg-tosca hover:bg-toscadark w-full rounded px-4 py-2 text-white"
+            className="w-full rounded bg-tosca px-4 py-2 text-white hover:bg-toscadark"
           >
             Simpan
           </button>

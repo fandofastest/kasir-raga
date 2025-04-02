@@ -443,7 +443,7 @@ export default function ProductFormModal({
                   <button
                     type="button"
                     onClick={() => setShowStaffModal(true)}
-                    className="bg-tosca hover:bg-toscadark-600 rounded px-2 py-1 text-white"
+                    className="hover:bg-toscadark-600 rounded bg-tosca px-2 py-1 text-white"
                   >
                     +
                   </button>
@@ -505,7 +505,7 @@ export default function ProductFormModal({
                   <button
                     type="button"
                     onClick={() => setShowAddSatuan(true)}
-                    className="bg-tosca hover:bg-toscadark rounded px-2 py-1 text-sm text-white"
+                    className="rounded bg-tosca px-2 py-1 text-sm text-white hover:bg-toscadark"
                   >
                     + Tambah Satuan
                   </button>
@@ -626,7 +626,7 @@ export default function ProductFormModal({
             <button
               type="submit"
               disabled={loading}
-              className="bg-tosca hover:bg-toscadark w-full rounded-lg px-4 py-2 text-white disabled:bg-gray-400"
+              className="w-full rounded-lg bg-tosca px-4 py-2 text-white hover:bg-toscadark disabled:bg-gray-400"
             >
               {loading
                 ? "Menyimpan..."
