@@ -4,24 +4,26 @@ import { connectToDatabase } from "@/lib/mongodb";
 import User from "@/models/user";
 import { withAuth } from "@/middleware/withAuth";
 import { log } from "console";
+import bcrypt from "bcryptjs";
 
 export const POST = withAuth(async (req) => {
   try {
     await connectToDatabase();
     const data = await req.json();
 
-    // const existingUser = await User.findOne({ email: data.email });
-    // if (existingUser) {
-    //   return NextResponse.json(
-    //     { error: "Email must be unique" },
-    //     { status: 400 },
-    //   );
-    // }
+    const existingUser = await User.findOne({ email: data.email });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "Email must be unique" },
+        { status: 400 },
+      );
+    }
 
-    const newUser = new User(data);
+    let newUser = new User(data);
+    newUser.password = await bcrypt.hash(data.password, 10);
 
     await newUser.save();
-    console.log(data);
+    // console.log(data);
 
     return NextResponse.json({
       data: newUser,
@@ -66,15 +68,15 @@ export const GET = withAuth(async (req) => {
   }
 });
 
-import bcrypt from "bcryptjs";
-
 export const PUT = withAuth(async (req) => {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const data = await req.json();
-
+    console.log("====================================");
+    console.log(data.password);
+    console.log("====================================");
     // Jika ada password, hash password tersebut
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);

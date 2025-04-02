@@ -68,9 +68,7 @@ export default function StaffFormModal({
 
     if (role === "kasir") {
       staffData.email = email;
-      if (!staff?._id) {
-        staffData.password = password;
-      }
+      staffData.password = password;
     }
 
     setLoading(true);
@@ -158,16 +156,14 @@ export default function StaffFormModal({
                 required
                 className="w-full rounded-lg border p-2 dark:bg-gray-800"
               />
-              {!staff && (
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full rounded-lg border p-2 dark:bg-gray-800"
-                />
-              )}
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full rounded-lg border p-2 dark:bg-gray-800"
+              />
             </>
           )}
           <input
@@ -187,7 +183,7 @@ export default function StaffFormModal({
           />
           <button
             type="submit"
-            className="bg-tosca hover:bg-toscadark w-full rounded-lg px-4 py-2 text-white"
+            className="w-full rounded-lg bg-tosca px-4 py-2 text-white hover:bg-toscadark"
           >
             {loading
               ? "Menyimpan..."

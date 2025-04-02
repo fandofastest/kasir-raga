@@ -11,12 +11,12 @@ export const POST = async (req) => {
     const { email, password } = await req.json();
     const user = await User.findOne({ email });
     if (!user)
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Invalid Email" }, { status: 401 });
 
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("====================================");
+    console.log(email + " " + password + " " + user.password + " " + isMatch);
+    console.log("====================================");
     if (!isMatch)
       return NextResponse.json(
         { error: "Invalid credentials" },
