@@ -291,6 +291,17 @@ export const GET = withAuth(async (req) => {
         "produk.productId": { $in: productIdsInCategory },
       });
     }
+    // Filter berdasarkan kategori konsumen (pembeli)
+    if (searchParams.has("kategori_konsumen")) {
+      const kategoriKonsumenId = searchParams.get("kategori_konsumen");
+      // Cari semua konsumen dengan kategori ini
+      const konsumenList = await Konsumen.find({ kategori: kategoriKonsumenId }).select("_id");
+      const konsumenIds = konsumenList.map(k => k._id);
+      andConditions.push({
+        pembeli: { $in: konsumenIds },
+      });
+    }
+
     if (andConditions.length > 0) {
       filter.$and = filter.$and
         ? filter.$and.concat(andConditions)

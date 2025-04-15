@@ -16,6 +16,11 @@ const KonsumenSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    kategori: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "KategoriKonsumen",
+      required: true,
+    }
   },
   {
     timestamps: true, // menambahkan createdAt, updatedAt

@@ -8,7 +8,8 @@ import {
   fetchSupplier,
   fetchPelanggan,
   fetchKategori, // API untuk mendapatkan data kategori
-  fetchProducts, // API untuk mendapatkan data produk
+  fetchProducts,
+  fetchKategoriKonsumen // API untuk mendapatkan data produk
 } from "@/lib/dataService";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import Image from "next/image";
@@ -36,11 +37,15 @@ export default function LaporanTransaksiPage({
   const [metodePembayaran, setMetodePembayaran] = useState<string>("");
   const [kategori, setKategori] = useState<string>("");
   const [produk, setProduk] = useState<string>("");
+  const [kategoriKonsumen, setKategoriKonsumen] = useState<string>(""); // NEW STATE
 
   // Options untuk dropdown
   const [supplierOptions, setSupplierOptions] = useState<any[]>([]);
   const [pembeliOptions, setPembeliOptions] = useState<any[]>([]);
   const [kategoriOptions, setKategoriOptions] = useState<any[]>([]);
+  const [kategoriKonsumenOptions, setKategoriKonsumenOptions] = useState<any[]>(
+    [],
+  ); // NEW STATE
   const [produkOptions, setProdukOptions] = useState<any[]>([]);
 
   // State untuk menentukan apakah tampilan mobile atau desktop
@@ -121,6 +126,8 @@ export default function LaporanTransaksiPage({
       setKategoriOptions(kategoriRes.data);
       const produkRes = await fetchProducts();
       setProdukOptions(produkRes.data);
+      const kategoriKonsumenRes = await fetchKategoriKonsumen();
+      setKategoriKonsumenOptions(kategoriKonsumenRes.data);
     } catch (err) {
       console.error("Gagal memuat opsi:", err);
     }
@@ -138,6 +145,7 @@ export default function LaporanTransaksiPage({
       if (metodePembayaran) params.metode_pembayaran = metodePembayaran;
       if (kategori) params.kategori = kategori;
       if (produk) params.produk = produk;
+      if (kategoriKonsumen) params.kategori_konsumen = kategoriKonsumen; // NEW PARAM
       params.tipe_transaksi = transactionType;
 
       const result = await fetchTransaction(params);
@@ -437,6 +445,25 @@ export default function LaporanTransaksiPage({
                 }
               />
             </div>
+            {isPenjualan && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Kategori Konsumen
+                </label>
+                <Select
+                  styles={customStyles}
+                  options={kategoriKonsumenOptions.map((opt) => ({
+                    value: opt._id,
+                    label: opt.nama,
+                  }))}
+                  onChange={(selected) =>
+                    setKategoriKonsumen(selected ? selected.value : "")
+                  }
+                  isClearable
+                  placeholder="Pilih Kategori Konsumen..."
+                />
+              </div>
+            )}
             {/* Metode Pembayaran */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">

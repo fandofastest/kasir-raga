@@ -8,6 +8,7 @@ import {
   fetchSupplier,
   fetchStaff,
   fetchPelanggan,
+  fetchKategoriKonsumen, // Import the new function
   updateDataTransaction,
 } from "@/lib/dataService";
 import { Staff } from "@/models/modeltsx/staffTypes";
@@ -56,7 +57,8 @@ export default function TransactionHistoryPage({
   const [pembeliOptions, setPembeliOptions] = useState<any[]>([]);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaksi | null>(null);
-
+    const [kategoriKonsumen, setKategoriKonsumen] = useState<string>(""); // NEW STATE
+    const [kategoriKonsumenOptions, setKategoriKonsumenOptions] = useState<any[]>([]); // NEW STATE
   // Options khusus berdasarkan role
   const kasirOptions = staffOptions.filter((staff) => staff.role === "kasir");
   const pengantarOptions = staffOptions.filter(
@@ -97,6 +99,8 @@ export default function TransactionHistoryPage({
       const pembeliRes = await fetchPelanggan();
       setStaffOptions(staffRes.data);
       setPembeliOptions(pembeliRes.data);
+      const kategoriKonsumenRes = await fetchKategoriKonsumen(); // Fetch kategori konsumen
+      setKategoriKonsumenOptions(kategoriKonsumenRes.data);
     } catch (err) {
       console.error("Gagal memuat opsi:", err);
     }
@@ -125,6 +129,7 @@ export default function TransactionHistoryPage({
       if (maxTotal) params.maxTotal = maxTotal;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
+      if (kategoriKonsumen) params.kategori_konsumen = kategoriKonsumen; // NEW PARAM
 
       const sortCol = overrideSortColumn || sortColumn;
       const sortDir = overrideSortDirection || sortDirection;
@@ -459,6 +464,32 @@ export default function TransactionHistoryPage({
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Kategori Konsumen</label>
+            <Select
+              styles={customStyles}
+              isClearable
+              options={kategoriKonsumenOptions.map((item: any) => ({
+                value: item._id,
+                label: item.nama,
+              }))}
+              value={
+                kategoriKonsumen
+                  ? {
+                      value: kategoriKonsumen,
+                      label:
+                        kategoriKonsumenOptions.find(
+                          (item: any) => item._id === kategoriKonsumen,
+                        )?.nama || "",
+                    }
+                  : null
+              }
+              onChange={(option: any) =>
+                setKategoriKonsumen(option ? option.value : "")
+              }
+              className="mt-1"
             />
           </div>
           <button

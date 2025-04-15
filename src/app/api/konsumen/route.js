@@ -9,11 +9,14 @@ export const POST = withAuth(async (req, res) => {
     await connectToDatabase();
 
     const data = await req.json();
+    console.log("Received data for new Konsumen:", data);
 
     // Cek apakah user sudah ada berdasarkan no HP
     const existingUser = await Konsumen.findOne({ nohp: data.nohp });
+    console.log("Existing user lookup result:", existingUser);
 
     if (existingUser) {
+      console.log("No HP already registered:", data.nohp);
       return NextResponse.json(
         { error: "No HP Sudah Terdaftar" },
         { status: 400 },
@@ -21,27 +24,37 @@ export const POST = withAuth(async (req, res) => {
     }
 
     // Membuat user baru
-    console.log(data);
-
     const newUser = new Konsumen(data);
+    console.log("New Konsumen instance created:", newUser);
 
     // Simpan ke database
     await newUser.save();
+    console.log("New Konsumen saved successfully.");
 
     return NextResponse.json({ message: "User berhasil dibuat" });
   } catch (error) {
-    console.log(error);
+    console.log("Error in POST /api/konsumen:", error);
 
     return NextResponse.json({ error: "Gagal membuat user" }, { status: 500 });
   }
 });
 
-export const GET = withAuth(async () => {
+export const GET = withAuth(async (req) => {
   try {
     await connectToDatabase();
 
-    // Ambil semua user
-    const users = await Konsumen.find().sort({ nama: "asc" });
+    // Check for kategori query param
+    const { searchParams } = new URL(req.url);
+    const kategori = searchParams.get("kategori");
+
+    let users;
+    if (kategori) {
+      // Get users by kategori
+      users = await Konsumen.find({ kategori }).sort({ nama: "asc" });
+    } else {
+      // Get all users
+      users = await Konsumen.find().sort({ nama: "asc" });
+    }
 
     return NextResponse.json(users);
   } catch (error) {

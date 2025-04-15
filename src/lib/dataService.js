@@ -486,3 +486,21 @@ export async function fetchKategori() {
   }
   return { data: data, token };
 }
+
+export async function fetchKategoriKonsumen() {
+  const token = await fetchUser(); // Function to get the token
+  const res = await fetch(`${apiUrl}/kategorikonsumen`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to fetch kategori konsumen");
+  }
+  return { data: data, token };
+}
+
+
