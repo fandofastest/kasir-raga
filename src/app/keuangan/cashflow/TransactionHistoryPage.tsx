@@ -14,13 +14,13 @@ import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import TransactionDetailDialog from "../detailtransaksi";
 
+// Remove tipeTransaksi from props interface
 interface TransactionHistoryPageProps {
-  tipeTransaksi?: string;
+  // tipeTransaksi?: string; // REMOVED
 }
 
-export default function TransactionHistoryPage({
-  tipeTransaksi,
-}: TransactionHistoryPageProps) {
+// Remove tipeTransaksi from function signature
+export default function TransactionHistoryPage({}: TransactionHistoryPageProps) {
   const [transactions, setTransactions] = useState<Transaksi[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -29,6 +29,7 @@ export default function TransactionHistoryPage({
   const [searchTerm, setSearchTerm] = useState<string>(""); // Nomor Transaksi
   const [metodePembayaran, setMetodePembayaran] = useState<string>("");
   const [statusTransaksi, setStatusTransaksi] = useState<string[]>([]);
+  const [selectedTipeTransaksi, setSelectedTipeTransaksi] = useState<string>(""); // NEW STATE for transaction type filter
 
   // Filter berdasarkan relasi (select)
   const [supplier, setSupplier] = useState<string>("");
@@ -113,9 +114,10 @@ export default function TransactionHistoryPage({
       const params: { [key: string]: string } = {};
       if (searchTerm) params.search = searchTerm;
       if (metodePembayaran) params.metode_pembayaran = metodePembayaran;
-      if (tipeTransaksi) params.tipe_transaksi = tipeTransaksi;
+      // Use selectedTipeTransaksi state for the API parameter
+      if (selectedTipeTransaksi) params.tipe_transaksi = selectedTipeTransaksi; // UPDATED
       if (supplier) params.supplier = supplier;
-      if (pembeli) params.pembeli = pembeli;
+      if (pembeli) params.pembeli = pembeli; // Ensure API uses 'pembeli' or 'pelanggan' consistently
       if (pengantar) params.pengantar = pengantar;
       if (staffBongkar) params.staff_bongkar = staffBongkar;
       if (kasir) params.kasir = kasir;
@@ -135,7 +137,13 @@ export default function TransactionHistoryPage({
       }
       const data = await fetchTransaction(params);
       console.log(data);
-      setTransactions(data.data.transactions);
+      // Ensure the response structure matches before accessing nested properties
+      if (data && data.data && data.data.transactions) {
+        setTransactions(data.data.transactions);
+      } else {
+        setTransactions([]); // Set to empty array if data is not as expected
+        console.warn("Unexpected response structure:", data);
+      }
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat memuat data");
       toast.error(err.message || "Terjadi kesalahan saat memuat data");
@@ -361,8 +369,24 @@ export default function TransactionHistoryPage({
         {/* Grid Filter Lainnya */}
         <form
           onSubmit={handleSubmit}
-          className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" // Adjusted grid columns
         >
+          {/* Add Tipe Transaksi Select */}
+          <div>
+            <label className="block text-sm font-medium">Tipe Transaksi</label>
+            <select
+              value={selectedTipeTransaksi}
+              onChange={(e) => setSelectedTipeTransaksi(e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            >
+              <option value="">Semua</option>
+              <option value="penjualan">Penjualan</option>
+              <option value="pembelian">Pembelian</option>
+              <option value="pengeluaran">Pengeluaran</option>
+            </select>
+          </div>
+
+          {/* Existing Filters */}
           <div>
             <label className="block text-sm font-medium">
               Metode Pembayaran
@@ -504,7 +528,7 @@ export default function TransactionHistoryPage({
           </div>
           <button
             type="submit"
-            className="col-span-1 rounded bg-tosca px-4 py-2 text-white sm:col-span-3"
+            className="col-span-1 rounded bg-tosca px-4 py-2 text-white sm:col-span-full" // Adjusted span
           >
             Terapkan Filter
           </button>
@@ -780,4 +804,5 @@ export default function TransactionHistoryPage({
       </div>
     </>
   );
+
 }

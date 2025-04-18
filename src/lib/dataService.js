@@ -503,4 +503,29 @@ export async function fetchKategoriKonsumen() {
   return { data: data, token };
 }
 
+export async function deleteTransaction(transactionId) {
+  // ambil token dari sesi
+  const token = await fetchUser();
 
+  // panggil endpoint DELETE dengan query ?id=...
+  const res = await fetch(
+    `${apiUrl}/transaksi?id=${encodeURIComponent(transactionId)}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  // jika gagal, lempar error dengan pesan yang dikembalikan server
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error || "Gagal menghapus transaksi");
+  }
+
+  // parse respons JSON
+  const data = await res.json();
+  return data;
+}

@@ -107,11 +107,11 @@ const menuGroups: MenuGroup[] = [
         route: "#",
         requiredPermission: "keuangan:view",
         children: [
-          {
-            label: "Cashflow",
-            route: "/keuangan/cashflow",
-            requiredPermission: "keuangan:cashflow:view",
-          },
+          // {
+          //   label: "Cashflow",
+          //   route: "/keuangan/cashflow",
+          //   requiredPermission: "keuangan:cashflow:view",
+          // },
           {
             label: "Pembelian",
             route: "/keuangan/pembelian",
@@ -142,40 +142,9 @@ const menuGroups: MenuGroup[] = [
       {
         icon: <SmileIcon />,
         label: "Laporan",
-        route: "#",
+        route: "/laporan",
         requiredPermission: "laporan:view",
-        children: [
-          {
-            label: "Penjualan",
-            route: "/laporan/penjualan",
-            requiredPermission: "laporan:penjualan:view",
-          },
-          {
-            label: "Pembelian",
-            route: "/laporan/pembelian",
-            requiredPermission: "laporan:pembelian:view",
-          },
-          {
-            label: "Piutang",
-            route: "/laporan/piutang",
-            requiredPermission: "laporan:piutang:view",
-          },
-          {
-            label: "Hutang",
-            route: "/laporan/hutang",
-            requiredPermission: "laporan:hutang:view",
-          },
-          {
-            label: "Produk",
-            route: "/laporan/produk",
-            requiredPermission: "laporan:produk:view", // diperbaiki
-          },
-          {
-            label: "Biaya Lain",
-            route: "/laporan/biaya",
-            requiredPermission: "laporan:biaya:view",
-          },
-        ],
+    
       },
       {
         icon: <SettingsIcon />,

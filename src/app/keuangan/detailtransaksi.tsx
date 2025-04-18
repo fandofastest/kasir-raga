@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import InvoicePage from "@/components/invoice";
+import { useAuth } from "@/hooks/userauth";
 
 interface TransactionDetailDialogProps {
   transaction: Transaksi;
   staffOptions: Staff[]; // Daftar staff lengkap untuk memilih pengantar & tukang bongkar
   onClose: () => void;
   onUpdate: (updatedTransaction: Transaksi) => void;
+  onDelete?: (id: string) => void;
+
 }
 
 const TransactionDetailDialog = ({
@@ -17,7 +20,11 @@ const TransactionDetailDialog = ({
   staffOptions,
   onClose,
   onUpdate,
+  onDelete,
 }: TransactionDetailDialogProps) => {
+  const user = useAuth().user as User;
+  const role = user?.role;
+  const isSuperAdmin = role === "superadmin";
   // Nonaktifkan scroll pada body saat dialog terbuka
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -307,8 +314,21 @@ const TransactionDetailDialog = ({
                 onClick={onClose}
                 className="mb-2 rounded bg-gray-300 px-4 py-2 text-sm text-gray-800 hover:bg-gray-400 sm:mb-0"
               >
+               
                 Tutup
               </button>
+              {isSuperAdmin && onDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDelete(transaction._id);
+                    onClose();
+                  }}
+                  className="px-4 py-2 rounded bg-red-600 text-white text-sm"
+                >
+                  Hapus
+                </button>
+              )}
               <button
                 type="submit"
                 className="hover:bg-toscadark bg-tosca mb-2 rounded px-4 py-2 text-sm text-white sm:mb-0"
