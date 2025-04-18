@@ -147,7 +147,7 @@ export default function LaporanTransaksiPage({
       if (produk) params.produk = produk;
       if (kategoriKonsumen) params.kategori_konsumen = kategoriKonsumen; // NEW PARAM
       params.tipe_transaksi = transactionType;
-
+      params.status_transaksi = "lunas,lunas_cepat"; 
       const result = await fetchTransaction(params);
       setTransactions(result.data.transactions);
       setCurrentPage(1); // reset pagination
