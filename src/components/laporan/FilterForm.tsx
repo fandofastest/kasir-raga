@@ -56,6 +56,11 @@ export default function FilterForm(props:Props){
     onSubmit,
   } = props;
 
+  // --- Filter staff by role ---
+  const kasirOptions = staffOptions.filter(s => s.role === "kasir");
+  const staffAntarOptions = staffOptions.filter(s => s.role === "staffAntar");
+  const staffBongkarOptions = staffOptions.filter(s => s.role === "staffBongkar");
+
   return (
     <form onSubmit={onSubmit} className="print:hidden mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {/* tanggal */}
@@ -163,21 +168,39 @@ export default function FilterForm(props:Props){
           onChange={(v)=>setProduk(v?.value??"")}/>
       </div>
 
-      {/* kasir + pengantar + bongkar */}
-      {[
-        {label:"Kasir (Operator)", val:kasir, set:setKasir},
-        {label:"Pengantar", val:pengantar, set:setPengantar},
-        {label:"Staff Bongkar", val:staffBongkar, set:setStaffBongkar},
-      ].map(({label,val,set})=>(
-        <div key={label}>
-          <label className="block text-sm font-medium">{label}</label>
-          <Select styles={customStyles}
-            options={staffOptions.map(s=>({value:s._id,label:s.name}))}
-            isClearable placeholder={`Pilih ${label}...`}
-            onChange={(v)=>set(v?.value??"")}/>
-        </div>
-      ))}
-
+      {/* kasir */}
+      <div>
+        <label className="block text-sm font-medium">Kasir (Operator)</label>
+        <Select
+          styles={customStyles}
+          options={kasirOptions.map(s=>({value:s._id,label:s.name}))}
+          isClearable
+          placeholder="Pilih Kasir..."
+          onChange={(v)=>setKasir(v?.value??"")}
+        />
+      </div>
+      {/* pengantar */}
+      <div>
+        <label className="block text-sm font-medium">Pengantar</label>
+        <Select
+          styles={customStyles}
+          options={staffAntarOptions.map(s=>({value:s._id,label:s.name}))}
+          isClearable
+          placeholder="Pilih Pengantar..."
+          onChange={(v)=>setPengantar(v?.value??"")}
+        />
+      </div>
+      {/* staff bongkar */}
+      <div>
+        <label className="block text-sm font-medium">Staff Bongkar</label>
+        <Select
+          styles={customStyles}
+          options={staffBongkarOptions.map(s=>({value:s._id,label:s.name}))}
+          isClearable
+          placeholder="Pilih Staff Bongkar..."
+          onChange={(v)=>setStaffBongkar(v?.value??"")}
+        />
+      </div>
       {/* keterangan */}
       <div>
         <label className="block text-sm font-medium">Keterangan</label>
