@@ -359,7 +359,7 @@ export default function TransactionHistoryPage({
               styles={customStyles}
             />
           </div>
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium">Pelanggan</label>
             <Select
               styles={customStyles}
@@ -381,7 +381,7 @@ export default function TransactionHistoryPage({
               onChange={(option: any) => setPembeli(option ? option.value : "")}
               className="mt-1"
             />
-          </div>
+          </div> */}
           <div>
             <label className="block text-sm font-medium">Supplier</label>
             <select
