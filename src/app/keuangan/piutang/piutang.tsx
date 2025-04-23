@@ -6,6 +6,7 @@ import {
   fetchTransaction,
   payInstallment,
   fetchPelanggan,
+  fetchKategoriKonsumen,
 } from "@/lib/dataService";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import PaymentHistoryDialog from "./PaymentHistoryDialog";
@@ -39,11 +40,15 @@ export default function PiutangPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-
+  const [kategoriPelangganOptions, setKategoriPelangganOptions] = useState<{
+    value: string;
+    label: string;
+  }[]>([]);
   // Filter state
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [selectedKategori, setSelectedKategori] = useState<string>("");
 
   // Modal state
   const [selectedTransaction, setSelectedTransaction] =
@@ -77,6 +82,15 @@ export default function PiutangPage() {
     const timePart = now.toTimeString().split(" ")[0];
     return `${dateString}T${timePart}`;
   }
+  const loadKategori = async () => {
+    try {
+      const res = await fetchKategoriKonsumen();
+      const opts = res.data.map((k: any) => ({ value: k._id, label: k.nama }));
+      setKategoriPelangganOptions(opts);
+    } catch (e) {
+      console.error("Gagal memuat kategori pelanggan", e);
+    }
+  };
 
   // Fungsi untuk memuat data transaksi cicilan dengan filter
   const loadData = async () => {
@@ -86,6 +100,8 @@ export default function PiutangPage() {
         metode_pembayaran: "cicilan",
         tipe_transaksi: "penjualan",
       };
+      if (selectedKategori) params.kategori_konsumen = selectedKategori;
+
       if (selectedCustomerId) params.pelanggan = selectedCustomerId;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
@@ -111,6 +127,8 @@ export default function PiutangPage() {
   useEffect(() => {
     loadData();
     loadCustomers();
+    loadKategori();
+
   }, []);
 
   // Fungsi untuk menghitung total pembayaran yang sudah dilakukan
@@ -389,6 +407,48 @@ export default function PiutangPage() {
             onChange={(sel) => setSelectedCustomerId(sel?.value ?? "")}
           />
 
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Kategori Pelanggan</label>
+          <Select
+            className="mt-1 w-full"
+            classNames={{
+              control: () =>
+                'h-10 flex items-center bg-white dark:bg-gray-800 ' +
+                'border border-gray-300 dark:border-gray-600 rounded-md ' +
+                'px-3 py-0 text-sm',
+              valueContainer: () =>
+                'h-full px-0',
+              input: () =>
+                'm-0 p-0 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400',
+              placeholder: () =>
+                'text-gray-500 dark:text-gray-400',
+              singleValue: () =>
+                'text-gray-900 dark:text-gray-100',
+              indicatorsContainer: () =>
+                'h-full',
+              menu: () =>
+                'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 mt-1 rounded-md shadow-lg',
+              option: ({ isFocused, isSelected }) =>
+                [
+                  'px-4 py-2 cursor-pointer select-none',
+                  isSelected
+                    ? 'bg-tosca text-white'
+                    : isFocused
+                    ? 'bg-gray-200 dark:bg-gray-600'
+                    : 'bg-white dark:bg-gray-800',
+                ].join(' '),
+            }}
+            options={kategoriPelangganOptions}
+            isClearable
+            isSearchable
+            placeholder="Pilih Kategori..."
+            value={
+              kategoriPelangganOptions.find((k) => k.value === selectedKategori) || null
+            }
+            onChange={(sel) => setSelectedKategori(sel?.value ?? "")}
+            inputId="kategori-select"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium">Tanggal Mulai</label>

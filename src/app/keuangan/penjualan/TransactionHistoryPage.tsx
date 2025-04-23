@@ -400,7 +400,7 @@ export default function TransactionHistoryPage({
               className="mt-1"
             />
           </div>
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium">Supplier</label>
             <select
               value={supplier}
@@ -414,7 +414,7 @@ export default function TransactionHistoryPage({
                 </option>
               ))}
             </select>
-          </div>
+          </div> */}
           <div>
             <label className="block text-sm font-medium">Armada</label>
             <select
