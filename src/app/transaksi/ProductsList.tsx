@@ -22,6 +22,75 @@ export default function ProductsList({
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState<any>(null);
+
+  async function loadProducts(pageNum = 1, search = "") {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        limit: "10",
+      });
+      
+      if (search) {
+        params.append("search", search);
+      }
+      
+      const response = await fetchProducts(params);
+      
+      if (pageNum === 1) {
+        setProducts(response.data || []);
+      } else {
+        setProducts(prev => [...prev, ...(response.data || [])]);
+      }
+      
+      setPagination(response.pagination);
+      setHasMore(response.pagination?.page < response.pagination?.totalPages);
+      setLoading(false);
+    } catch (error) {
+      toast.error("Gagal memuat produk");
+      console.error(error);
+      setLoading(false);
+    }
+  }
+
+  // Initial load and refresh
+  useEffect(() => {
+    setPage(1);
+    loadProducts(1, searchTerm);
+  }, [refreshKey]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      loadProducts(1, searchTerm);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Infinite scroll handler
+  const handleScroll = () => {
+    if (loading || !hasMore) return;
+    
+    const scrollTop = document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight;
+    const clientHeight = document.documentElement.clientHeight;
+    
+    if (scrollTop + clientHeight >= scrollHeight - 200) {
+      setPage(prev => prev + 1);
+      loadProducts(page + 1, searchTerm);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore, page, searchTerm]);
 
   // Modal states
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
@@ -29,15 +98,6 @@ export default function ProductsList({
   const [quantity, setQuantity] = useState<number>(1);
   const [unitPrice, setUnitPrice] = useState<number>(0);
 
-  async function loadProducts() {
-    try {
-      const data = await fetchProducts();
-      setProducts(data.data);
-    } catch (error) {
-      toast.error("Gagal memuat produk");
-      console.error(error);
-    }
-  }
 
   useEffect(() => {
     loadProducts();
@@ -159,72 +219,80 @@ export default function ProductsList({
             : "flex flex-col space-y-3"
         }
       >
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product) => {
+        {products.length > 0 ? (
+          products.map((product) => {
             const firstPrice =
               product.satuans && product.satuans.length > 0
                 ? product.satuans[0].harga
                 : 0;
 
             return (
-              <LazyLoad key={product._id} height={150} offset={100} once>
-                <div
-                  className={`rounded-md border border-stroke p-3 shadow-sm 
-                  transition-shadow hover:shadow-lg dark:border-strokedark dark:bg-boxdark
-                  ${
-                    viewMode === "grid"
-                      ? "flex flex-col items-center space-y-2 text-center"
-                      : "flex w-full flex-row items-center justify-between space-x-4"
-                  }`}
-                >
-                  {/* Gambar Produk */}
-                  <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
-                    <ProductImage product={product} />
-                  </div>
-                  {/* Info Produk */}
-                  <div className="flex-1">
-                    <p className="font-medium text-black dark:text-white">
-                      {product.nama_produk}
-                    </p>
-                    {product.satuans && product.satuans.length > 0 ? (
-                      <p className="text-sm text-gray-500">
-                        Rp{firstPrice.toLocaleString()}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-gray-500">No Price</p>
-                    )}
-                  </div>
-
-                  {/* Stok */}
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Stok: {product.jumlah}
-                    </p>
-                  </div>
-
-                  {/* Tombol Tambah */}
-                  <button
-                    className={`ml-auto rounded-md px-3 py-1 text-sm font-semibold text-white ${
-                      viewMode === "grid" ? "w-full" : ""
-                    }
-                    ${
-                      product.jumlah === 0
-                        ? "cursor-not-allowed bg-gray-400"
-                        : "bg-tosca hover:bg-toscadark"
-                    }`}
-                    onClick={() => handleTambahClick(product)}
-                    disabled={product.jumlah === 0}
-                  >
-                    {product.jumlah === 0 ? "Habis" : "Tambah"}
-                  </button>
+              <div
+                key={product._id}
+                className={`rounded-md border border-stroke p-3 shadow-sm 
+                transition-shadow hover:shadow-lg dark:border-strokedark dark:bg-boxdark
+                ${
+                  viewMode === "grid"
+                    ? "flex flex-col items-center space-y-2 text-center"
+                    : "flex w-full flex-row items-center justify-between space-x-4"
+                }`}
+              >
+                {/* Gambar Produk */}
+                <div className="relative h-[100px] w-[100px] rounded-md border border-gray-300">
+                  <ProductImage product={product} />
                 </div>
-              </LazyLoad>
+                {/* Info Produk */}
+                <div className="flex-1">
+                  <p className="font-medium text-black dark:text-white">
+                    {product.nama_produk}
+                  </p>
+                  {product.satuans && product.satuans.length > 0 ? (
+                    <p className="text-sm text-gray-500">
+                      Rp{firstPrice.toLocaleString()}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">No Price</p>
+                  )}
+                </div>
+
+                {/* Stok */}
+                <div>
+                  <p className="text-sm text-gray-500">
+                    Stok: {product.jumlah}
+                  </p>
+                </div>
+
+                {/* Tombol Tambah */}
+                <button
+                  className={`ml-auto rounded-md px-3 py-1 text-sm font-semibold text-white ${
+                    viewMode === "grid" ? "w-full" : ""
+                  }
+                  ${
+                    product.jumlah === 0
+                      ? "cursor-not-allowed bg-gray-400"
+                      : "bg-tosca hover:bg-toscadark"
+                  }`}
+                  onClick={() => handleTambahClick(product)}
+                  disabled={product.jumlah === 0}
+                >
+                  {product.jumlah === 0 ? "Habis" : "Tambah"}
+                </button>
+              </div>
             );
           })
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400">
             Produk tidak ditemukan
           </p>
+        )}
+        
+        {/* Loading indicator */}
+        {loading && (
+          <div className={viewMode === "grid" ? "col-span-full" : ""}>
+            <div className="flex justify-center py-4">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-tosca border-r-transparent"></div>
+            </div>
+          </div>
         )}
       </div>
 

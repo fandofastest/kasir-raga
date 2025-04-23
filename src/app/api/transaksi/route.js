@@ -282,50 +282,82 @@ export const GET = withAuth(async (req) => {
     }
     if (searchParams.has("kategori")) {
       const kategoriValue = searchParams.get("kategori");
-      // Asumsikan kategori dikirim sebagai ID kategori
       const productsInCategory = await Product.find({
         kategori: kategoriValue,
       }).select("_id");
       const productIdsInCategory = productsInCategory.map((p) => p._id);
-      andConditions.push({
-        "produk.productId": { $in: productIdsInCategory },
+      
+      // Add pipeline stage to filter products and recalculate total
+      const transactions = await Transaksi.aggregate([
+        { $match: filter },
+        {
+          $addFields: {
+            // Filter produk array to only include items in the category
+            filteredProduk: {
+              $filter: {
+                input: "$produk",
+                as: "item",
+                cond: { $in: ["$$item.productId", productIdsInCategory] }
+              }
+            }
+          }
+        },
+        {
+          $addFields: {
+            // Calculate new total based on filtered products
+            newTotal: {
+              $reduce: {
+                input: "$filteredProduk",
+                initialValue: 0,
+                in: { 
+                  $add: [
+                    "$$value", 
+                    { $multiply: ["$$this.quantity", "$$this.harga"] }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          $match: { "filteredProduk.0": { $exists: true } }
+        },
+        {
+          $addFields: {
+            produk: "$filteredProduk",
+            total_harga: "$newTotal"
+          }
+        }
+      ]).exec();
+
+      // Populate the filtered results
+      await Transaksi.populate(transactions, {
+        path: "kasir supplier pembeli pengantar staff_bongkar produk.productId produk.satuans.satuan"
       });
-    }
-    // Filter berdasarkan kategori konsumen (pembeli)
-    if (searchParams.has("kategori_konsumen")) {
-      const kategoriKonsumenId = searchParams.get("kategori_konsumen");
-      // Cari semua konsumen dengan kategori ini
-      const konsumenList = await Konsumen.find({ kategori: kategoriKonsumenId }).select("_id");
-      const konsumenIds = konsumenList.map(k => k._id);
-      andConditions.push({
-        pembeli: { $in: konsumenIds },
+
+      return NextResponse.json({
+        transactions,
+        totalTransactions: transactions.length,
+        sumTotal: transactions.reduce((sum, t) => sum + t.total_harga, 0),
+        status: 200
       });
     }
 
-    if (andConditions.length > 0) {
-      filter.$and = filter.$and
-        ? filter.$and.concat(andConditions)
-        : andConditions;
-    }
-    // --- End tambahan filter produk & kategori ---
-
-    // Sorting: parameter sortBy dan sortOrder (asc atau desc)
+    // Original query for non-category filters
     let sort = {};
     if (searchParams.has("sortBy")) {
       const sortBy = searchParams.get("sortBy");
       const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
       sort[sortBy] = sortOrder;
     } else {
-      // Default sort berdasarkan createdAt descending
+      // Default sort berdasarkan tanggal_transaksi descending
       sort = { tanggal_transaksi: -1 };
     }
 
-    // Query transaksi dengan filter dan sort
     const transactions = await Transaksi.find(filter)
       .populate("kasir supplier pembeli pengantar staff_bongkar")
       .populate("produk.productId")
       .populate("produk.satuans.satuan")
-
       .sort(sort);
 
     // Agregasi untuk total transaksi dan total harga
@@ -601,6 +633,8 @@ export const PUT = withAuth(async (req) => {
       .populate("staff_bongkar")
       .exec();
 
+
+      
     return NextResponse.json({
       message: "Transaksi berhasil diperbarui",
       data: populatedTransactionFull,

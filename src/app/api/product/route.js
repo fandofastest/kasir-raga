@@ -98,38 +98,51 @@ export const POST = withAuth(async (req) => {
     );
   }
 });
-export const GET = withAuth(async () => {
+export const GET = withAuth(async (req) => {
   try {
     await connectToDatabase();
 
-    // Ambil produk beserta populate untuk satuans.satuan, kategori, dan brand
-    const products = await Product.find()
+    // Get pagination parameters from query
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    
+    // Calculate skip value
+    const skip = (page - 1) * limit;
+
+    // Build search query
+    let query = {};
+    if (search) {
+      query.nama_produk = { $regex: search, $options: 'i' };
+    }
+
+    // Get total count for pagination
+    const total = await Product.countDocuments(query);
+
+    // Get paginated products with populate
+    const products = await Product.find(query)
       .populate("satuans.satuan kategori brand")
+      .skip(skip)
+      .limit(limit)
       .lean();
 
-    // Ambil semua supplierId dari produk (yang tersimpan sebagai string atau ObjectId)
+    // Handle supplier population
     const supplierIds = products.map((p) => p.supplier).filter((id) => !!id);
-
-    // Buat array supplierId unik
     const uniqueSupplierIds = [...new Set(supplierIds)];
-
-    // Pisahkan antara id yang valid dan tidak valid
     const validSupplierIds = uniqueSupplierIds.filter((id) =>
-      mongoose.Types.ObjectId.isValid(id),
+      mongoose.Types.ObjectId.isValid(id)
     );
 
-    // Cari dokumen supplier hanya untuk id yang valid
     const suppliers = await Supplier.find({
       _id: { $in: validSupplierIds },
     }).lean();
 
-    // Buat mapping: id (string) => dokumen supplier
     const supplierMap = {};
     suppliers.forEach((s) => {
       supplierMap[s._id.toString()] = s;
     });
 
-    // Ganti field supplier di setiap produk jika id valid dan dokumen ditemukan
     products.forEach((p) => {
       if (p.supplier && mongoose.Types.ObjectId.isValid(p.supplier)) {
         const supDoc = supplierMap[p.supplier];
@@ -137,15 +150,22 @@ export const GET = withAuth(async () => {
           p.supplier = supDoc;
         }
       }
-      // Jika id supplier tidak valid, biarkan sebagai string
     });
 
-    return NextResponse.json(products);
+    return NextResponse.json({
+      data: products,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 });

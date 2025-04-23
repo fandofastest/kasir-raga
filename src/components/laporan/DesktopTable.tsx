@@ -43,9 +43,9 @@ export default function DesktopTable({
             </th>
             <th
               className="border px-2 py-1 cursor-pointer"
-              onClick={() => onSort("createdAt")}
+              onClick={() => onSort("tanggal_transaksi")} // Change sort key here
             >
-              Tanggal {sortColumn === "createdAt" && (sortDirection === "asc" ? "▲" : "▼")}
+              Tanggal {sortColumn === "tanggal_transaksi" && (sortDirection === "asc" ? "▲" : "▼")} {/* Change condition here */}
             </th>
             <th
               className="border px-2 py-1 cursor-pointer"
@@ -98,7 +98,7 @@ export default function DesktopTable({
               return (
                 <tr key={`${trx._id}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="border px-2 py-1">{trx.no_transaksi}</td>
-                  <td className="border px-2 py-1">{new Date(trx.createdAt).toLocaleDateString("id-ID")}</td>
+                  <td className="border px-2 py-1">{new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}</td> {/* Change date source here */}
                   <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
                   <td className="border px-2 py-1">{isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}</td>
                   <td className="border px-2 py-1">{pd.productId?.nama_produk ?? pd.nama_produk}</td>
@@ -115,7 +115,7 @@ export default function DesktopTable({
             return (
               <tr key={trx._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="border px-2 py-1">{trx.no_transaksi}</td>
-                <td className="border px-2 py-1">{new Date(trx.createdAt).toLocaleDateString("id-ID")}</td>
+                <td className="border px-2 py-1">{new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}</td> {/* This already uses tanggal_transaksi */}
                 <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
                 <td className="border px-2 py-1">{isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}</td>
                 {produkFilter && <td className="border px-2 py-1">-</td>}

@@ -301,117 +301,11 @@ export default function TransactionHistoryPage({
           </div>
         </div>
 
-        {/* Grid Filter Lainnya */}
+        {/* Grid Filter Lainnya - Simplified to only include Kasir and Date filters */}
         <form
           onSubmit={handleSubmit}
-          className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3"
         >
-          <div>
-            <label className="block text-sm font-medium">
-              Metode Pembayaran
-            </label>
-            <select
-              value={metodePembayaran}
-              onChange={(e) => setMetodePembayaran(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Semua</option>
-              <option value="tunai">Tunai</option>
-              <option value="edc">EDC</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="cicilan">Cicilan</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">
-              Status Transaksi
-            </label>
-            <Select
-              classNamePrefix="react-select"
-              isMulti
-              options={statusOptions}
-              value={statusOptions.filter((option) =>
-                statusTransaksi.includes(option.value),
-              )}
-              onChange={(selectedOptions) => {
-                setStatusTransaksi(
-                  selectedOptions
-                    ? selectedOptions.map((option: any) => option.value)
-                    : [],
-                );
-              }}
-              className="mt-1"
-              styles={customStyles}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Pelanggan</label>
-            <Select
-              styles={customStyles}
-              isClearable
-              options={pembeliOptions.map((item: any) => ({
-                value: item._id,
-                label: item.nama,
-              }))}
-              value={
-                pembeli
-                  ? {
-                      value: pembeli,
-                      label:
-                        pembeliOptions.find((item: any) => item._id === pembeli)
-                          ?.nama || "",
-                    }
-                  : null
-              }
-              onChange={(option: any) => setPembeli(option ? option.value : "")}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Supplier</label>
-            <select
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Semua Supplier</option>
-              {supplierOptions.map((item: any) => (
-                <option key={item._id} value={item._id}>
-                  {item.nama}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Armada</label>
-            <select
-              value={pengantar}
-              onChange={(e) => setPengantar(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Semua Armada</option>
-              {pengantarOptions.map((item) => (
-                <option key={item._id} value={item._id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Buruh Bongkar</label>
-            <select
-              value={staffBongkar}
-              onChange={(e) => setStaffBongkar(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            >
-              <option value="">Semua Buruh Bongkar</option>
-              {staffBongkarOptions.map((item) => (
-                <option key={item._id} value={item._id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </div>
           <div>
             <label className="block text-sm font-medium">Kasir</label>
             <select
@@ -523,6 +417,12 @@ export default function TransactionHistoryPage({
                     >
                       Buruh Bongkar{renderSortIndicator("staff_bongkar")}
                     </th>
+                    <th
+                      className="cursor-pointer border px-4 py-2 text-left text-sm font-medium text-gray-600 dark:text-gray-200"
+                      onClick={() => handleSort("keterangan")}
+                    >
+                      Keterangan{renderSortIndicator("keterangan")}
+                    </th>
                     <th className="border px-4 py-2 text-center text-sm font-medium text-gray-600 dark:text-gray-200">
                       Aksi
                     </th>
@@ -587,6 +487,9 @@ export default function TransactionHistoryPage({
                             ? trx.staff_bongkar.name
                             : trx.staff_bongkar
                           : ""}
+                      </td>
+                      <td className="border px-4 py-2 text-left text-sm text-gray-700 dark:text-white">
+                        {trx.keterangan || "-"}
                       </td>
                       <td className="border px-4 py-2 text-center text-sm">
                         <button
@@ -694,6 +597,10 @@ export default function TransactionHistoryPage({
                             ? trx.staff_bongkar.name
                             : trx.staff_bongkar
                           : ""}
+                      </p>
+                      <p>
+                        <span className="font-medium">Keterangan: </span>
+                        {trx.keterangan || "-"}
                       </p>
                       <button
                         onClick={() => openDetailDialog(trx)}

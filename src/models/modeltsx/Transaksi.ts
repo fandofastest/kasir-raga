@@ -21,6 +21,7 @@ interface Transaksi {
     quantity: number;
     harga: number;
     satuans: any;
+    kategori?: string;
     nama_produk: string;
   }[];
   staff_bongkar: Staff | string;

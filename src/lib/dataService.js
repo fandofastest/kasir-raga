@@ -2,9 +2,12 @@ import { toast } from "react-hot-toast";
 import { signOut } from "next-auth/react";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-export const fetchProducts = async () => {
+export const fetchProducts = async (params = new URLSearchParams()) => {
   const token = await fetchUser();
-  const res = await fetch(apiUrl + "/product", {
+  const queryString = params.toString();
+  const url = `${apiUrl}/product${queryString ? `?${queryString}` : ''}`;
+  
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -13,7 +16,11 @@ export const fetchProducts = async () => {
     toast.error("Session Expired");
     signOut({ callbackUrl: "/auth/signin" });
   }
-  return { data, token };
+  return { 
+    data: data.data, 
+    pagination: data.pagination,
+    token 
+  };
 };
 export async function createProduct(productData) {
   const token = await fetchUser();

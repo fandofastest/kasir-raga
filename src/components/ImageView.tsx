@@ -10,9 +10,11 @@ export default function ProductImage({ product: product }: any) {
 
   return (
     <Image
+    quality={1}
+      fill
       src={src}
       alt="Product"
-      fill
+      loading="lazy"
       className="rounded-md object-cover"
       onError={() => {
         if (src !== defaultImage) {

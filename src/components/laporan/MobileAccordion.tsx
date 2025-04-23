@@ -34,7 +34,7 @@ export default function MobileAccordion({
               <p className="font-bold">{trx.no_transaksi}</p>
               <p className="text-sm">{formatRupiah(trx.total_harga)}</p>
               <p className="text-xs text-gray-500">
-                {new Date(trx.createdAt).toLocaleDateString("id-ID")}
+                {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")} {/* Change date source here */}
               </p>
             </div>
             <div className="font-bold">{open.has(trx._id) ? "-" : "+"}</div>

@@ -65,7 +65,7 @@ export default function PrintTable({
             <tr key={`${trx._id}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td className="border px-2 py-1">{trx.no_transaksi}</td>
               <td className="border px-2 py-1">
-                {new Date(trx.createdAt).toLocaleDateString("id-ID")}
+                {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")} {/* Change date source here */}
               </td>
               <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
               <td className="border px-2 py-1">

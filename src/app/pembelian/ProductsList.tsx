@@ -53,6 +53,10 @@ export default function ProductsList({
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showRemoveSatuan, setShowRemoveSatuan] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState<any>(null);
 
   // Modal states
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
@@ -74,25 +78,72 @@ export default function ProductsList({
   };
 
   // -------------------------------------------------------------------
-  // Fetch data produk
+  // Fetch data produk dengan pagination
   // -------------------------------------------------------------------
-  async function loadProducts() {
+  async function loadProducts(pageNum = 1, search = "") {
     try {
-      const data = await fetchProducts();
-      setProducts(data.data);
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        limit: "10",
+      });
+      
+      if (search) {
+        params.append("search", search);
+      }
+      
+      const response = await fetchProducts(params);
+      
+      if (pageNum === 1) {
+        setProducts(response.data || []);
+      } else {
+        setProducts(prev => [...prev, ...(response.data || [])]);
+      }
+      
+      setPagination(response.pagination);
+      setHasMore(response.pagination?.page < response.pagination?.totalPages);
+      setLoading(false);
     } catch (error) {
       toast.error("Gagal memuat produk");
       console.error(error);
+      setLoading(false);
     }
   }
+
+  // Initial load
   useEffect(() => {
-    loadProducts();
-  }, []);
+    setPage(1);
+    loadProducts(1, searchTerm);
+  }, [refreshKey]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      loadProducts(1, searchTerm);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Infinite scroll handler
+  const handleScroll = () => {
+    if (loading || !hasMore) return;
+    
+    const scrollTop = document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight;
+    const clientHeight = document.documentElement.clientHeight;
+    
+    if (scrollTop + clientHeight >= scrollHeight - 200) {
+      setPage(prev => prev + 1);
+      loadProducts(page + 1, searchTerm);
+    }
+  };
 
   useEffect(() => {
-    loadProducts();
-    console.log("refreshKey:", refreshKey);
-  }, [refreshKey]);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore, page, searchTerm]);
 
   // -------------------------------------------------------------------
   // Fungsi untuk mengupdate konversi dan menghitung harga jual otomatis
@@ -434,8 +485,8 @@ export default function ProductsList({
       <div
         className={
           viewMode === "grid"
-            ? "grid grid-cols-2 gap-4 overflow-y-auto md:grid-cols-3 lg:grid-cols-4"
-            : "flex h-fit max-h-[65vh] flex-col space-y-3 overflow-y-auto"
+            ? "grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4"
+            : "flex flex-col space-y-3"
         }
       >
         {filteredProducts.length > 0 ? (
@@ -499,6 +550,15 @@ export default function ProductsList({
           <p className="text-center text-gray-500 dark:text-gray-400">
             Produk tidak ditemukan
           </p>
+        )}
+        
+        {/* Loading indicator */}
+        {loading && (
+          <div className={viewMode === "grid" ? "col-span-full" : ""}>
+            <div className="flex justify-center py-4">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-tosca border-r-transparent"></div>
+            </div>
+          </div>
         )}
       </div>
 
