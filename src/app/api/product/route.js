@@ -107,6 +107,7 @@ export const GET = withAuth(async (req) => {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
+    const categories = searchParams.get("categories") || "";
     
     // Calculate skip value
     const skip = (page - 1) * limit;
@@ -115,6 +116,14 @@ export const GET = withAuth(async (req) => {
     let query = {};
     if (search) {
       query.nama_produk = { $regex: search, $options: 'i' };
+    }
+    
+    // Add category filter if provided
+    if (categories) {
+      const categoryIds = categories.split(',').filter(id => id);
+      if (categoryIds.length > 0) {
+        query.kategori = { $in: categoryIds };
+      }
     }
 
     // Get total count for pagination

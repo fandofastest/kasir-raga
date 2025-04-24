@@ -111,6 +111,12 @@ export default function LaporanTransaksiPage() {
   // muat dropdown
   const loadOptions = useCallback(async () => {
     try {
+      // Create params to fetch all products without pagination
+      const productParams = new URLSearchParams({
+        limit: "1000", // Set a high limit to get all products
+        page: "1"
+      });
+      
       const [
         s1,
         p1,
@@ -122,7 +128,7 @@ export default function LaporanTransaksiPage() {
         fetchSupplier(),
         fetchPelanggan(),
         fetchKategori(),
-        fetchProducts(),
+        fetchProducts(productParams), // Pass params to get all products
         fetchKategoriKonsumen(),
         fetchStaff(),
       ]);

@@ -38,6 +38,11 @@ const ProductList = () => {
         params.append("search", search);
       }
       
+      // Add categories to query params
+      if (categories && categories.length > 0) {
+        params.append("categories", categories.join(','));
+      }
+      
       const res = await fetchProducts(params);
       
       if (pageNum === 1) {

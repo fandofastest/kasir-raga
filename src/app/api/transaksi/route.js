@@ -193,6 +193,25 @@ export const GET = withAuth(async (req) => {
     if (searchParams.has("kasir")) {
       filter.kasir = searchParams.get("kasir");
     }
+    // Add filter for kategori_konsumen
+    if (searchParams.has("kategori_konsumen")) {
+      // First, find all customers in this category
+      const kategoriKonsumenId = searchParams.get("kategori_konsumen");
+      const konsumenInCategory = await Konsumen.find({
+        kategori: kategoriKonsumenId
+      }).select("_id");
+      
+      // Get array of customer IDs
+      const konsumenIds = konsumenInCategory.map(k => k._id);
+      
+      // Filter transactions where pembeli is in the list of customers
+      if (konsumenIds.length > 0) {
+        filter.pembeli = { $in: konsumenIds };
+      } else {
+        // If no customers found in this category, return no results
+        filter.pembeli = null;
+      }
+    }
     if (searchParams.has("minTotal") || searchParams.has("maxTotal")) {
       filter.total_harga = {};
       if (searchParams.has("minTotal")) {
@@ -276,10 +295,68 @@ export const GET = withAuth(async (req) => {
       const productDoc = await Product.findOne({
         nama_produk: { $regex: produkName, $options: "i" },
       });
-      andConditions.push({
-        "produk.productId": productDoc ? productDoc._id : null,
-      });
+      
+      if (productDoc) {
+        // Use the same aggregation approach as with categories
+        const transactions = await Transaksi.aggregate([
+          { $match: filter },
+          {
+            $addFields: {
+              // Filter produk array to only include the specific product
+              filteredProduk: {
+                $filter: {
+                  input: "$produk",
+                  as: "item",
+                  cond: { $eq: ["$$item.productId", productDoc._id] }
+                }
+              }
+            }
+          },
+          {
+            $addFields: {
+              // Calculate new total based on filtered products
+              newTotal: {
+                $reduce: {
+                  input: "$filteredProduk",
+                  initialValue: 0,
+                  in: { 
+                    $add: [
+                      "$$value", 
+                      { $multiply: ["$$this.quantity", "$$this.harga"] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            $match: { "filteredProduk.0": { $exists: true } }
+          },
+          {
+            $addFields: {
+              produk: "$filteredProduk",
+              total_harga: "$newTotal"
+            }
+          }
+        ]).exec();
+
+        // Populate the filtered results
+        await Transaksi.populate(transactions, {
+          path: "kasir supplier pembeli pengantar staff_bongkar produk.productId produk.satuans.satuan"
+        });
+
+        return NextResponse.json({
+          transactions,
+          totalTransactions: transactions.length,
+          sumTotal: transactions.reduce((sum, t) => sum + t.total_harga, 0),
+          status: 200
+        });
+      }
+      
+      // If product not found, add a condition that will return no results
+      andConditions.push({ "produk.productId": null });
     }
+    
     if (searchParams.has("kategori")) {
       const kategoriValue = searchParams.get("kategori");
       const productsInCategory = await Product.find({
