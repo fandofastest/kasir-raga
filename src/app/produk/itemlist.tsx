@@ -18,23 +18,81 @@ const ProductList = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [expandedProducts, setExpandedProducts] = useState<string[]>([]);
+  
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState<any>(null);
 
-  // Fetch data produk
-  useEffect(() => {
-    const getProducts = async () => {
-      try {
-        const res = await fetchProducts();
-        console.log(res.data);
-        setProducts(res.data);
-        setFilteredProducts(res.data);
-      } catch (error) {
-        console.error("Gagal mengambil data produk:", error);
+  // Modified fetch products function
+  const getProducts = async (pageNum = 1, search = "", categories: string[] = []) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        limit: "20",
+      });
+      
+      if (search) {
+        params.append("search", search);
       }
-    };
-    getProducts();
+      
+      const res = await fetchProducts(params);
+      
+      if (pageNum === 1) {
+        setProducts(res.data || []);
+        setFilteredProducts(res.data || []);
+      } else {
+        setProducts(prev => [...prev, ...(res.data || [])]);
+        setFilteredProducts(prev => [...prev, ...(res.data || [])]);
+      }
+      
+      setPagination(res.pagination);
+      setHasMore(res.pagination?.page < res.pagination?.totalPages);
+      setLoading(false);
+    } catch (error) {
+      console.error("Gagal mengambil data produk:", error);
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    setPage(1);
+    getProducts(1, searchQuery, selectedCategories);
   }, []);
 
-  // Fetch data kategori
+  // Handle search and category filter with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      getProducts(1, searchQuery, selectedCategories);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCategories]);
+
+  // Infinite scroll handler
+  const handleScroll = () => {
+    if (loading || !hasMore) return;
+    
+    const scrollTop = document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight;
+    const clientHeight = document.documentElement.clientHeight;
+    
+    if (scrollTop + clientHeight >= scrollHeight - 200) {
+      setPage(prev => prev + 1);
+      getProducts(page + 1, searchQuery, selectedCategories);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore, page, searchQuery, selectedCategories]);
+
+  // Add loading indicator at the bottom of both desktop and mobile views
   useEffect(() => {
     const getCategories = async () => {
       try {
