@@ -317,7 +317,7 @@ const TransactionDetailDialog = ({
                
                 Tutup
               </button>
-              {isSuperAdmin && onDelete && (
+              {isSuperAdmin && onDelete && transaction.status_transaksi === "batal" && (
                 <button
                   type="button"
                   onClick={() => {

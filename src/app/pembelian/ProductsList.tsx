@@ -248,25 +248,37 @@ export default function ProductsList({
     setActiveProduct(product);
     setPurchasePrice((product.harga_modal || 0).toString());
     setQuantity("1");
-
+    
     if (product.satuans && product.satuans.length > 0) {
-      const newEditSatuans: EditSatuan[] = product.satuans.map((s) => {
-        const costSatuan = (product.harga_modal || 0) * s.konversi;
-        const defaultHJ = s.harga;
-        let profitPercent = 0;
-        if (costSatuan > 0) {
-          profitPercent = ((defaultHJ - costSatuan) / costSatuan) * 100;
-        }
-        return {
-          _id: s._id,
-          satuanId: s.satuan._id,
-          konversi: s.konversi,
-          hargaJual: defaultHJ,
-          profitPercent: +profitPercent.toFixed(2),
-          error: "", // inisialisasi error kosong
-        };
-      });
-      setEditSatuans(newEditSatuans);
+      const newEditSatuans: EditSatuan[] = product.satuans
+        .filter(s => s.satuan && s.satuan._id) // Filter out items with null satuan._id
+        .map((s) => {
+          const costSatuan = (product.harga_modal || 0) * s.konversi;
+          const defaultHJ = s.harga;
+          let profitPercent = 0;
+          if (costSatuan > 0) {
+            profitPercent = ((defaultHJ - costSatuan) / costSatuan) * 100;
+          }
+
+          return {
+            _id: s._id,
+            satuanId: s.satuan._id,
+            konversi: s.konversi,
+            hargaJual: defaultHJ,
+            profitPercent: +profitPercent.toFixed(2),
+            error: "", // inisialisasi error kosong
+          };
+        });
+      setEditSatuans(newEditSatuans.length > 0 ? newEditSatuans : [
+        {
+          _id: generateUUID(),
+          satuanId: "",
+          konversi: 1,
+          hargaJual: Number(product.harga_modal),
+          profitPercent: 0,
+          error: "",
+        },
+      ]);
     } else {
       // Jika produk tidak memiliki data satuan, inisialisasi dengan satu baris default
       setEditSatuans([

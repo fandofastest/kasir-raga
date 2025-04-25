@@ -200,10 +200,10 @@ export const GET = withAuth(async (req) => {
       const konsumenInCategory = await Konsumen.find({
         kategori: kategoriKonsumenId
       }).select("_id");
-      
+
       // Get array of customer IDs
       const konsumenIds = konsumenInCategory.map(k => k._id);
-      
+
       // Filter transactions where pembeli is in the list of customers
       if (konsumenIds.length > 0) {
         filter.pembeli = { $in: konsumenIds };
@@ -295,7 +295,7 @@ export const GET = withAuth(async (req) => {
       const productDoc = await Product.findOne({
         nama_produk: { $regex: produkName, $options: "i" },
       });
-      
+
       if (productDoc) {
         // Use the same aggregation approach as with categories
         const transactions = await Transaksi.aggregate([
@@ -319,9 +319,9 @@ export const GET = withAuth(async (req) => {
                 $reduce: {
                   input: "$filteredProduk",
                   initialValue: 0,
-                  in: { 
+                  in: {
                     $add: [
-                      "$$value", 
+                      "$$value",
                       { $multiply: ["$$this.quantity", "$$this.harga"] }
                     ]
                   }
@@ -352,18 +352,18 @@ export const GET = withAuth(async (req) => {
           status: 200
         });
       }
-      
+
       // If product not found, add a condition that will return no results
       andConditions.push({ "produk.productId": null });
     }
-    
+
     if (searchParams.has("kategori")) {
       const kategoriValue = searchParams.get("kategori");
       const productsInCategory = await Product.find({
         kategori: kategoriValue,
       }).select("_id");
       const productIdsInCategory = productsInCategory.map((p) => p._id);
-      
+
       // Add pipeline stage to filter products and recalculate total
       const transactions = await Transaksi.aggregate([
         { $match: filter },
@@ -386,9 +386,9 @@ export const GET = withAuth(async (req) => {
               $reduce: {
                 input: "$filteredProduk",
                 initialValue: 0,
-                in: { 
+                in: {
                   $add: [
-                    "$$value", 
+                    "$$value",
                     { $multiply: ["$$this.quantity", "$$this.harga"] }
                   ]
                 }
@@ -524,8 +524,8 @@ export const PUT = withAuth(async (req) => {
           const productId = detail.productId._id.toString();
           const conversion =
             detail.satuans &&
-            Array.isArray(detail.satuans) &&
-            detail.satuans[0]?.konversi
+              Array.isArray(detail.satuans) &&
+              detail.satuans[0]?.konversi
               ? detail.satuans[0].konversi
               : 1;
           const oldDeduction = detail.quantity * conversion;
@@ -543,8 +543,8 @@ export const PUT = withAuth(async (req) => {
 
           const conversion =
             detail.satuans &&
-            Array.isArray(detail.satuans) &&
-            detail.satuans[0]?.konversi
+              Array.isArray(detail.satuans) &&
+              detail.satuans[0]?.konversi
               ? detail.satuans[0].konversi
               : 1;
           const newDeduction = detail.quantity * conversion;
@@ -646,8 +646,8 @@ export const PUT = withAuth(async (req) => {
           // jika tidak ada, default 1
           const conversion =
             detail.satuans &&
-            Array.isArray(detail.satuans) &&
-            detail.satuans[0]?.konversi
+              Array.isArray(detail.satuans) &&
+              detail.satuans[0]?.konversi
               ? detail.satuans[0].konversi
               : 1;
 
@@ -657,6 +657,13 @@ export const PUT = withAuth(async (req) => {
           if (transaction.tipe_transaksi === "penjualan") {
             await Product.findByIdAndUpdate(productDoc._id, {
               $inc: { jumlah: adjustment },
+            });
+          }
+          else if (transaction.tipe_transaksi === "pembelian" &&
+            (transaction.status_transaksi === "lunas" ||
+              transaction.metode_pembayaran === "cicilan")) {
+            await Product.findByIdAndUpdate(productDoc._id, {
+              $inc: { jumlah: -adjustment },
             });
           }
         }
@@ -684,8 +691,8 @@ export const PUT = withAuth(async (req) => {
           if (!productDoc) continue;
           const conversion =
             detail.satuans &&
-            Array.isArray(detail.satuans) &&
-            detail.satuans[0]?.konversi
+              Array.isArray(detail.satuans) &&
+              detail.satuans[0]?.konversi
               ? detail.satuans[0].konversi
               : 1;
           const adjustment = detail.quantity * conversion;
@@ -711,7 +718,7 @@ export const PUT = withAuth(async (req) => {
       .exec();
 
 
-      
+
     return NextResponse.json({
       message: "Transaksi berhasil diperbarui",
       data: populatedTransactionFull,
@@ -745,6 +752,17 @@ export const DELETE = withAuth(async (req) => {
       return NextResponse.json(
         { error: "Transaksi tidak ditemukan" },
         { status: 404 },
+      );
+    }
+
+    // Hanya transaksi dengan status "batal" yang dapat dihapus
+    if (transaction.status_transaksi !== "batal") {
+      return NextResponse.json(
+        {
+          error: "Transaksi harus dibatalkan terlebih dahulu sebelum dihapus",
+          status: 400
+        },
+        { status: 400 },
       );
     }
 

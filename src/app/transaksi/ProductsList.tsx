@@ -118,9 +118,16 @@ export default function ProductsList({
 
     // Default satuan => product.satuans[0] jika ada
     if (product.satuans && product.satuans.length > 0) {
-      const defaultSat = product.satuans[0];
-      setSelectedSatuanId(defaultSat.satuan._id);
-      setUnitPrice(defaultSat.harga);
+      // Find first valid satuan with satuan._id
+      const validSatuans = product.satuans.filter(s => s.satuan && s.satuan._id);
+      if (validSatuans.length > 0) {
+        const defaultSat = validSatuans[0];
+        setSelectedSatuanId(defaultSat.satuan._id);
+        setUnitPrice(defaultSat.harga);
+      } else {
+        setSelectedSatuanId("");
+        setUnitPrice(0);
+      }
     } else {
       setSelectedSatuanId("");
       setUnitPrice(0);
@@ -148,6 +155,8 @@ export default function ProductsList({
 
   // Konfirmasi menambahkan item ke cart
   const handleConfirmAdd = () => {
+    console.log(activeProduct);
+    
     if (!activeProduct) return;
 
     const chosenSatuan = activeProduct.satuans.find(
@@ -336,11 +345,13 @@ export default function ProductsList({
                     value={selectedSatuanId}
                     onChange={(e) => handleSelectSatuan(e.target.value)}
                   >
-                    {activeProduct.satuans.map((s) => (
-                      <option key={s._id} value={s.satuan._id}>
-                        {s.satuan.nama} - Rp {s.harga.toLocaleString()}
-                      </option>
-                    ))}
+                    {activeProduct.satuans
+                      .filter(s => s.satuan && s.satuan._id) // Filter out invalid satuans
+                      .map((s) => (
+                        <option key={s._id} value={s.satuan._id}>
+                          {s.satuan.nama} - Rp {s.harga.toLocaleString()}
+                        </option>
+                      ))}
                   </select>
                 </div>
               ) : (
