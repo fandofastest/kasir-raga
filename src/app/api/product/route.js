@@ -102,92 +102,121 @@ export const GET = withAuth(async (req) => {
   try {
     await connectToDatabase();
 
-    // Get pagination parameters from query
+    // Get query parameters
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    // Parse limit, default to 10 if not provided or invalid
-    let limit = parseInt(searchParams.get("limit") || "10"); 
-    const search = searchParams.get("search") || "";
-    const categories = searchParams.get("categories") || "";
-    
-    // Determine if fetching all products
-    const fetchAll = limit < 0; 
-    if (fetchAll) {
-      limit = 0; // Set limit to 0 or some indicator if needed, but we won't use it in the query
-    }
-    
-    // Calculate skip value only if not fetching all
-    const skip = fetchAll ? 0 : (page - 1) * limit;
+    const withPriceParam = searchParams.get("withprice");
+    const fetchWithPrice = withPriceParam === 'true' || withPriceParam === '1'; // Check if we need all products with prices
 
-    // Build search query
-    let query = {};
-    if (search) {
-      query.nama_produk = { $regex: search, $options: 'i' };
-    }
-    
-    // Add category filter if provided
-    if (categories) {
-      const categoryIds = categories.split(',').filter(id => mongoose.Types.ObjectId.isValid(id)); // Ensure valid IDs
-      if (categoryIds.length > 0) {
-        query.kategori = { $in: categoryIds.map(id => new mongoose.Types.ObjectId(id)) }; // Convert to ObjectId
-      }
-    }
+    let products;
+    let paginationInfo;
 
-    // Get total count for pagination (always needed)
-    const total = await Product.countDocuments(query);
+    if (fetchWithPrice) {
+      // --- Fetch ALL products with populated units and prices ---
+      products = await Product.find({}) // Find all products
+        .populate("satuans.satuan kategori brand") // Populate necessary fields
+        .lean(); // Use lean for performance
 
-    // Get products: apply pagination or fetch all
-    let productsQuery = Product.find(query)
-      .populate("satuans.satuan kategori brand"); // Populate common fields
+      // Handle supplier population (still useful even when fetching all)
+      const supplierIds = products.map((p) => p.supplier).filter((id) => !!id && mongoose.Types.ObjectId.isValid(id));
+      const uniqueSupplierIds = [...new Set(supplierIds)];
+      // No need to filter for valid IDs again if already done in map/filter
+      // const validSupplierIds = uniqueSupplierIds.filter((id) => mongoose.Types.ObjectId.isValid(id)); 
 
-    if (!fetchAll) {
-      productsQuery = productsQuery.skip(skip).limit(limit);
-    }
+      const suppliers = await Supplier.find({
+        _id: { $in: uniqueSupplierIds },
+      }).lean();
 
-    const products = await productsQuery.lean(); // Execute the query
+      const supplierMap = {};
+      suppliers.forEach((s) => {
+        supplierMap[s._id.toString()] = s;
+      });
 
-    // Handle supplier population (remains the same logic)
-    const supplierIds = products.map((p) => p.supplier).filter((id) => !!id);
-    const uniqueSupplierIds = [...new Set(supplierIds)];
-    const validSupplierIds = uniqueSupplierIds.filter((id) =>
-      mongoose.Types.ObjectId.isValid(id)
-    );
-
-    const suppliers = await Supplier.find({
-      _id: { $in: validSupplierIds },
-    }).lean();
-
-    const supplierMap = {};
-    suppliers.forEach((s) => {
-      supplierMap[s._id.toString()] = s;
-    });
-
-    products.forEach((p) => {
-      if (p.supplier && mongoose.Types.ObjectId.isValid(p.supplier)) {
-        const supDoc = supplierMap[p.supplier.toString()]; // Ensure comparison with string ID
-        if (supDoc) {
-          p.supplier = supDoc;
+      products.forEach((p) => {
+        if (p.supplier && mongoose.Types.ObjectId.isValid(p.supplier)) {
+          const supDoc = supplierMap[p.supplier.toString()];
+          p.supplier = supDoc ? supDoc : null; // Assign populated supplier or null
         } else {
-           p.supplier = null; // Or handle missing supplier appropriately
+          p.supplier = null;
         }
-      } else {
-         p.supplier = null; // Handle invalid or missing supplier ID
+      });
+
+      // Set pagination info to indicate all data is returned
+      const total = products.length;
+      paginationInfo = { total, page: 1, limit: total, totalPages: 1 };
+
+    } else {
+      // --- Original logic for PAGINATED/FILTERED products ---
+      const page = parseInt(searchParams.get("page") || "1");
+      let limit = parseInt(searchParams.get("limit") || "10");
+      const search = searchParams.get("search") || "";
+      const categories = searchParams.get("categories") || "";
+
+      const fetchAllPaginated = limit < 0; // Check for the existing 'fetch all' logic within pagination
+      if (fetchAllPaginated) {
+        limit = 0; 
       }
-    });
+      const skip = fetchAllPaginated ? 0 : (page - 1) * limit;
 
-    // Adjust pagination info if fetching all
-    const paginationInfo = fetchAll 
-      ? { total, page: 1, limit: total, totalPages: 1 } 
-      : { total, page, limit, totalPages: Math.ceil(total / limit) };
+      let query = {};
+      if (search) {
+        query.nama_produk = { $regex: search, $options: 'i' };
+      }
+      if (categories) {
+        const categoryIds = categories.split(',').filter(id => mongoose.Types.ObjectId.isValid(id));
+        if (categoryIds.length > 0) {
+          query.kategori = { $in: categoryIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+      }
 
+      const total = await Product.countDocuments(query);
+
+      let productsQuery = Product.find(query)
+        .populate("satuans.satuan kategori brand");
+
+      if (!fetchAllPaginated) {
+        productsQuery = productsQuery.skip(skip).limit(limit);
+      }
+
+      products = await productsQuery.lean();
+
+      // Handle supplier population (same logic as before)
+      const supplierIds = products.map((p) => p.supplier).filter((id) => !!id && mongoose.Types.ObjectId.isValid(id));
+      const uniqueSupplierIds = [...new Set(supplierIds)];
+      // const validSupplierIds = uniqueSupplierIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+      const suppliers = await Supplier.find({
+        _id: { $in: uniqueSupplierIds },
+      }).lean();
+
+      const supplierMap = {};
+      suppliers.forEach((s) => {
+        supplierMap[s._id.toString()] = s;
+      });
+
+      products.forEach((p) => {
+         if (p.supplier && mongoose.Types.ObjectId.isValid(p.supplier)) {
+           const supDoc = supplierMap[p.supplier.toString()];
+           p.supplier = supDoc ? supDoc : null;
+         } else {
+           p.supplier = null;
+         }
+      });
+
+      paginationInfo = fetchAllPaginated
+        ? { total, page: 1, limit: total, totalPages: 1 }
+        : { total, page, limit, totalPages: limit > 0 ? Math.ceil(total / limit) : 1 }; // Handle limit=0 case for totalPages
+    }
+
+    // --- Return Response ---
     return NextResponse.json({
       data: products,
       pagination: paginationInfo
     });
+
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", details: error.message }, // Include error details
+      { error: "Internal Server Error", details: error.message },
       { status: 500 }
     );
   }

@@ -154,64 +154,105 @@ const ProductList = () => {
     );
   };
 
-  // Function to handle Excel export - fetches all matching data
+  // Function to handle Excel export - fetches all matching data with prices
   const handleExportExcel = async () => {
     setIsExporting(true); // Start loading state
     try {
-      // Prepare parameters to fetch ALL matching products
+      // Prepare parameters to fetch ALL products with detailed prices
       const params = new URLSearchParams({
-        limit: "-1", // Use a special limit or parameter to indicate fetching all
+        withprice: "true", // Use the parameter to fetch all products with detailed prices
       });
+      // Keep existing filters if needed (optional, depends on desired behavior)
+      // If you want the export to respect search/category filters AND get all prices:
       if (searchQuery) {
-        params.append("search", searchQuery);
+         params.append("search", searchQuery); // Note: API needs to support search/category with withprice=true
       }
       if (selectedCategories && selectedCategories.length > 0) {
-        params.append("categories", selectedCategories.join(','));
+         params.append("categories", selectedCategories.join(',')); // Note: API needs to support search/category with withprice=true
       }
+      // If withprice=true should *always* ignore filters, remove the two 'if' blocks above.
 
-      // Fetch all products matching the criteria
-      const res = await fetchProducts(params);
+      // Fetch all products matching the criteria with price details
+      const res = await fetchProducts(params); // Call fetchProducts with the new params
       const allMatchingProducts = res.data || [];
 
       if (allMatchingProducts.length === 0) {
-         alert("Tidak ada data produk yang cocok untuk diekspor."); // Or use a toast notification
+         alert("Tidak ada data produk yang cocok untuk diekspor.");
          setIsExporting(false);
          return;
       }
 
-      // Prepare data for Excel sheet
-      const dataToExport = allMatchingProducts.map((product: Product) => ({ // Add explicit type : Product
-        "Nama Barang": product.nama_produk ?? "N/A",
-        "Kategori": product.kategori?.nama ?? "N/A",
-        "Harga Modal": product.harga_modal ?? 0,
-        "Stok": product.jumlah ?? 0,
-        "Supplier": product.supplier?.nama ?? "N/A",
-        // Add more fields as needed
-      }));
+      // --- Prepare data for Excel sheet with dynamic unit price columns ---
 
-      // Create worksheet
+      // 1. Identify all unique unit names across all products
+      const uniqueUnitNames = new Set<string>();
+      allMatchingProducts.forEach((product: Product) => { // Add explicit type : Product
+        product.satuans?.forEach(satuanDetail => {
+          if (satuanDetail.satuan?.nama) {
+            uniqueUnitNames.add(satuanDetail.satuan.nama);
+          }
+        });
+      });
+      const sortedUnitNames = Array.from(uniqueUnitNames).sort(); // Sort for consistent column order
+
+      // 2. Prepare data rows
+      const dataToExport = allMatchingProducts.map((product: Product) => { // Also ensure type here if not already present
+        const rowData: { [key: string]: any } = { // Use index signature for dynamic keys
+          "Nama Barang": product.nama_produk ?? "N/A",
+          "Kategori": product.kategori?.nama ?? "N/A",
+          "Harga Modal": product.harga_modal ?? 0,
+          "Stok": product.jumlah ?? 0, // Assuming 'jumlah' is the base unit stock
+          "Supplier": product.supplier?.nama ?? "N/A",
+          // Add other base fields if needed (e.g., SKU, Brand)
+          "SKU": product.sku ?? "N/A",
+          "Brand": product.brand?.nama ?? "N/A",
+        };
+
+        // Add dynamic columns for each unit's selling price
+        sortedUnitNames.forEach(unitName => {
+          const priceColumnName = `Harga Jual (${unitName})`;
+          const satuanInfo = product.satuans?.find(s => s.satuan?.nama === unitName);
+          rowData[priceColumnName] = satuanInfo?.harga ?? null; // Use null or 0 if price not found for this unit
+        });
+
+        return rowData;
+      });
+
+      // 3. Create worksheet
       const worksheet = XLSX.utils.json_to_sheet(dataToExport);
 
-      // Create workbook
+      // 4. Create workbook
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Produk");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Produk Detail Harga"); // Changed sheet name
 
-      // Format Harga Modal column (optional)
+      // 5. Format currency columns (Harga Modal and dynamic Harga Jual columns)
+      const header = Object.keys(dataToExport[0] || {}); // Get headers from the first row
+      const currencyColumns: number[] = [];
+      header.forEach((colName, index) => {
+        if (colName === "Harga Modal" || colName.startsWith("Harga Jual (")) {
+          currencyColumns.push(index);
+        }
+      });
+
       const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-          const cell_address = XLSX.utils.encode_cell({c: 2, r: R}); // Column C
-          if(worksheet[cell_address]) {
-              worksheet[cell_address].t = 'n';
-              worksheet[cell_address].z = '#,##0';
+      for (let R = range.s.r + 1; R <= range.e.r; ++R) { // Start from row 1 (data)
+        currencyColumns.forEach(C => { // Iterate through identified currency column indices
+          const cell_address = XLSX.utils.encode_cell({c: C, r: R});
+          if(worksheet[cell_address] && typeof worksheet[cell_address].v === 'number') { // Check if cell exists and value is number
+              worksheet[cell_address].t = 'n'; // Set type to number
+              worksheet[cell_address].z = '#,##0'; // Set number format (Indonesian Rupiah style without symbol)
+              // Or use 'Rp#,##0' if you want the currency symbol
           }
+        });
       }
 
-      // Trigger download
-      XLSX.writeFile(workbook, `Daftar_Produk_${searchQuery ? searchQuery + '_' : ''}${selectedCategories.length > 0 ? 'filtered_' : ''}${new Date().toISOString().split('T')[0]}.xlsx`);
+      // 6. Trigger download
+      const filename = `Daftar_Produk_Detail_Harga_${new Date().toISOString().split('T')[0]}.xlsx`; // Simplified filename
+      XLSX.writeFile(workbook, filename);
 
     } catch (error) {
       console.error("Gagal mengekspor data produk:", error);
-      alert("Terjadi kesalahan saat mengekspor data."); // Or use a toast notification
+      alert("Terjadi kesalahan saat mengekspor data.");
     } finally {
       setIsExporting(false); // End loading state
     }
