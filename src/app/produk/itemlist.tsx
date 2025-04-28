@@ -281,7 +281,7 @@ const ProductList = () => {
             }`}
             disabled={isExporting} // Disable while exporting
           >
-            {isExporting ? 'Mengekspor...' : 'Export Excels'}
+            {isExporting ? 'Mengekspor...' : 'Export Excel'}
           </button>
           <button
             onClick={() => handleOpenModal()}
