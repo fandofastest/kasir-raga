@@ -245,7 +245,7 @@ const ProductList = () => {
               );
             }}
             // Use classNames prop for Tailwind styling
-            classNames={{
+            classNames={{  
               control: (state) => `
                 mt-1 border border-stroke dark:border-strokedark rounded-md shadow-sm 
                 bg-white dark:bg-form-input 
