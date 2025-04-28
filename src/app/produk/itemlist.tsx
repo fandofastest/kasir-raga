@@ -194,7 +194,7 @@ const ProductList = () => {
         });
       });
       const sortedUnitNames = Array.from(uniqueUnitNames).sort(); // Sort for consistent column order
-
+  
       // 2. Prepare data rows
       const dataToExport = allMatchingProducts.map((product: Product) => { // Also ensure type here if not already present
         const rowData: { [key: string]: any } = { // Use index signature for dynamic keys
