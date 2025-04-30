@@ -9,6 +9,7 @@ import {
   fetchStaff,
   fetchPelanggan,
   updateDataTransaction,
+  deleteTransaction,
 } from "@/lib/dataService";
 import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
@@ -86,7 +87,16 @@ export default function TransactionHistoryPage({
     updateDataTransaction(updatedTransaction._id, updatedTransaction);
     loadData();
   };
-
+  const handledeletedialog = async ( transactionId :any ) => {
+    try {
+      await deleteTransaction(transactionId);
+      toast.success("Transaksi berhasil dihapus");
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    
+  }
   const loadOptions = async () => {
     try {
       const supplierRes = await fetchSupplier();
@@ -621,6 +631,7 @@ export default function TransactionHistoryPage({
 
         {selectedTransaction && (
           <TransactionDetailDialog
+          onDelete={handledeletedialog}
             transaction={selectedTransaction}
             staffOptions={staffOptions}
             onClose={() => setSelectedTransaction(null)}
