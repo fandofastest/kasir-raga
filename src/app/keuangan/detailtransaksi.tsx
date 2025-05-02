@@ -112,7 +112,7 @@ const TransactionDetailDialog = ({
                   Tanggal:
                 </p>
                 <p className="text-gray-900 dark:text-gray-100">
-                  {new Date(transaction.createdAt).toLocaleDateString("id-ID", {
+                  {new Date(transaction.tanggal_transaksi).toLocaleDateString("id-ID", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
