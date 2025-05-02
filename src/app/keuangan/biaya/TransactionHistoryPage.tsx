@@ -14,7 +14,7 @@ import {
 import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import TransactionDetailDialog from "../detailtransaksi";
-
+  
 interface TransactionHistoryPageProps {
   tipeTransaksi?: string;
 }
