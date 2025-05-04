@@ -65,8 +65,22 @@ export default function MobileAccordion({
               ) : (
                 /* Ringkasan transaksi keseluruhan */
                 <>
-                  {isPenjualan && <p><b>Modal:</b> {formatRupiah(getModal(trx))}</p>}
-                  <p><b>Total:</b> {formatRupiah(trx.total_harga)}</p>
+                  <p>
+                    <span className="font-medium">Total: </span>
+                    {formatRupiah(trx.total_harga)}
+                  </p>
+                  {isPenjualan && (
+                    <p>
+                      <span className="font-medium">Ongkir: </span>
+                      {formatRupiah(trx.ongkir)}
+                    </p>
+                  )}
+                  {isPenjualan && (
+                    <p>
+                      <span className="font-medium">Modal: </span>
+                      {formatRupiah(getModal(trx))}
+                    </p>
+                  )}
                   {isPenjualan && <p><b>Laba:</b> {formatRupiah(getLaba(trx))}</p>}
                 </>
               )}

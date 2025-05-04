@@ -81,6 +81,9 @@ export default function DesktopTable({
                   Total {sortColumn === "total_harga" && (sortDirection === "asc" ? "▲" : "▼")}
                 </th>
                 {isPenjualan && (
+                  <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("ongkir")}>Ongkir {sortColumn === "ongkir" && (sortDirection === "asc" ? "▲" : "▼")}</th>
+                )}
+                {isPenjualan && (
                   <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("laba")}>Laba {sortColumn === "laba" && (sortDirection === "asc" ? "▲" : "▼")}</th>
                 )}
               </>
@@ -115,7 +118,7 @@ export default function DesktopTable({
             return (
               <tr key={trx._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="border px-2 py-1">{trx.no_transaksi}</td>
-                <td className="border px-2 py-1">{new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}</td> {/* This already uses tanggal_transaksi */}
+                <td className="border px-2 py-1">{new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}</td>
                 <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
                 <td className="border px-2 py-1">{isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}</td>
                 {produkFilter && <td className="border px-2 py-1">-</td>}
@@ -123,6 +126,9 @@ export default function DesktopTable({
                   <td className="border px-2 py-1 text-right">{formatRupiah(getModal(trx))}</td>
                 )}
                 <td className="border px-2 py-1 text-right">{formatRupiah(trx.total_harga)}</td>
+                {isPenjualan && (
+                  <td className="border px-2 py-1 text-right">{formatRupiah(trx.ongkir)}</td>
+                )}
                 {isPenjualan && (
                   <td className="border px-2 py-1 text-right">{formatRupiah(getLaba(trx))}</td>
                 )}

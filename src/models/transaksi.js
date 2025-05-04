@@ -77,6 +77,10 @@ const transactionSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    ongkir: { // Add the ongkir field here
+      type: Number,
+      default: 0,
+    },
     metode_pembayaran: {
       type: String,
       enum: ["tunai", "edc", "bank_transfer", "cicilan", "hutang"],

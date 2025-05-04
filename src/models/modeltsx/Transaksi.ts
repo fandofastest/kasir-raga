@@ -36,6 +36,8 @@ interface Transaksi {
     paid: boolean;
     paymentDate?: Date;
   }[];
+  ongkir: number;
+  updatedAt: string;
 }
 
 export default Transaksi;

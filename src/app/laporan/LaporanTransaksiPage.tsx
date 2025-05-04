@@ -266,6 +266,7 @@ export default function LaporanTransaksiPage() {
             Pelanggan: trx.pembeli?.nama ?? "-",
             Modal: getModal(trx),
             Total: trx.total_harga,
+            Ongkir: trx.ongkir,
             Laba: getLaba(trx),
             Operator: typeof trx.kasir === "object" ? trx.kasir?.name : trx.kasir,
           }
@@ -283,6 +284,7 @@ export default function LaporanTransaksiPage() {
           ["Jumlah Transaksi", sortedTransactions.length],
           ["Total Penjualan", totalValue],
           ["Total Modal", totalModal],
+          ["Total Ongkir", sortedTransactions.reduce((s, t) => s + t.ongkir, 0)],
           ["Total Laba", totalLaba],
         ]
       : [

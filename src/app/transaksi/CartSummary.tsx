@@ -58,6 +58,7 @@ function CartSummary({
   );
   const [paymentMethod, setPaymentMethod] = useState<string>("tunai");
   const [keterangan, setKeterangan] = useState<string>("");
+  const [ongkir, setOngkir] = useState<string>("0");
 
   // Diskon
   const [enableDiscount, setEnableDiscount] = useState<boolean>(false);
@@ -143,6 +144,7 @@ function CartSummary({
     setUnitPelunasan("hari");
     setSelectedDelivery("");
     setSelectedUnloading("");
+    setOngkir("0");
   };
 
   // Load Supplier & Pelanggan
@@ -327,6 +329,7 @@ function CartSummary({
       pengantar: selectedDelivery || null,
       staff_bongkar: selectedUnloading || null,
       total_harga: totalHarga,
+      ongkir: Number(ongkir) || 0,
       metode_pembayaran:
         paymentMethod === "cicilan" ? "cicilan" : paymentMethod,
       status_transaksi: paymentMethod === "cicilan" ? "belum_lunas" : "lunas",
@@ -394,6 +397,7 @@ function CartSummary({
       pengantar: selectedDelivery || null,
       staff_bongkar: selectedUnloading || null,
       total_harga: totalHarga,
+      ongkir: Number(ongkir) || 0,
       metode_pembayaran: paymentMethod,
       status_transaksi: "tunda", // draft
       tipe_transaksi: "penjualan",
@@ -658,6 +662,44 @@ function CartSummary({
           </div>
         )}
 
+        <div>
+          <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
+            Diskon
+          </h3>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={enableDiscount}
+              onChange={() => setEnableDiscount(!enableDiscount)}
+              className="h-4 w-4"
+            />
+            {enableDiscount && (
+              <input
+                type="number"
+                min={0}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                placeholder="Masukkan diskon"
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+              />
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
+            Ongkir
+          </h3>
+          <input
+            type="number"
+            min={0}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="Masukkan ongkir"
+            value={ongkir}
+            onChange={(e) => setOngkir(e.target.value)}
+          />
+        </div>
+
         <button
           className="bg-tosca hover:bg-toscadarkdark mt-3 w-full rounded-md py-2 text-white"
           disabled={!selectedCustomer || cartItems.length === 0}
@@ -915,55 +957,19 @@ function CartSummary({
                 )}
               </div>
             </div>
-            {paymentMethod === "cicilan" && (
-              <div className="mt-2">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Down Payment (DP)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                      placeholder="Masukkan DP"
-                      value={dp}
-                      onChange={(e) => setDp(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Durasi Pelunasan
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                      placeholder="Masukkan durasi"
-                      value={durasiPelunasan}
-                      onChange={(e) =>
-                        setDurasiPelunasan(Number(e.target.value))
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Unit Pelunasan
-                  </label>
-                  <select
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    value={unitPelunasan}
-                    onChange={(e) =>
-                      setUnitPelunasan(e.target.value as "hari" | "bulan")
-                    }
-                  >
-                    <option value="hari">Hari</option>
-                    <option value="bulan">Bulan</option>
-                  </select>
-                </div>
-              </div>
-            )}
+            <div>
+              <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
+                Ongkir
+              </h3>
+              <input
+                type="number"
+                min={0}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                placeholder="Masukkan ongkir"
+                value={ongkir}
+                onChange={(e) => setOngkir(e.target.value)}
+              />
+            </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 className="hover:bg-toscadark bg-tosca w-full rounded-md py-2 text-white"

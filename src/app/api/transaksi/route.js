@@ -59,7 +59,10 @@ export const POST = withAuth(async (req) => {
     }
 
     // Buat transaksi baru
-    const newTransaction = new Transaksi(data);
+    const newTransaction = new Transaksi({
+      ...data,
+      ongkir: data.ongkir || 0, // Set default ongkir to 0 if not provided
+    });
     await newTransaction.save();
 
     // Update stok produk berdasarkan tipe transaksi
@@ -497,6 +500,10 @@ export const PUT = withAuth(async (req) => {
     }
     if (!updateData.staff_bongkar || updateData.staff_bongkar === "") {
       updateData.staff_bongkar = null;
+    }
+    // Normalisasi field ongkir
+    if (updateData.ongkir === undefined || updateData.ongkir === null) {
+      updateData.ongkir = 0;
     }
 
     // Cari transaksi lama

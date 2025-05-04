@@ -546,6 +546,12 @@ export default function TransactionHistoryPage({
                       Total
                     </th>
                     <th
+                      className="cursor-pointer border px-4 py-2 text-right text-sm font-medium text-gray-600 dark:text-gray-200"
+                      onClick={() => handleSort("ongkir")}
+                    >
+                      Ongkir
+                    </th>
+                    <th
                       className="cursor-pointer border px-4 py-2 font-medium text-gray-600 dark:text-gray-200"
                       onClick={() => handleSort("tanggal_transaksi")}
                     >
@@ -608,6 +614,13 @@ export default function TransactionHistoryPage({
                       </td>
                       <td className="border px-4 py-2 text-right text-sm text-gray-700 dark:text-white">
                         {trx.total_harga.toLocaleString("id-ID", {
+                          style: "currency",
+                          currency: "IDR",
+                          minimumFractionDigits: 0,
+                        })}
+                      </td>
+                      <td className="border px-4 py-2 text-right text-sm text-gray-700 dark:text-white">
+                        {trx.ongkir.toLocaleString("id-ID", {
                           style: "currency",
                           currency: "IDR",
                           minimumFractionDigits: 0,
@@ -706,6 +719,14 @@ export default function TransactionHistoryPage({
                       <p>
                         <span className="font-medium">Total: </span>
                         {trx.total_harga.toLocaleString("id-ID", {
+                          style: "currency",
+                          currency: "IDR",
+                          minimumFractionDigits: 0,
+                        })}
+                      </p>
+                      <p>
+                        <span className="font-medium">Ongkir: </span>
+                        {trx.ongkir.toLocaleString("id-ID", {
                           style: "currency",
                           currency: "IDR",
                           minimumFractionDigits: 0,
