@@ -114,7 +114,8 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
   // Diskon transaksi dan contoh PPN
   const diskon = transaksi.diskon || 0;
   const ppn = 0;
-  const grandTotal = subTotal - diskon + ppn;
+  const ongkir = transaksi.ongkir || 0;
+  const grandTotal = subTotal - diskon + ppn + ongkir;
 
   // Judul faktur
   const judulFaktur =
@@ -295,6 +296,12 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
             <span>PPN</span>
             <span>
               Rp{printMode === "armada" ? "****" : ppn.toLocaleString("id-ID")}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Ongkir</span>
+            <span>
+              Rp{printMode === "armada" ? "****" : ongkir.toLocaleString("id-ID")}
             </span>
           </div>
           {transaksi.metode_pembayaran === "cicilan" && (
