@@ -12,6 +12,7 @@ import Transaksi from "@/models/modeltsx/Transaksi";
 import PaymentHistoryDialog from "./PaymentHistoryDialog";
 import ActionDropdown from "./ActionDropdown";
 import Select from "react-select";
+import { formatDateWithTimezone } from "@/lib/timezone";
 
 // Interface untuk transaksi piutang
 export interface PiutangTransaction extends Transaksi {
@@ -155,13 +156,7 @@ export default function PiutangPage() {
 
   // Format tampilan jatuh tempo
   const nextDueDate = (trx: PiutangTransaction) => {
-    const dateObj = getNextDueDateAsDate(trx);
-    return dateObj.toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    return formatDateWithTimezone(getNextDueDateAsDate(trx), "EEEE, d MMMM yyyy");
   };
 
   // Modal: Buka untuk bayar cicilan
@@ -583,11 +578,7 @@ export default function PiutangPage() {
                   <td className="border px-4 py-2">{idx + 1}</td>
                   <td className="border px-4 py-2">{trx.no_transaksi}</td>
                   <td className="border px-4 py-2">
-                    {new Date(trx.createdAt).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {formatDateWithTimezone(trx.createdAt, "d MMMM yyyy")}
                   </td>
                   <td className="border px-4 py-2">
                     {trx.tipe_transaksi === "penjualan"
@@ -664,11 +655,7 @@ export default function PiutangPage() {
                   <div>
                     <p className="font-medium">{trx.no_transaksi}</p>
                     <p className="text-sm">
-                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      {formatDateWithTimezone(trx.createdAt, "d MMMM yyyy")}
                     </p>
                   </div>
                   <button

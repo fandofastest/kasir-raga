@@ -1,6 +1,7 @@
 "use client";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import { formatRupiah } from "@/components/tools";
+import DateDisplay from "@/components/DateDisplay";
 
 interface Props {
   data: Transaksi[];
@@ -65,7 +66,7 @@ export default function PrintTable({
             <tr key={`${trx._id}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td className="border px-2 py-1">{trx.no_transaksi}</td>
               <td className="border px-2 py-1">
-                {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")} {/* Change date source here */}
+                <DateDisplay date={trx.tanggal_transaksi} format="dd/MM/yyyy" />
               </td>
               <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
               <td className="border px-2 py-1">

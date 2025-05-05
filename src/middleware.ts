@@ -25,6 +25,9 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 200, headers: response.headers });
   }
 
+  // Set timezone header untuk digunakan di seluruh aplikasi
+  response.headers.set('x-timezone', 'Asia/Jakarta');
+
   return response;
 }
 

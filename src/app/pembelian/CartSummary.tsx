@@ -22,6 +22,7 @@ import {
   // Buat juga fetchDraftTransaction di dataService untuk GET /transaksi/[id]/draft
   fetchDraftTransaction,
 } from "@/lib/dataService";
+import { getCurrentDateWithTimezone, formatDateWithTimezone } from "@/lib/timezone";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -85,7 +86,7 @@ export default function CartSummary({
   const totalPrice = rawTotal - discountValue;
   // Tambahan: State untuk tanggal, default ke hari ini
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = new Date();
+    const today = getCurrentDateWithTimezone();
     return today.toISOString().split("T")[0];
   });
   function getTimestampWithCurrentTime(dateString: string): string {

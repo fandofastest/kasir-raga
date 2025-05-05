@@ -6,6 +6,7 @@ import QRCode from "react-qr-code";
 import { useSession } from "next-auth/react";
 import { getPreferences } from "@/lib/dataService"; // Pastikan fungsi ini sudah diimplementasikan
 import Image from "next/image";
+import DateDisplay from "@/components/DateDisplay";
 
 interface InvoiceProps {
   transaksi: Transaksi;
@@ -179,7 +180,7 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
         <div className="flex-1 text-right">
           <p>
             <strong>Tanggal:</strong>{" "}
-            {new Date(transaksi.tanggal_transaksi).toLocaleDateString("id-ID")}
+            <DateDisplay date={transaksi.tanggal_transaksi} format="dd MMMM yyyy" />
           </p>
           <p>
             <strong>Faktur:</strong> {transaksi.no_transaksi}

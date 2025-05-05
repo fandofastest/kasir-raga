@@ -28,6 +28,8 @@ import CustomersList from "./CustomerList";
 import StaffFormModal from "../staff/StaffForm";
 import MobileSalesModal from "./MobileSalesModal";
 import TransactionSuccessDialog from "../pembelian/TransactionSuccessDialog";
+import { getCurrentDateWithTimezone, formatDateWithTimezone } from "@/lib/timezone";
+import DateDisplay from "@/components/DateDisplay";
 
 // ==== Interface Props ====
 interface CartSummaryProps {
@@ -96,13 +98,13 @@ function CartSummary({
   }, 0);
   const totalHarga = totalPrice - Number(discount) + Number(ongkir);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = new Date();
+    const today = getCurrentDateWithTimezone();
     return today.toISOString().split("T")[0];
   });
   function getTimestampWithCurrentTime(dateString: string): string {
-    const now = new Date();
-    // Ambil bagian jam, menit, detik (format "HH:MM:SS")
-    const timePart = now.toTimeString().split(" ")[0];
+    const date = new Date(dateString);
+    const zonedDate = getCurrentDateWithTimezone();
+    const timePart = formatDateWithTimezone(zonedDate, 'HH:mm:ss');
     return `${dateString}T${timePart}`;
   }
   // =============== USEEFFECTS ===============

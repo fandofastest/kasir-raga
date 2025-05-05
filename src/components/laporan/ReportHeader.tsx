@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { formatRupiah } from "@/components/tools";
+import DateDisplay from "@/components/DateDisplay";
 
 interface Props{
   isPenjualan:boolean;
@@ -28,7 +29,7 @@ export default function ReportHeader({
           </div>
         </div>
         <div className="mt-4 text-right text-sm font-bold sm:mt-0">
-          <p>{new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p>
+          <p><DateDisplay date={new Date()} format="EEEE, d MMMM yyyy" /></p>
           {isPenjualan?(
             <>
               <p>Total Penjualan: {formatRupiah(totalValue)}</p>

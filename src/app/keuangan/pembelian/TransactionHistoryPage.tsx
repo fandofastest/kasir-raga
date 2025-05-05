@@ -15,6 +15,7 @@ import {
 import { Staff } from "@/models/modeltsx/staffTypes";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import TransactionDetailDialog from "../detailtransaksi";
+import { formatDateWithTimezone } from "@/lib/timezone";
 
 interface TransactionHistoryPageProps {
   tipeTransaksi?: string;
@@ -580,15 +581,7 @@ export default function TransactionHistoryPage({
                         })}
                       </td>
                       <td className="border px-4 py-2">
-                        {new Date(trx.tanggal_transaksi).toLocaleDateString(
-                          "id-ID",
-                          {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          },
-                        )}
+                        {formatDateWithTimezone(trx.tanggal_transaksi, "EEEE, d MMMM yyyy")}
                       </td>
                       <td className="border px-4 py-2 text-left text-sm text-gray-700 dark:text-white">
                         {trx.metode_pembayaran}
@@ -679,18 +672,7 @@ export default function TransactionHistoryPage({
                       </p>
                       <p>
                         <span className="font-medium">Tanggal: </span>
-                        {new Date(trx.createdAt)
-                          .toLocaleDateString("id-ID", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
-                          })
-                          .replace("pukul ", "")
-                          .replace(",", "")}
+                        {formatDateWithTimezone(trx.tanggal_transaksi, "EEEE, d MMMM yyyy")}
                       </p>
                       <p>
                         <span className="font-medium">Metode Pembayaran: </span>
