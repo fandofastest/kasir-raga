@@ -615,25 +615,25 @@ function CartSummary({
 
         {/* Cicilan */}
         {paymentMethod === "cicilan" && (
-          <div className="mt-4 pl-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Down Payment (DP)
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  placeholder="Masukkan DP"
-                  value={dp}
-                  onChange={(e) => setDp(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Durasi Pelunasan
-                </label>
+          <div className="mt-4 space-y-4">
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
+                Down Payment (DP)
+              </h3>
+              <input
+                type="number"
+                min={0}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                placeholder="Masukkan DP"
+                value={dp}
+                onChange={(e) => setDp(e.target.value)}
+              />
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
+                Durasi Pelunasan
+              </h3>
+              <div className="flex gap-2">
                 <input
                   type="number"
                   min={1}
@@ -642,22 +642,30 @@ function CartSummary({
                   value={durasiPelunasan}
                   onChange={(e) => setDurasiPelunasan(Number(e.target.value))}
                 />
+                <select
+                  className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  value={unitPelunasan}
+                  onChange={(e) =>
+                    setUnitPelunasan(e.target.value as "hari" | "bulan")
+                  }
+                >
+                  <option value="hari">Hari</option>
+                  <option value="bulan">Bulan</option>
+                </select>
               </div>
             </div>
-            <div className="mt-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Unit Pelunasan
-              </label>
-              <select
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
+                Ongkir
+              </h3>
+              <input
+                type="number"
+                min={0}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={unitPelunasan}
-                onChange={(e) =>
-                  setUnitPelunasan(e.target.value as "hari" | "bulan")
-                }
-              >
-                <option value="hari">Hari</option>
-                <option value="bulan">Bulan</option>
-              </select>
+                placeholder="Masukkan ongkir"
+                value={ongkir}
+                onChange={(e) => setOngkir(e.target.value)}
+              />
             </div>
           </div>
         )}
@@ -957,19 +965,78 @@ function CartSummary({
                 )}
               </div>
             </div>
-            <div>
-              <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
-                Ongkir
-              </h3>
-              <input
-                type="number"
-                min={0}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                placeholder="Masukkan ongkir"
-                value={ongkir}
-                onChange={(e) => setOngkir(e.target.value)}
-              />
-            </div>
+
+            {/* Form Cicilan */}
+            {paymentMethod === "cicilan" ? (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
+                    Down Payment (DP)
+                  </h3>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    placeholder="Masukkan DP"
+                    value={dp}
+                    onChange={(e) => setDp(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
+                    Durasi Pelunasan
+                  </h3>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      placeholder="Masukkan durasi"
+                      value={durasiPelunasan}
+                      onChange={(e) => setDurasiPelunasan(Number(e.target.value))}
+                    />
+                    <select
+                      className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      value={unitPelunasan}
+                      onChange={(e) =>
+                        setUnitPelunasan(e.target.value as "hari" | "bulan")
+                      }
+                    >
+                      <option value="hari">Hari</option>
+                      <option value="bulan">Bulan</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
+                    Ongkir
+                  </h3>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    placeholder="Masukkan ongkir"
+                    value={ongkir}
+                    onChange={(e) => setOngkir(e.target.value)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
+                  Ongkir
+                </h3>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  placeholder="Masukkan ongkir"
+                  value={ongkir}
+                  onChange={(e) => setOngkir(e.target.value)}
+                />
+              </div>
+            )}
+
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 className="hover:bg-toscadark bg-tosca w-full rounded-md py-2 text-white"
