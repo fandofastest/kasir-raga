@@ -11,7 +11,6 @@ import Transaksi from "@/models/modeltsx/Transaksi";
 import PaymentHistoryDialog from "../piutang/PaymentHistoryDialog";
 import ActionDropdown from "@/app/keuangan/piutang/ActionDropdown";
 import Select from "react-select";
-import { getCurrentDateWithTimezone, formatDateWithTimezone } from "@/lib/timezone";
 
 // Interface untuk transaksi hutang
 export interface HutangTransaction extends Transaksi {
@@ -62,11 +61,11 @@ export default function HutangPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   // Tambahan: State untuk tanggal, default ke hari ini
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = getCurrentDateWithTimezone();
+    const today = new Date();
     return today.toISOString().split("T")[0];
   });
   function getTimestampWithCurrentTime(dateString: string): string {
-    const now = getCurrentDateWithTimezone();
+    const now = new Date();
     // Ambil bagian jam, menit, detik (format "HH:MM:SS")
     const timePart = now.toTimeString().split(" ")[0];
     return `${dateString}T${timePart}`;
@@ -131,7 +130,13 @@ export default function HutangPage() {
 
   // Format tampilan jatuh tempo
   const nextDueDate = (trx: HutangTransaction) => {
-    return formatDateWithTimezone(getNextDueDateAsDate(trx), "EEEE, d MMMM yyyy");
+    const dateObj = getNextDueDateAsDate(trx);
+    return dateObj.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   // Modal: Buka untuk bayar cicilan
@@ -507,7 +512,11 @@ export default function HutangPage() {
                   <td className="border px-4 py-2">{idx + 1}</td>
                   <td className="border px-4 py-2">{trx.no_transaksi}</td>
                   <td className="border px-4 py-2">
-                    {formatDateWithTimezone(trx.createdAt, "d MMMM yyyy")}
+                    {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
                   </td>
                   <td className="border px-4 py-2">
                     {trx.supplier?.nama || "N/A"}
@@ -582,7 +591,11 @@ export default function HutangPage() {
                   <div>
                     <p className="font-medium">{trx.no_transaksi}</p>
                     <p className="text-sm">
-                      {formatDateWithTimezone(trx.createdAt, "d MMMM yyyy")}
+                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
                   <button
@@ -675,9 +688,10 @@ export default function HutangPage() {
               </label>
               <input
                 type="date"
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                className="flex-1 rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm
+             dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={e => setSelectedDate(e.target.value)}
               />
             </div>
 

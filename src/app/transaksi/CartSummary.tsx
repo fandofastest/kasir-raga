@@ -28,8 +28,6 @@ import CustomersList from "./CustomerList";
 import StaffFormModal from "../staff/StaffForm";
 import MobileSalesModal from "./MobileSalesModal";
 import TransactionSuccessDialog from "../pembelian/TransactionSuccessDialog";
-import { getCurrentDateWithTimezone, formatDateWithTimezone } from "@/lib/timezone";
-import DateDisplay from "@/components/DateDisplay";
 
 // ==== Interface Props ====
 interface CartSummaryProps {
@@ -98,13 +96,13 @@ function CartSummary({
   }, 0);
   const totalHarga = totalPrice - Number(discount) + Number(ongkir);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = getCurrentDateWithTimezone();
+    const today = new Date();
     return today.toISOString().split("T")[0];
   });
   function getTimestampWithCurrentTime(dateString: string): string {
-    const date = new Date(dateString);
-    const zonedDate = getCurrentDateWithTimezone();
-    const timePart = formatDateWithTimezone(zonedDate, 'HH:mm:ss');
+    const now = new Date();
+    // Ambil bagian jam, menit, detik (format "HH:MM:SS")
+    const timePart = now.toTimeString().split(" ")[0];
     return `${dateString}T${timePart}`;
   }
   // =============== USEEFFECTS ===============
@@ -618,22 +616,22 @@ function CartSummary({
         {/* Cicilan */}
         {paymentMethod === "cicilan" && (
           <div className="mt-4 space-y-4">
-            <div>
+              <div>
               <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
-                Down Payment (DP)
+                  Down Payment (DP)
               </h3>
-              <input
-                type="number"
-                min={0}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                placeholder="Masukkan DP"
-                value={dp}
-                onChange={(e) => setDp(e.target.value)}
-              />
-            </div>
-            <div>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  placeholder="Masukkan DP"
+                  value={dp}
+                  onChange={(e) => setDp(e.target.value)}
+                />
+              </div>
+              <div>
               <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">
-                Durasi Pelunasan
+                  Durasi Pelunasan
               </h3>
               <div className="flex gap-2">
                 <input
@@ -644,16 +642,16 @@ function CartSummary({
                   value={durasiPelunasan}
                   onChange={(e) => setDurasiPelunasan(Number(e.target.value))}
                 />
-                <select
+              <select
                   className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  value={unitPelunasan}
-                  onChange={(e) =>
-                    setUnitPelunasan(e.target.value as "hari" | "bulan")
-                  }
-                >
-                  <option value="hari">Hari</option>
-                  <option value="bulan">Bulan</option>
-                </select>
+                value={unitPelunasan}
+                onChange={(e) =>
+                  setUnitPelunasan(e.target.value as "hari" | "bulan")
+                }
+              >
+                <option value="hari">Hari</option>
+                <option value="bulan">Bulan</option>
+              </select>
               </div>
             </div>
             <div>
@@ -1024,19 +1022,19 @@ function CartSummary({
                 </div>
               </div>
             ) : (
-              <div>
-                <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
-                  Ongkir
-                </h3>
-                <input
-                  type="number"
-                  min={0}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  placeholder="Masukkan ongkir"
-                  value={ongkir}
-                  onChange={(e) => setOngkir(e.target.value)}
-                />
-              </div>
+            <div>
+              <h3 className="mb-2 mt-2 text-xs font-semibold text-black dark:text-white">
+                Ongkir
+              </h3>
+              <input
+                type="number"
+                min={0}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                placeholder="Masukkan ongkir"
+                value={ongkir}
+                onChange={(e) => setOngkir(e.target.value)}
+              />
+            </div>
             )}
 
             <div className="mt-4 grid grid-cols-2 gap-2">

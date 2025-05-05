@@ -1,7 +1,6 @@
 "use client";
 import Transaksi from "@/models/modeltsx/Transaksi";
 import { formatRupiah } from "@/components/tools";
-import DateDisplay from "@/components/DateDisplay";
 
 interface Props {
   data: Transaksi[];
@@ -35,7 +34,7 @@ export default function MobileAccordion({
               <p className="font-bold">{trx.no_transaksi}</p>
               <p className="text-sm">{formatRupiah(trx.total_harga)}</p>
               <p className="text-xs text-gray-500">
-                <DateDisplay date={trx.tanggal_transaksi} format="dd/MM/yyyy" />
+                {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")} {/* Change date source here */}
               </p>
             </div>
             <div className="font-bold">{open.has(trx._id) ? "-" : "+"}</div>
