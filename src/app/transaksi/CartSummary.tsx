@@ -59,7 +59,7 @@ function CartSummary({
   const [paymentMethod, setPaymentMethod] = useState<string>("tunai");
   const [keterangan, setKeterangan] = useState<string>("");
   const [ongkir, setOngkir] = useState<string>("0");
-
+  
   // Diskon
   const [enableDiscount, setEnableDiscount] = useState<boolean>(false);
   const [discount, setDiscount] = useState("");
@@ -94,7 +94,7 @@ function CartSummary({
     }
     return sum;
   }, 0);
-  const totalHarga = totalPrice - Number(discount);
+  const totalHarga = totalPrice - Number(discount) + Number(ongkir);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split("T")[0];
