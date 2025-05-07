@@ -115,7 +115,9 @@ const InvoicePage: React.FC<InvoiceProps> = ({ transaksi }) => {
   const diskon = transaksi.diskon || 0;
   const ppn = 0;
   const ongkir = transaksi.ongkir || 0;
-  const grandTotal = subTotal - diskon + ppn + ongkir;
+  const grandTotal = transaksi.metode_pembayaran === "cicilan" 
+    ? subTotal - diskon + ppn + ongkir - (transaksi.dp || 0)
+    : subTotal - diskon + ppn + ongkir;
 
   // Judul faktur
   const judulFaktur =

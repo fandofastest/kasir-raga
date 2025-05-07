@@ -679,7 +679,7 @@ export default function TransactionHistoryPage({
                       </p>
                       <p>
                         <span className="font-medium">Tanggal: </span>
-                        {new Date(trx.createdAt)
+                        {new Date(trx.tanggal_transaksi)
                           .toLocaleDateString("id-ID", {
                             weekday: "long",
                             day: "numeric",

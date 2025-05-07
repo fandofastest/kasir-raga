@@ -245,8 +245,8 @@ export default function HutangPage() {
           bVal = b.no_transaksi || "";
           return aVal.localeCompare(bVal);
         case "tanggal":
-          aVal = new Date(a.createdAt).getTime();
-          bVal = new Date(b.createdAt).getTime();
+          aVal = new Date(a.tanggal_transaksi).getTime();
+          bVal = new Date(b.tanggal_transaksi).getTime();
           return aVal - bVal;
         case "supplier":
           aVal = a.supplier?.nama || "";
@@ -512,7 +512,7 @@ export default function HutangPage() {
                   <td className="border px-4 py-2">{idx + 1}</td>
                   <td className="border px-4 py-2">{trx.no_transaksi}</td>
                   <td className="border px-4 py-2">
-                    {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                    {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
@@ -591,7 +591,7 @@ export default function HutangPage() {
                   <div>
                     <p className="font-medium">{trx.no_transaksi}</p>
                     <p className="text-sm">
-                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                      {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "long",
                         year: "numeric",

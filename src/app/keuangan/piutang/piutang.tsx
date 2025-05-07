@@ -76,6 +76,10 @@ export default function PiutangPage() {
     const today = new Date();
     return today.toISOString().split("T")[0];
   });
+
+  // State untuk loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   function getTimestampWithCurrentTime(dateString: string): string {
     const now = new Date();
     // Ambil bagian jam, menit, detik (format "HH:MM:SS")
@@ -186,7 +190,8 @@ export default function PiutangPage() {
 
   // Fungsi submit modal pembayaran
   const handlePaymentSubmit = async () => {
-    if (!selectedTransaction) return;
+    if (!selectedTransaction || isSubmitting) return;
+    
     const sisaUtang = computeSisaUtang(selectedTransaction);
 
     if (modalType === "installment" && Number(paymentAmount) <= 0) {
@@ -197,7 +202,9 @@ export default function PiutangPage() {
       toast.error("Jumlah pembayaran kurang dari sisa utang.");
       return;
     }
+
     try {
+      setIsSubmitting(true);
       const res = await payInstallment(
         selectedTransaction._id,
         paymentAmount,
@@ -213,6 +220,8 @@ export default function PiutangPage() {
       }
     } catch (error: any) {
       toast.error("Terjadi kesalahan saat pembayaran");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -273,8 +282,8 @@ export default function PiutangPage() {
           bVal = b.no_transaksi || "";
           return aVal.localeCompare(bVal);
         case "tanggal":
-          aVal = new Date(a.createdAt).getTime();
-          bVal = new Date(b.createdAt).getTime();
+          aVal = new Date(a.tanggal_transaksi).getTime();
+          bVal = new Date(b.tanggal_transaksi).getTime();
           return aVal - bVal;
         case "pelanggan": {
           const aName =
@@ -583,7 +592,7 @@ export default function PiutangPage() {
                   <td className="border px-4 py-2">{idx + 1}</td>
                   <td className="border px-4 py-2">{trx.no_transaksi}</td>
                   <td className="border px-4 py-2">
-                    {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                    {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
@@ -664,7 +673,7 @@ export default function PiutangPage() {
                   <div>
                     <p className="font-medium">{trx.no_transaksi}</p>
                     <p className="text-sm">
-                      {new Date(trx.createdAt).toLocaleDateString("id-ID", {
+                      {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "long",
                         year: "numeric",
@@ -764,6 +773,7 @@ export default function PiutangPage() {
                 className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
             <p className="mb-2">
@@ -787,6 +797,7 @@ export default function PiutangPage() {
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full rounded border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                  disabled={isSubmitting}
                 />
               </div>
             )}
@@ -800,6 +811,7 @@ export default function PiutangPage() {
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full rounded border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                  disabled={isSubmitting}
                 />
               </div>
             )}
@@ -810,14 +822,39 @@ export default function PiutangPage() {
                   setSelectedTransaction(null);
                 }}
                 className="rounded bg-gray-300 px-4 py-2 text-sm text-gray-800"
+                disabled={isSubmitting}
               >
                 Batal
               </button>
               <button
                 onClick={handlePaymentSubmit}
-                className="bg-tosca rounded px-4 py-2 text-sm text-white"
+                className={`bg-tosca rounded px-4 py-2 text-sm text-white ${
+                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                disabled={isSubmitting}
               >
-                {modalType === "installment" ? "Bayar Cicilan" : "Lunasi"}
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Memproses...
+                  </span>
+                ) : (
+                  modalType === "installment" ? "Bayar Cicilan" : "Lunasi"
+                )}
               </button>
             </div>
           </div>
