@@ -55,6 +55,8 @@ export default function DesktopTable({
             </th>
             <th className="border px-2 py-1">{isPenjualan ? "Pelanggan" : "Supplier"}</th>
             {produkFilter && <th className="border px-2 py-1">Produk</th>}
+            {produkFilter && <th className="border px-2 py-1">Jumlah</th>}
+            {produkFilter && <th className="border px-2 py-1">Satuan</th>}
             {produkFilter ? (
               <> {/* Baris produk: harga dan laba per produk */}
                 <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("modal")}>
@@ -105,6 +107,8 @@ export default function DesktopTable({
                   <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
                   <td className="border px-2 py-1">{isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}</td>
                   <td className="border px-2 py-1">{pd.productId?.nama_produk ?? pd.nama_produk}</td>
+                  <td className="border px-2 py-1 text-right">{pd.quantity}</td>
+                  <td className="border px-2 py-1">{pd.satuans?.[0]?.satuan?.nama ?? "-"}</td>
                   <td className="border px-2 py-1 text-right">{formatRupiah(hargaModal)}</td>
                   <td className="border px-2 py-1 text-right">{formatRupiah(hargaJual)}</td>
                   {isPenjualan && (
@@ -121,6 +125,8 @@ export default function DesktopTable({
                 <td className="border px-2 py-1">{new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}</td>
                 <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
                 <td className="border px-2 py-1">{isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}</td>
+                {produkFilter && <td className="border px-2 py-1">-</td>}
+                {produkFilter && <td className="border px-2 py-1 text-right">{trx.produk.reduce((sum, p) => sum + p.quantity, 0)}</td>}
                 {produkFilter && <td className="border px-2 py-1">-</td>}
                 {isPenjualan && (
                   <td className="border px-2 py-1 text-right">{formatRupiah(getModal(trx))}</td>

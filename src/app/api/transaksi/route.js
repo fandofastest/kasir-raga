@@ -241,12 +241,12 @@ export const GET = withAuth(async (req) => {
       !searchParams.has("endDate") &&
       !searchParams.has("period")
     ) {
-      // Jika tanggal tidak diset, ambil data dalam bulan ini saja
+      // Jika tanggal tidak diset, ambil data 1 tahun kebelakang
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      endOfMonth.setHours(23, 59, 59, 999);
-      filter.tanggal_transaksi = { $gte: startOfMonth, $lte: endOfMonth };
+      const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      const endOfToday = new Date(now);
+      endOfToday.setHours(23, 59, 59, 999);
+      filter.tanggal_transaksi = { $gte: oneYearAgo, $lte: endOfToday };
     }
 
     // Filter relatif berdasarkan periode: day, week, month, atau year

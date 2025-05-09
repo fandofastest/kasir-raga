@@ -166,6 +166,8 @@ export default function LaporanTransaksiPage() {
       if (statusTransaksi.length > 0) query.status_transaksi = statusTransaksi.join(",");
 
       const res = await fetchTransaction(query);
+      // console.log(res.data.transactions);
+      
       setTransactions(res.data.transactions);
       console.log(res.data.transactions);
       
@@ -259,7 +261,7 @@ export default function LaporanTransaksiPage() {
     const rows = sortedTransactions.map((trx, i) => ({
       No: i + 1,
       "No Transaksi": trx.no_transaksi,
-      Tanggal: new Date(trx.createdAt).toLocaleDateString("id-ID"),
+      Tanggal: new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID"),
       Tipe: trx.tipe_transaksi,
       ...(isPenjualan
         ? {
@@ -269,11 +271,13 @@ export default function LaporanTransaksiPage() {
             Ongkir: trx.ongkir,
             Laba: getLaba(trx),
             Operator: typeof trx.kasir === "object" ? trx.kasir?.name : trx.kasir,
+            "Jumlah Unit": trx.produk.reduce((sum, p) => sum + p.quantity, 0),
           }
         : {
             Supplier: trx.supplier?.nama ?? "-",
             Total: trx.total_harga,
             Operator: typeof trx.kasir === "object" ? trx.kasir?.name : trx.kasir,
+            "Jumlah Unit": trx.produk.reduce((sum, p) => sum + p.quantity, 0),
           }),
     }));
 

@@ -56,6 +56,7 @@ export default function MobileAccordion({
                   return (
                     <div key={idx} className="pt-2">
                       <p><b>Produk:</b> {pd.productId?.nama_produk ?? pd.nama_produk}</p>
+                      <p><b>Jumlah:</b> {pd.quantity} {pd.satuans?.[0]?.satuan?.nama ?? ""}</p>
                       <p><b>Harga Modal:</b> {formatRupiah(hargaModal)}</p>
                       <p><b>Harga Jual:</b> {formatRupiah(hargaJual)}</p>
                       {isPenjualan && <p><b>Laba:</b> {formatRupiah(labaProduk)}</p>}

@@ -36,6 +36,8 @@ export default function PrintTable({
               {isPenjualan ? "Pelanggan" : "Supplier"}
             </th>
             {produkFilter && <th className="border px-2 py-1">Produk</th>}
+            {produkFilter && <th className="border px-2 py-1">Jumlah</th>}
+            {produkFilter && <th className="border px-2 py-1">Satuan</th>}
 
             {produkFilter ? (
               <>
@@ -78,6 +80,12 @@ export default function PrintTable({
                 <>                  
                   <td className="border px-2 py-1">
                     {pd?.productId?.nama_produk ?? pd?.nama_produk}
+                  </td>
+                  <td className="border px-2 py-1 text-right">
+                    {pd?.quantity ?? 0}
+                  </td>
+                  <td className="border px-2 py-1">
+                    {pd?.satuans?.[0]?.satuan?.nama ?? "-"}
                   </td>
                   <td className="border px-2 py-1 text-right">
                     {formatRupiah((pd?.productId?.harga_modal ?? 0) * (pd?.quantity ?? 0))}
