@@ -208,7 +208,7 @@ export default function LaporanTransaksiPage() {
       return acc + modal * pd.quantity * konversi;
     }, 0);
 
-  const getLaba = (trx: Transaksi) => trx.total_harga - getModal(trx);
+  const getLaba = (trx: Transaksi) => trx.total_harga - getModal(trx) - (trx.ongkir ?? 0);
 
   const sortedTransactions = [...transactions].sort((a, b) => {
     if (!sortColumn) return 0;
