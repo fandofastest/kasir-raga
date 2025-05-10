@@ -90,11 +90,9 @@ export const POST = withAuth(async (req) => {
           await Product.findByIdAndUpdate(detail.productId, {
             $inc: { jumlah: adjustment },
           });
-          if (detail.harga !== detail.harga_modal) {
-            await Product.findByIdAndUpdate(detail.productId, {
-              harga_modal: detail.harga_modal,
-            });
-          }
+          await Product.findByIdAndUpdate(detail.productId, {
+            harga_modal: detail.harga_modal,
+          });
           if (detail.satuans && detail.satuans.length > 0) {
             for (const satuanId of detail.satuans) {
               await Product.updateOne(
