@@ -20,6 +20,7 @@ interface Transaksi {
     productId: Product;
     quantity: number;
     harga: number;
+    harga_modal?: number;
     satuans: any;
     kategori?: string;
     nama_produk: string;

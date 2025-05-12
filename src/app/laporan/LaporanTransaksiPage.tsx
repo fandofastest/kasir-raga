@@ -203,7 +203,8 @@ export default function LaporanTransaksiPage() {
   /* ------------------ kalkulasi modal & laba + sort + paginate ------------ */
   const getModal = (trx: Transaksi) =>
     trx.produk.reduce((acc, pd) => {
-      const modal = pd.productId?.harga_modal ?? 0;
+      // Use the harga_modal from the transaction record, with fallback to product harga_modal
+      const modal = pd.harga_modal ?? pd.productId?.harga_modal ?? 0;
       const konversi = pd.satuans?.[0]?.konversi ?? 1;
       return acc + modal * pd.quantity * konversi;
     }, 0);

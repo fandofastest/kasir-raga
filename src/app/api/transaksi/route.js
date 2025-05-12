@@ -68,6 +68,18 @@ export const POST = withAuth(async (req) => {
     // Update stok produk berdasarkan tipe transaksi
     if (newTransaction.produk && newTransaction.produk.length > 0) {
       for (const detail of newTransaction.produk) {
+        const productDoc = await Product.findById(detail.productId);
+        if (!productDoc) continue;
+        
+        // Make sure the harga_modal is saved in the transaction
+        if (!detail.harga_modal) {
+          // Use a Mongoose findByIdAndUpdate to update the specific product's modal price in the transaction
+          await Transaksi.updateOne(
+            { _id: newTransaction._id, "produk.productId": detail.productId },
+            { $set: { "produk.$.harga_modal": productDoc.harga_modal } }
+          );
+        }
+        
         const conversion =
           detail.satuans && detail.satuans[0]?.konversi
             ? detail.satuans[0].konversi
@@ -90,9 +102,12 @@ export const POST = withAuth(async (req) => {
           await Product.findByIdAndUpdate(detail.productId, {
             $inc: { jumlah: adjustment },
           });
-          await Product.findByIdAndUpdate(detail.productId, {
-            harga_modal: detail.harga_modal,
-          });
+          // Update the product's modal price if it has changed
+          if (detail.harga_modal) {
+            await Product.findByIdAndUpdate(detail.productId, {
+              harga_modal: detail.harga_modal,
+            });
+          }
           if (detail.satuans && detail.satuans.length > 0) {
             for (const satuanId of detail.satuans) {
               await Product.updateOne(
