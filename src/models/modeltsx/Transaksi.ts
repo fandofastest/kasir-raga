@@ -25,6 +25,14 @@ interface Transaksi {
     kategori?: string;
     nama_produk: string;
   }[];
+  filteredProduk?: {
+    productId: string;
+    quantity: number;
+    harga: number;
+    harga_modal?: number;
+    satuans: any;
+    _id: string;
+  }[];
   staff_bongkar: Staff | string;
   // Field tambahan untuk cicilan/hutang
   dp?: number;

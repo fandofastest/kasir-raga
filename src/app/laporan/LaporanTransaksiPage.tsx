@@ -19,7 +19,6 @@ import {
   fetchStaff,
 } from "@/lib/dataService";
 
-
 import Transaksi from "@/models/modeltsx/Transaksi";
 import { Staff } from "@/models/modeltsx/staffTypes";
 import { formatRupiah } from "@/components/tools";
@@ -34,14 +33,15 @@ export default function LaporanTransaksiPage() {
   /* ------------------------------------------------------------------------ */
   /*  1.  STATE                                                               */
   /* ------------------------------------------------------------------------ */
-  const [tipeTransaksi, setTipeTransaksi] = useState<TransactionType>("penjualan");
+  const [tipeTransaksi, setTipeTransaksi] =
+    useState<TransactionType>("penjualan");
 
   const isPenjualan = tipeTransaksi === "penjualan";
   const [statusTransaksi, setStatusTransaksi] = useState<string[]>([
     "lunas",
     "lunas_cepat",
   ]);
-  
+
   const [transactions, setTransactions] = useState<Transaksi[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -65,7 +65,7 @@ export default function LaporanTransaksiPage() {
   const [pembeliOptions, setPembeliOptions] = useState<any[]>([]);
   const [kategoriOptions, setKategoriOptions] = useState<any[]>([]);
   const [kategoriKonsumenOptions, setKategoriKonsumenOptions] = useState<any[]>(
-    []
+    [],
   );
   const [produkOptions, setProdukOptions] = useState<any[]>([]);
   const [staffOptions, setStaffOptions] = useState<Staff[]>([]);
@@ -73,7 +73,7 @@ export default function LaporanTransaksiPage() {
   // UI
   const [isMobile, setIsMobile] = useState(false);
   const [openTransactions, setOpenTransactions] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   // toko info
@@ -114,17 +114,10 @@ export default function LaporanTransaksiPage() {
       // Create params to fetch all products without pagination
       const productParams = new URLSearchParams({
         limit: "1000", // Set a high limit to get all products
-        page: "1"
+        page: "1",
       });
-      
-      const [
-        s1,
-        p1,
-        k1,
-        p2,
-        kk1,
-        stf,
-      ] = await Promise.all([
+
+      const [s1, p1, k1, p2, kk1, stf] = await Promise.all([
         fetchSupplier(),
         fetchPelanggan(),
         fetchKategori(),
@@ -163,14 +156,15 @@ export default function LaporanTransaksiPage() {
       if (pengantar) query.pengantar = pengantar;
       if (staffBongkar) query.staff_bongkar = staffBongkar;
       if (keterangan) query.keterangan = keterangan;
-      if (statusTransaksi.length > 0) query.status_transaksi = statusTransaksi.join(",");
+      if (statusTransaksi.length > 0)
+        query.status_transaksi = statusTransaksi.join(",");
 
       const res = await fetchTransaction(query);
       // console.log(res.data.transactions);
-      
+
       setTransactions(res.data.transactions);
       console.log(res.data.transactions);
-      
+
       setCurrentPage(1);
     } catch (e: any) {
       setError(e.message ?? "Gagal memuat data");
@@ -202,14 +196,18 @@ export default function LaporanTransaksiPage() {
 
   /* ------------------ kalkulasi modal & laba + sort + paginate ------------ */
   const getModal = (trx: Transaksi) =>
-    trx.produk.reduce((acc, pd) => {
-      // Use the harga_modal from the transaction record, with fallback to product harga_modal
-      const modal = pd.harga_modal ?? pd.productId?.harga_modal ?? 0;
+    (trx.filteredProduk ?? trx.produk).reduce((acc: number, pd: any) => {
+      // console.log("texxxt" + acc);
+
+      const modal = pd.harga_modal ?? 0;
       const konversi = pd.satuans?.[0]?.konversi ?? 1;
-      return acc + modal * pd.quantity * konversi;
+      const total = modal * pd.quantity * konversi;
+      console.log("texxxt" + total);
+      return total;
     }, 0);
 
-  const getLaba = (trx: Transaksi) => trx.total_harga - getModal(trx) - (trx.ongkir ?? 0);
+  const getLaba = (trx: Transaksi) =>
+    trx.total_harga - getModal(trx) - (trx.ongkir ?? 0);
 
   const sortedTransactions = [...transactions].sort((a, b) => {
     if (!sortColumn) return 0;
@@ -227,7 +225,10 @@ export default function LaporanTransaksiPage() {
         valA = (a as any)[sortColumn];
         valB = (b as any)[sortColumn];
     }
-    if (typeof valA === "string") return sortDirection === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    if (typeof valA === "string")
+      return sortDirection === "asc"
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
     return sortDirection === "asc" ? valA - valB : valB - valA;
   });
 
@@ -271,13 +272,15 @@ export default function LaporanTransaksiPage() {
             Total: trx.total_harga,
             Ongkir: trx.ongkir,
             Laba: getLaba(trx),
-            Operator: typeof trx.kasir === "object" ? trx.kasir?.name : trx.kasir,
+            Operator:
+              typeof trx.kasir === "object" ? trx.kasir?.name : trx.kasir,
             "Jumlah Unit": trx.produk.reduce((sum, p) => sum + p.quantity, 0),
           }
         : {
             Supplier: trx.supplier?.nama ?? "-",
             Total: trx.total_harga,
-            Operator: typeof trx.kasir === "object" ? trx.kasir?.name : trx.kasir,
+            Operator:
+              typeof trx.kasir === "object" ? trx.kasir?.name : trx.kasir,
             "Jumlah Unit": trx.produk.reduce((sum, p) => sum + p.quantity, 0),
           }),
     }));
@@ -289,7 +292,10 @@ export default function LaporanTransaksiPage() {
           ["Jumlah Transaksi", sortedTransactions.length],
           ["Total Penjualan", totalValue],
           ["Total Modal", totalModal],
-          ["Total Ongkir", sortedTransactions.reduce((s, t) => s + t.ongkir, 0)],
+          [
+            "Total Ongkir",
+            sortedTransactions.reduce((s, t) => s + t.ongkir, 0),
+          ],
           ["Total Laba", totalLaba],
         ]
       : [
@@ -303,9 +309,12 @@ export default function LaporanTransaksiPage() {
     XLSX.utils.book_append_sheet(
       wb,
       ws,
-      isPenjualan ? "Penjualan" : "Pembelian"
+      isPenjualan ? "Penjualan" : "Pembelian",
     );
-    XLSX.writeFile(wb, `${isPenjualan ? "LaporanPenjualan" : "LaporanPembelian"}.xlsx`);
+    XLSX.writeFile(
+      wb,
+      `${isPenjualan ? "LaporanPenjualan" : "LaporanPembelian"}.xlsx`,
+    );
   };
 
   /* ------------------------------------------------------------------------ */
@@ -330,10 +339,21 @@ export default function LaporanTransaksiPage() {
           --rs-option-hover: #374151;
         }
         @media print {
-          .desktopTable { display: none !important; }
-          .mobileAccordion { display: none !important; }
-          body, table, th, td, p, h2, h3 {
-            color: black !important; background: white !important;
+          .desktopTable {
+            display: none !important;
+          }
+          .mobileAccordion {
+            display: none !important;
+          }
+          body,
+          table,
+          th,
+          td,
+          p,
+          h2,
+          h3 {
+            color: black !important;
+            background: white !important;
           }
         }
       `}</style>
@@ -341,27 +361,37 @@ export default function LaporanTransaksiPage() {
       <div className="p-4 dark:bg-boxdark dark:text-gray-100 print:bg-white">
         {/* ------------ FILTER FORM ------------ */}
         <FilterForm
-         statusTransaksi={statusTransaksi}
-        setStatusTransaksi={setStatusTransaksi}
-        tipeTransaksi={tipeTransaksi}
-        setTipeTransaksi={setTipeTransaksi}
+          statusTransaksi={statusTransaksi}
+          setStatusTransaksi={setStatusTransaksi}
+          tipeTransaksi={tipeTransaksi}
+          setTipeTransaksi={setTipeTransaksi}
           isPenjualan={isPenjualan}
           /* nilai filter */
-          startDate={startDate} endDate={endDate}
-          supplier={supplier} pembeli={pembeli}
+          startDate={startDate}
+          endDate={endDate}
+          supplier={supplier}
+          pembeli={pembeli}
           metodePembayaran={metodePembayaran}
-          kategori={kategori} produk={produk}
+          kategori={kategori}
+          produk={produk}
           kategoriKonsumen={kategoriKonsumen}
-          kasir={kasir} pengantar={pengantar}
-          staffBongkar={staffBongkar} keterangan={keterangan}
+          kasir={kasir}
+          pengantar={pengantar}
+          staffBongkar={staffBongkar}
+          keterangan={keterangan}
           /* setter */
-          setStartDate={setStartDate} setEndDate={setEndDate}
-          setSupplier={setSupplier} setPembeli={setPembeli}
+          setStartDate={setStartDate}
+          setEndDate={setEndDate}
+          setSupplier={setSupplier}
+          setPembeli={setPembeli}
           setMetodePembayaran={setMetodePembayaran}
-          setKategori={setKategori} setProduk={setProduk}
+          setKategori={setKategori}
+          setProduk={setProduk}
           setKategoriKonsumen={setKategoriKonsumen}
-          setKasir={setKasir} setPengantar={setPengantar}
-          setStaffBongkar={setStaffBongkar} setKeterangan={setKeterangan}
+          setKasir={setKasir}
+          setPengantar={setPengantar}
+          setStaffBongkar={setStaffBongkar}
+          setKeterangan={setKeterangan}
           /* options */
           supplierOptions={supplierOptions}
           pembeliOptions={pembeliOptions}
@@ -390,7 +420,6 @@ export default function LaporanTransaksiPage() {
           <DesktopTable
             data={paginatedTransactions}
             produkFilter={!!kategori || !!produk}
-            
             isPenjualan={isPenjualan}
             getModal={getModal}
             getLaba={getLaba}
@@ -419,7 +448,7 @@ export default function LaporanTransaksiPage() {
         {/* ------------ PRINT‑ONLY TABLE ------------ */}
         <PrintTable
           data={sortedTransactions}
-          produkFilter={!!produk ||!!kategori}
+          produkFilter={!!produk || !!kategori}
           isPenjualan={isPenjualan}
           getModal={getModal}
           getLaba={getLaba}

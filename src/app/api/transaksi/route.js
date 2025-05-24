@@ -70,7 +70,7 @@ export const POST = withAuth(async (req) => {
       for (const detail of newTransaction.produk) {
         const productDoc = await Product.findById(detail.productId);
         if (!productDoc) continue;
-        
+
         // Make sure the harga_modal is saved in the transaction
         if (!detail.harga_modal) {
           // Use a Mongoose findByIdAndUpdate to update the specific product's modal price in the transaction
@@ -79,7 +79,7 @@ export const POST = withAuth(async (req) => {
             { $set: { "produk.$.harga_modal": productDoc.harga_modal } }
           );
         }
-        
+
         const conversion =
           detail.satuans && detail.satuans[0]?.konversi
             ? detail.satuans[0].konversi

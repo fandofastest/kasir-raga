@@ -25,9 +25,7 @@ export default function DesktopTable({
 }: Props) {
   // Jika filter kategori/produk aktif, pisah baris per produk
   const rows = produkFilter
-    ? data.flatMap((trx) =>
-        trx.produk.map((pd) => ({ trx, pd }))
-      )
+    ? data.flatMap((trx) => trx.produk.map((pd) => ({ trx, pd })))
     : data.map((trx) => ({ trx, pd: null }));
 
   return (
@@ -36,57 +34,108 @@ export default function DesktopTable({
         <thead className="bg-gray-100 dark:bg-gray-800">
           <tr>
             <th
-              className="border px-2 py-1 cursor-pointer"
+              className="cursor-pointer border px-2 py-1"
               onClick={() => onSort("no_transaksi")}
             >
-              No. Transaksi {sortColumn === "no_transaksi" && (sortDirection === "asc" ? "▲" : "▼")}
+              No. Transaksi{" "}
+              {sortColumn === "no_transaksi" &&
+                (sortDirection === "asc" ? "▲" : "▼")}
             </th>
             <th
-              className="border px-2 py-1 cursor-pointer"
+              className="cursor-pointer border px-2 py-1"
               onClick={() => onSort("tanggal_transaksi")} // Change sort key here
             >
-              Tanggal {sortColumn === "tanggal_transaksi" && (sortDirection === "asc" ? "▲" : "▼")} {/* Change condition here */}
+              Tanggal{" "}
+              {sortColumn === "tanggal_transaksi" &&
+                (sortDirection === "asc" ? "▲" : "▼")}{" "}
+              {/* Change condition here */}
             </th>
             <th
-              className="border px-2 py-1 cursor-pointer"
+              className="cursor-pointer border px-2 py-1"
               onClick={() => onSort("tipe_transaksi")}
             >
-              Tipe {sortColumn === "tipe_transaksi" && (sortDirection === "asc" ? "▲" : "▼")}
+              Tipe{" "}
+              {sortColumn === "tipe_transaksi" &&
+                (sortDirection === "asc" ? "▲" : "▼")}
             </th>
-            <th className="border px-2 py-1">{isPenjualan ? "Pelanggan" : "Supplier"}</th>
+            <th className="border px-2 py-1">
+              {isPenjualan ? "Pelanggan" : "Supplier"}
+            </th>
             {produkFilter && <th className="border px-2 py-1">Produk</th>}
             {produkFilter && <th className="border px-2 py-1">Jumlah</th>}
             {produkFilter && <th className="border px-2 py-1">Satuan</th>}
             {produkFilter ? (
-              <> {/* Baris produk: harga dan laba per produk */}
-                <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("modal")}>
-                  Harga Modal {sortColumn === "modal" && (sortDirection === "asc" ? "▲" : "▼")}
+              <>
+                {" "}
+                {/* Baris produk: harga dan laba per produk */}
+                <th
+                  className="cursor-pointer border px-2 py-1"
+                  onClick={() => onSort("modal")}
+                >
+                  Harga Modal{" "}
+                  {sortColumn === "modal" &&
+                    (sortDirection === "asc" ? "▲" : "▼")}
                 </th>
-                <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("harga_produk")}>
-                  Harga Jual {sortColumn === "harga_produk" && (sortDirection === "asc" ? "▲" : "▼")}
+                <th
+                  className="cursor-pointer border px-2 py-1"
+                  onClick={() => onSort("harga_produk")}
+                >
+                  Harga Jual{" "}
+                  {sortColumn === "harga_produk" &&
+                    (sortDirection === "asc" ? "▲" : "▼")}
                 </th>
                 {isPenjualan && (
                   <th
-                    className="border px-2 py-1 cursor-pointer"
+                    className="cursor-pointer border px-2 py-1"
                     onClick={() => onSort("laba")}
                   >
-                    Laba {sortColumn === "laba" && (sortDirection === "asc" ? "▲" : "▼")}
+                    Laba{" "}
+                    {sortColumn === "laba" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
                   </th>
                 )}
               </>
             ) : (
-              <> {/* Baris transaksi keseluruhan */}
+              <>
+                {" "}
+                {/* Baris transaksi keseluruhan */}
                 {isPenjualan && (
-                  <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("modal")}>Modal {sortColumn === "modal" && (sortDirection === "asc" ? "▲" : "▼")}</th>
+                  <th
+                    className="cursor-pointer border px-2 py-1"
+                    onClick={() => onSort("modal")}
+                  >
+                    Modal{" "}
+                    {sortColumn === "modal" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
                 )}
-                <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("total_harga")}>
-                  Total {sortColumn === "total_harga" && (sortDirection === "asc" ? "▲" : "▼")}
+                <th
+                  className="cursor-pointer border px-2 py-1"
+                  onClick={() => onSort("total_harga")}
+                >
+                  Total{" "}
+                  {sortColumn === "total_harga" &&
+                    (sortDirection === "asc" ? "▲" : "▼")}
                 </th>
                 {isPenjualan && (
-                  <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("ongkir")}>Ongkir {sortColumn === "ongkir" && (sortDirection === "asc" ? "▲" : "▼")}</th>
+                  <th
+                    className="cursor-pointer border px-2 py-1"
+                    onClick={() => onSort("ongkir")}
+                  >
+                    Ongkir{" "}
+                    {sortColumn === "ongkir" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
                 )}
                 {isPenjualan && (
-                  <th className="border px-2 py-1 cursor-pointer" onClick={() => onSort("laba")}>Laba {sortColumn === "laba" && (sortDirection === "asc" ? "▲" : "▼")}</th>
+                  <th
+                    className="cursor-pointer border px-2 py-1"
+                    onClick={() => onSort("laba")}
+                  >
+                    Laba{" "}
+                    {sortColumn === "laba" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
                 )}
               </>
             )}
@@ -97,48 +146,91 @@ export default function DesktopTable({
           {rows.map(({ trx, pd }, idx) => {
             if (produkFilter && pd) {
               // per produk
-              const hargaModal = (pd.productId?.harga_modal ?? 0) * pd.quantity;
+              const hargaModal = (pd?.harga_modal ?? 0) * pd.quantity;
               const hargaJual = pd.harga * pd.quantity; // asumsi pd.price harga jual per unit
               const labaProduk = isPenjualan ? hargaJual - hargaModal : 0;
               return (
-                <tr key={`${trx._id}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <tr
+                  key={`${trx._id}-${idx}`}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
                   <td className="border px-2 py-1">{trx.no_transaksi}</td>
-                  <td className="border px-2 py-1">{new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}</td> {/* Change date source here */}
+                  <td className="border px-2 py-1">
+                    {new Date(trx.tanggal_transaksi).toLocaleDateString(
+                      "id-ID",
+                    )}
+                  </td>{" "}
+                  {/* Change date source here */}
                   <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
-                  <td className="border px-2 py-1">{isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}</td>
-                  <td className="border px-2 py-1">{pd.productId?.nama_produk ?? pd.nama_produk}</td>
+                  <td className="border px-2 py-1">
+                    {isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}
+                  </td>
+                  <td className="border px-2 py-1">
+                    {pd.productId?.nama_produk ?? pd.nama_produk}
+                  </td>
                   <td className="border px-2 py-1 text-right">{pd.quantity}</td>
-                  <td className="border px-2 py-1">{pd.satuans?.[0]?.satuan?.nama ?? "-"}</td>
-                  <td className="border px-2 py-1 text-right">{formatRupiah(hargaModal)}</td>
-                  <td className="border px-2 py-1 text-right">{formatRupiah(hargaJual)}</td>
+                  <td className="border px-2 py-1">
+                    {pd.satuans?.[0]?.satuan?.nama ?? "-"}
+                  </td>
+                  <td className="border px-2 py-1 text-right">
+                    {formatRupiah(hargaModal)}
+                  </td>
+                  <td className="border px-2 py-1 text-right">
+                    {formatRupiah(hargaJual)}
+                  </td>
                   {isPenjualan && (
-                    <td className="border px-2 py-1 text-right">{formatRupiah(labaProduk)}</td>
+                    <td className="border px-2 py-1 text-right">
+                      {formatRupiah(labaProduk)}
+                    </td>
                   )}
-                  <td className="border px-2 py-1">{typeof trx.kasir === "object" ? trx.kasir.name : trx.kasir}</td>
+                  <td className="border px-2 py-1">
+                    {typeof trx.kasir === "object" ? trx.kasir.name : trx.kasir}
+                  </td>
                 </tr>
               );
             }
             // baris transaksi normal
             return (
-              <tr key={trx._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <tr
+                key={trx._id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
                 <td className="border px-2 py-1">{trx.no_transaksi}</td>
-                <td className="border px-2 py-1">{new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}</td>
+                <td className="border px-2 py-1">
+                  {new Date(trx.tanggal_transaksi).toLocaleDateString("id-ID")}
+                </td>
                 <td className="border px-2 py-1">{trx.tipe_transaksi}</td>
-                <td className="border px-2 py-1">{isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}</td>
+                <td className="border px-2 py-1">
+                  {isPenjualan ? trx.pembeli?.nama : trx.supplier?.nama}
+                </td>
                 {produkFilter && <td className="border px-2 py-1">-</td>}
-                {produkFilter && <td className="border px-2 py-1 text-right">{trx.produk.reduce((sum, p) => sum + p.quantity, 0)}</td>}
+                {produkFilter && (
+                  <td className="border px-2 py-1 text-right">
+                    {trx.produk.reduce((sum, p) => sum + p.quantity, 0)}
+                  </td>
+                )}
                 {produkFilter && <td className="border px-2 py-1">-</td>}
                 {isPenjualan && (
-                  <td className="border px-2 py-1 text-right">{formatRupiah(getModal(trx))}</td>
+                  <td className="border px-2 py-1 text-right">
+                    {formatRupiah(getModal(trx))}
+                  </td>
                 )}
-                <td className="border px-2 py-1 text-right">{formatRupiah(trx.total_harga)}</td>
+                <td className="border px-2 py-1 text-right">
+                  {formatRupiah(trx.total_harga)}
+                </td>
                 {isPenjualan && (
-                  <td className="border px-2 py-1 text-right">{formatRupiah(trx.ongkir)}</td>
+                  <td className="border px-2 py-1 text-right">
+                    {formatRupiah(trx.ongkir)}
+                  </td>
                 )}
                 {isPenjualan && (
-                  <td className="border px-2 py-1 text-right">{formatRupiah(getLaba(trx))}</td>
+                  <td className="border px-2 py-1 text-right">
+                    {formatRupiah(getLaba(trx))}
+                  </td>
                 )}
-                <td className="border px-2 py-1">{typeof trx.kasir === "object" ? trx.kasir.name : trx.kasir}</td>
+                <td className="border px-2 py-1">
+                  {typeof trx.kasir === "object" ? trx.kasir.name : trx.kasir}
+                </td>
               </tr>
             );
           })}
