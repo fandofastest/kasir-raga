@@ -173,14 +173,14 @@ export default function DesktopTable({
                     {pd.satuans?.[0]?.satuan?.nama ?? "-"}
                   </td>
                   <td className="border px-2 py-1 text-right">
-                    {formatRupiah(hargaModal)}
+                    {formatRupiah(getModal(trx))}
                   </td>
                   <td className="border px-2 py-1 text-right">
-                    {formatRupiah(hargaJual)}
+                    {formatRupiah(trx.total_harga)}
                   </td>
                   {isPenjualan && (
                     <td className="border px-2 py-1 text-right">
-                      {formatRupiah(labaProduk)}
+                      {formatRupiah(getLaba(trx))}
                     </td>
                   )}
                   <td className="border px-2 py-1">

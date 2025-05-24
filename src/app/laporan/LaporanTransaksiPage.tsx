@@ -196,14 +196,10 @@ export default function LaporanTransaksiPage() {
 
   /* ------------------ kalkulasi modal & laba + sort + paginate ------------ */
   const getModal = (trx: Transaksi) =>
-    (trx.filteredProduk ?? trx.produk).reduce((acc: number, pd: any) => {
-      // console.log("texxxt" + acc);
-
+    trx.produk.reduce((acc: number, pd: any) => {
       const modal = pd.harga_modal ?? 0;
-      const konversi = pd.satuans?.[0]?.konversi ?? 1;
-      const total = modal * pd.quantity * konversi;
-      console.log("texxxt" + total);
-      return total;
+      const total = modal * pd.quantity;
+      return acc + total;
     }, 0);
 
   const getLaba = (trx: Transaksi) =>
