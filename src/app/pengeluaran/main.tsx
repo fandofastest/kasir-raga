@@ -9,6 +9,10 @@ export default function TransaksiLainLainPage() {
   const [nominal, setNominal] = useState("");
   const [keterangan, setKeterangan] = useState("");
   const [loading, setLoading] = useState(false);
+  const [tanggal, setTanggal] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +32,7 @@ export default function TransaksiLainLainPage() {
       metode_pembayaran: "tunai", // default payment method
       status_transaksi: "lunas", // we mark it as paid immediately
       tipe_transaksi: "pengeluaran", // set to "pengeluaran" (or "pemasukan") for 'transaksi lain-lain'
+      tanggal_transaksi: tanggal,
       // Other fields will use their default values
     };
 
@@ -78,10 +83,21 @@ export default function TransaksiLainLainPage() {
             rows={3}
           ></textarea>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Tanggal
+          </label>
+          <input
+            type="date"
+            value={tanggal}
+            onChange={(e) => setTanggal(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
         <button
           type="submit"
           disabled={loading}
-          className="hover:bg-toscadark bg-tosca w-full rounded px-4 py-2 text-white"
+          className="w-full rounded bg-tosca px-4 py-2 text-white hover:bg-toscadark"
         >
           {loading ? "Sedang diproses..." : "Buat Transaksi"}
         </button>
